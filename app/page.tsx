@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import CodePlayground from '@/components/playground/CodePlayground'
+import RFPage from '@/components/rf/RFPage'
 
 export const metadata: Metadata = {
-  title: 'Code Playground',
-  description: 'Interactive Python, JavaScript, and Bash playground for cyber and TSCM tasks',
+  title: 'RF / TSCM Tools',
+  description: 'Frequency reference, path loss calculator, channel maps, signal math, and TSCM threat device reference',
 }
 
-export default function PlaygroundPage() {
-  return <CodePlayground />
+export default function RFToolsPage() {
+  return <RFPage />
 }
