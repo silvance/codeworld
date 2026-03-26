@@ -54,7 +54,7 @@ export default function HomePage() {
                 codeworld
               </h1>
               <p className="text-sm text-zinc-400 max-w-xl leading-relaxed">
-                A collection of reference tools and interactive utilities for cyber operations, TSCM, and digital forensics. Built for practitioners, not demos.
+                A collection of reference tools and interactive utilities for cyber operations, TSCM, and digital forensics.
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded px-3 py-1.5">
