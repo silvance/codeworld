@@ -1,4 +1,4 @@
-export type Language = 'python' | 'javascript' | 'bash'
+export type Language = 'python' | 'javascript' | 'bash' | 'go' | 'ruby'
 
 export interface Snippet {
   id: string
@@ -423,7 +423,386 @@ echo ""`,
 ]
 
 export const categories: SnippetCategory[] = [
-  { id: 'python',     name: 'Python',     snippets: pythonSnippets },
-  { id: 'javascript', name: 'JavaScript', snippets: jsSnippets },
-  { id: 'bash',       name: 'Bash',       snippets: bashSnippets },
+  {
+    id: 'python',
+    name: 'Python',
+    snippets: [
+      { id: 'py-blank', title: 'Blank', description: 'Empty editor', language: 'python', code: '# Python\n' },
+      ...pythonSnippets,
+    ],
+  },
+  {
+    id: 'javascript',
+    name: 'JavaScript',
+    snippets: [
+      { id: 'js-blank', title: 'Blank', description: 'Empty editor', language: 'javascript', code: '// JavaScript\n' },
+      ...jsSnippets,
+    ],
+  },
+  {
+    id: 'bash',
+    name: 'Bash',
+    snippets: [
+      { id: 'bash-blank', title: 'Blank', description: 'Empty editor', language: 'bash', code: '#!/bin/bash\n' },
+      ...bashSnippets,
+    ],
+  },
+  {
+    id: 'go',
+    name: 'Go',
+    snippets: [
+      {
+        id: 'go-blank',
+        title: 'Blank',
+        description: 'Empty editor',
+        language: 'go',
+        code: `package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, World!")
+}
+`,
+      },
+      {
+        id: 'go-hash',
+        title: 'Hash files',
+        description: 'MD5, SHA-1, SHA-256 from stdin',
+        language: 'go',
+        code: `package main
+
+import (
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"fmt"
+)
+
+func hashAll(data []byte) {
+	md5sum    := md5.Sum(data)
+	sha1sum   := sha1.Sum(data)
+	sha256sum := sha256.Sum256(data)
+
+	fmt.Printf("Input:   %q\\n", string(data))
+	fmt.Printf("MD5:     %x\\n", md5sum)
+	fmt.Printf("SHA-1:   %x\\n", sha1sum)
+	fmt.Printf("SHA-256: %x\\n", sha256sum)
+}
+
+func main() {
+	samples := []string{
+		"TSCM payload",
+		"THM{flag_goes_here}",
+		"password123",
+	}
+	for _, s := range samples {
+		hashAll([]byte(s))
+		fmt.Println()
+	}
+}
+`,
+      },
+      {
+        id: 'go-subnet',
+        title: 'Subnet calculator',
+        description: 'CIDR to network info',
+        language: 'go',
+        code: `package main
+
+import (
+	"fmt"
+	"net"
+)
+
+func subnetInfo(cidr string) {
+	ip, ipNet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		fmt.Printf("Error: %v\\n", err)
+		return
+	}
+
+	// Host count
+	ones, bits := ipNet.Mask.Size()
+	hostBits  := bits - ones
+	hosts     := (1 << hostBits) - 2
+	if hostBits <= 1 {
+		hosts = 0
+	}
+
+	// Broadcast
+	broadcast := make(net.IP, len(ipNet.IP))
+	for i := range ipNet.IP {
+		broadcast[i] = ipNet.IP[i] | ^ipNet.Mask[i]
+	}
+
+	fmt.Printf("CIDR:       %s\\n", cidr)
+	fmt.Printf("Input IP:   %s\\n", ip)
+	fmt.Printf("Network:    %s\\n", ipNet.IP)
+	fmt.Printf("Mask:       %s\\n", net.IP(ipNet.Mask))
+	fmt.Printf("Broadcast:  %s\\n", broadcast)
+	fmt.Printf("Usable:     %d hosts\\n", hosts)
+	fmt.Println()
+}
+
+func main() {
+	cidrs := []string{"192.168.1.0/24", "10.0.0.0/8", "172.16.0.0/12", "192.168.10.50/28"}
+	for _, c := range cidrs {
+		subnetInfo(c)
+	}
+}
+`,
+      },
+      {
+        id: 'go-xor',
+        title: 'XOR cipher',
+        description: 'XOR encrypt/decrypt with key',
+        language: 'go',
+        code: `package main
+
+import (
+	"encoding/hex"
+	"fmt"
+)
+
+func xorBytes(data, key []byte) []byte {
+	out := make([]byte, len(data))
+	for i, b := range data {
+		out[i] = b ^ key[i%len(key)]
+	}
+	return out
+}
+
+func hexDump(data []byte) {
+	for i := 0; i < len(data); i += 16 {
+		end := i + 16
+		if end > len(data) {
+			end = len(data)
+		}
+		chunk := data[i:end]
+		fmt.Printf("%04x  %-48s  ", i, hex.EncodeToString(chunk))
+		for _, b := range chunk {
+			if b >= 32 && b < 127 {
+				fmt.Printf("%c", b)
+			} else {
+				fmt.Print(".")
+			}
+		}
+		fmt.Println()
+	}
+}
+
+func main() {
+	plaintext := []byte("TSCM payload example")
+	key       := []byte{0xDE, 0xAD, 0xBE, 0xEF}
+
+	encrypted := xorBytes(plaintext, key)
+	decrypted := xorBytes(encrypted, key)
+
+	fmt.Printf("Plaintext : %s\\n", plaintext)
+	fmt.Printf("Key       : %x\\n", key)
+	fmt.Println("\\nEncrypted hex dump:")
+	hexDump(encrypted)
+	fmt.Printf("\\nDecrypted : %s\\n", decrypted)
+}
+`,
+      },
+      {
+        id: 'go-portscan',
+        title: 'TCP port scanner',
+        description: 'Concurrent port scanner',
+        language: 'go',
+        code: `package main
+
+import (
+	"fmt"
+	"net"
+	"sort"
+	"sync"
+	"time"
+)
+
+func scanPort(host string, port int, timeout time.Duration) bool {
+	addr := fmt.Sprintf("%s:%d", host, port)
+	conn, err := net.DialTimeout("tcp", addr, timeout)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
+}
+
+func main() {
+	host    := "scanme.nmap.org"
+	ports   := []int{22, 80, 443, 8080, 8443, 3306, 5432, 6379, 27017}
+	timeout := 2 * time.Second
+
+	fmt.Printf("Scanning %s\\n", host)
+	fmt.Println("---")
+
+	var mu   sync.Mutex
+	var wg   sync.WaitGroup
+	open := []int{}
+
+	for _, port := range ports {
+		wg.Add(1)
+		go func(p int) {
+			defer wg.Done()
+			if scanPort(host, p, timeout) {
+				mu.Lock()
+				open = append(open, p)
+				mu.Unlock()
+			}
+		}(port)
+	}
+
+	wg.Wait()
+	sort.Ints(open)
+
+	if len(open) == 0 {
+		fmt.Println("No open ports found")
+		return
+	}
+	for _, p := range open {
+		fmt.Printf("  %-6d OPEN\\n", p)
+	}
+	fmt.Printf("\\n%d/%d ports open\\n", len(open), len(ports))
+}
+`,
+      },
+    ],
+  },
+  {
+    id: 'ruby',
+    name: 'Ruby',
+    snippets: [
+      {
+        id: 'rb-blank',
+        title: 'Blank',
+        description: 'Empty editor',
+        language: 'ruby',
+        code: '# Ruby\n',
+      },
+      {
+        id: 'rb-hash',
+        title: 'Hash identifier',
+        description: 'Identify hash algorithm by length',
+        language: 'ruby',
+        code: `require 'digest'
+
+def identify_hash(digest)
+  sizes = {
+    32  => 'MD5',
+    40  => 'SHA-1',
+    56  => 'SHA-224',
+    64  => 'SHA-256 / SHA3-256',
+    96  => 'SHA-384',
+    128 => 'SHA-512 / SHA3-512',
+  }
+  sizes.fetch(digest.strip.length, "Unknown (#{digest.strip.length} hex chars)")
+end
+
+samples = [
+  '5f4dcc3b5aa765d61d8327deb882cf99',
+  'a665a45920422f9d417e4867efdc4fb8a04a1f3f',
+  'a665a45920422f9d417e4867efdc4fb8a04a1f3f3f2f1f2f3f4f5f6f7f8f9f0',
+]
+
+samples.each do |h|
+  puts "#{h[0..23]}...  →  #{identify_hash(h)}"
+end
+
+# Live hashing
+puts "\\n=== Live hashing ==="
+input = "TSCM payload"
+puts "Input:   #{input}"
+puts "MD5:     #{Digest::MD5.hexdigest(input)}"
+puts "SHA-1:   #{Digest::SHA1.hexdigest(input)}"
+puts "SHA-256: #{Digest::SHA256.hexdigest(input)}"
+`,
+      },
+      {
+        id: 'rb-base64',
+        title: 'Base64 encode/decode',
+        description: 'Encode and decode base64',
+        language: 'ruby',
+        code: `require 'base64'
+
+def enc(s) = Base64.strict_encode64(s)
+def dec(s) = Base64.decode64(s)
+
+samples = ['THM{flag_goes_here}', 'sensitive_data_example', 'TSCM payload']
+
+puts "=== Encoding ==="
+samples.each { |s| puts "#{s.inspect}\\n  → #{enc(s)}" }
+
+puts "\\n=== Decoding ==="
+encoded = samples.map { |s| enc(s) }
+encoded.each { |s| puts "#{s}\\n  → #{dec(s).inspect}" }
+
+puts "\\n=== URL-safe base64 ==="
+url_enc = Base64.urlsafe_encode64("hello world+test/data")
+puts "Encoded: #{url_enc}"
+puts "Decoded: #{Base64.urlsafe_decode64(url_enc)}"
+`,
+      },
+      {
+        id: 'rb-regex',
+        title: 'Regex extraction',
+        description: 'Extract IPs, emails, URLs from text',
+        language: 'ruby',
+        code: `text = <<~TEXT
+  Contact admin@example.com or security@corp.gov for issues.
+  Server at 192.168.1.100 and 10.0.0.1 responded.
+  External: 203.0.113.42 logged from https://evil.example.com/path?q=1
+  Also checked http://192.168.1.1:8080/admin and ftp://files.internal.net
+  Backup user: backup_admin@192.168.1.50
+TEXT
+
+patterns = {
+  'IPv4 addresses' => /\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b/,
+  'Email addresses' => /\\b[\\w.+-]+@[\\w.-]+\\.[a-z]{2,}\\b/i,
+  'URLs'            => %r{https?://[^\\s"'<>]+}i,
+  'Private IPs'     => /\\b(?:10|172\\.(?:1[6-9]|2\\d|3[01])|192\\.168)\\.\\d+\\.\\d+\\b/,
+}
+
+patterns.each do |name, pattern|
+  matches = text.scan(pattern).uniq
+  puts "\\n#{name} (#{matches.length}):"
+  matches.each { |m| puts "  #{m}" }
+end
+`,
+      },
+      {
+        id: 'rb-caesar',
+        title: 'Caesar / ROT13',
+        description: 'Rotation cipher brute-force',
+        language: 'ruby',
+        code: `def caesar(text, shift)
+  text.chars.map do |c|
+    if c =~ /[a-zA-Z]/
+      base = c =~ /[a-z]/ ? 'a'.ord : 'A'.ord
+      ((c.ord - base + shift) % 26 + base).chr
+    else
+      c
+    end
+  end.join
+end
+
+def rot13(text) = caesar(text, 13)
+
+ciphertext = "Gur dhvpx oebja sbk whzcf bire gur ynml qbt"
+puts "Ciphertext: #{ciphertext}"
+puts "ROT13:      #{rot13(ciphertext)}"
+puts
+
+puts "--- All 26 shifts ---"
+(1..25).each do |i|
+  marker = i == 13 ? "  ◄" : ""
+  puts "Shift #{i.to_s.rjust(2)}: #{caesar(ciphertext, i)}#{marker}"
+end
+`,
+      },
+    ],
+  },
 ]

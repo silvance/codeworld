@@ -20,12 +20,24 @@ const MONACO_LANG: Record<Language, string> = {
   python: 'python',
   javascript: 'javascript',
   bash: 'shell',
+  go: 'go',
+  ruby: 'ruby',
 }
 
 const LANG_LABELS: Record<Language, string> = {
   python: 'Python',
   javascript: 'JavaScript',
   bash: 'Bash (sim)',
+  go: 'Go',
+  ruby: 'Ruby',
+}
+
+const LANG_TAB: Record<Language, string> = {
+  python: 'PY',
+  javascript: 'JS',
+  bash: 'SH',
+  go: 'GO',
+  ruby: 'RB',
 }
 
 export default function CodePlayground() {
@@ -125,6 +137,32 @@ export default function CodePlayground() {
     return { out: lines.join('\n'), err: hasError }
   }
 
+  // ── Piston API (Go + Ruby) ────────────────────────────────────────────────
+  const runPiston = async (lang: 'go' | 'ruby', src: string): Promise<{ out: string; err: boolean }> => {
+    const PISTON = 'https://emkc.org/api/v2/piston/execute'
+    const versions: Record<string, string> = { go: '1.21.0', ruby: '3.3.0' }
+    const filenames: Record<string, string> = { go: 'main.go', ruby: 'main.rb' }
+
+    setOutput(`Running ${LANG_LABELS[lang]} via Piston API...`)
+
+    const res = await fetch(PISTON, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: lang,
+        version: versions[lang],
+        files: [{ name: filenames[lang], content: src }],
+      }),
+    })
+
+    if (!res.ok) throw new Error(`Piston API error: ${res.status}`)
+
+    const data = await res.json()
+    const run = data.run ?? {}
+    const out = ((run.stdout ?? '') + (run.stderr ?? '')).trim() || '(no output)'
+    return { out, err: (run.code ?? 0) !== 0 }
+  }
+
   const runCode = useCallback(async () => {
     setIsRunning(true)
     setIsError(false)
@@ -140,6 +178,8 @@ export default function CodePlayground() {
         result = { out: simulateBash(code), err: false }
       } else if (language === 'javascript') {
         result = runJS(code)
+      } else if (language === 'go' || language === 'ruby') {
+        result = await runPiston(language, code)
       } else {
         result = await runPython(code)
       }
@@ -184,7 +224,7 @@ export default function CodePlayground() {
                 className={`px-2 py-1 text-xs font-mono rounded transition-colors ${
                   language === cat.id ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500'
                 }`}>
-                {cat.id === 'javascript' ? 'JS' : cat.id === 'python' ? 'PY' : 'SH'}
+                {LANG_TAB[cat.id]}
               </button>
             ))}
           </div>
@@ -269,7 +309,7 @@ export default function CodePlayground() {
               className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
                 language === cat.id ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
               }`}>
-              {cat.id === 'javascript' ? 'JS' : cat.id === 'python' ? 'PY' : 'SH'}
+              {LANG_TAB[cat.id]}
             </button>
           ))}
         </div>
@@ -357,6 +397,8 @@ export default function CodePlayground() {
               )}
               {language === 'javascript' && <span className="text-[10px] font-mono text-zinc-700">browser JS</span>}
               {language === 'bash' && <span className="text-[10px] font-mono text-zinc-700">simulated</span>}
+              {language === 'go' && <span className="text-[10px] font-mono text-zinc-700">piston · go 1.21</span>}
+              {language === 'ruby' && <span className="text-[10px] font-mono text-zinc-700">piston · ruby 3.3</span>}
             </div>
             <pre className={`flex-1 overflow-auto px-3 py-2 text-xs font-mono leading-relaxed bg-zinc-950 ${
               isError ? 'text-red-400' : 'text-emerald-400'
