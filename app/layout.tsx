@@ -25,7 +25,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistMono.variable} font-mono antialiased bg-zinc-950`}>
         <TopNav />
-        {children}
+        <div className="h-screen pt-10 flex flex-col">
+          {children}
+        </div>
       </body>
     </html>
   )
