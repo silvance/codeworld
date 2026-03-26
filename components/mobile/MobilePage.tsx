@@ -67,7 +67,7 @@ export default function MobilePage() {
           <button onClick={() => setMobileNavOpen(o => !o)} className="text-zinc-400 text-xs font-mono">☰</button>
           <span className="text-xs font-mono text-zinc-300">{NAV.find(n => n.id === active)?.label}</span>
         </div>
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 max-w-5xl w-full">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 w-full">
           {SECTIONS[active]}
         </main>
       </div>

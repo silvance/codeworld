@@ -103,7 +103,7 @@ export default function RFPage() {
         </div>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 max-w-5xl w-full">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 w-full">
           {SECTIONS[active]}
         </main>
       </div>
