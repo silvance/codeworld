@@ -104,8 +104,8 @@ function EventIDs() {
           <div key={e.id} className="border border-zinc-800 rounded p-3 bg-zinc-900/30">
             <div className="flex items-start gap-3 mb-1.5 flex-wrap">
               <span className="text-sm font-mono font-bold text-amber-400 min-w-[3rem]">{e.id}</span>
-              <span className="text-xs font-mono text-zinc-200">{e.description}</span>
-              <div className="ml-auto flex gap-2">
+              <span className="text-xs font-mono text-zinc-200 flex-1">{e.description}</span>
+              <div className="flex gap-2 flex-wrap">
                 <Badge text={e.log} cls="bg-zinc-800 text-zinc-400" />
                 <Badge text={e.category} cls={catColors[e.category] ?? 'bg-zinc-800 text-zinc-400'} />
               </div>
@@ -273,8 +273,8 @@ function BrowserArtifacts() {
             }`}>{b}</button>
         ))}
       </div>
-      <div className="border border-zinc-800 rounded overflow-hidden">
-        <table className="w-full text-xs font-mono">
+      <div className="border border-zinc-800 rounded overflow-hidden overflow-x-auto">
+        <table className="w-full text-xs font-mono min-w-[600px]">
           <thead>
             <tr className="bg-zinc-900 border-b border-zinc-800">
               <th className="text-left px-3 py-2 text-zinc-500 font-normal w-24">Browser</th>
@@ -420,8 +420,8 @@ export function MemoryForensics() {
               triage only
             </button>
           </div>
-          <div className="border border-zinc-800 rounded overflow-hidden">
-            <table className="w-full text-xs font-mono">
+          <div className="border border-zinc-800 rounded overflow-hidden overflow-x-auto">
+            <table className="w-full text-xs font-mono min-w-[500px]">
               <thead>
                 <tr className="bg-zinc-900 border-b border-zinc-800">
                   <th className="text-left px-3 py-2 text-zinc-500 font-normal w-8"></th>
