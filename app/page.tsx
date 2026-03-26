@@ -1,172 +1,110 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-
-const BOOT_LINES = [
-  { text: 'BIOS v2.4.1 — system check...', delay: 0 },
-  { text: 'CPU: cyber/TSCM operations module [OK]', delay: 120 },
-  { text: 'MEM: toolset loaded — 6 modules detected [OK]', delay: 240 },
-  { text: 'NET: RF subsystem online [OK]', delay: 360 },
-  { text: 'FS:  forensics engine mounted [OK]', delay: 480 },
-  { text: 'SYS: all checks passed — booting...', delay: 640 },
-  { text: '', delay: 800 },
-  { text: '> codeworld v0.1.0', delay: 900 },
-]
 
 const TOOLS = [
   {
     href:    '/playground',
-    label:   'code playground',
-    cmd:     'cd /playground',
-    desc:    'Live Python, JavaScript, and Bash execution environment. Pre-loaded with cyber-relevant snippets — hash identification, entropy analysis, XOR cipher, JWT decoding, subnet math, WiGLE parsing.',
-    tags:    ['python', 'javascript', 'bash sim'],
-    color:   'emerald',
+    label:   'Code Playground',
+    status:  'operational',
+    desc:    'Live Python, JavaScript, and Bash execution. Pre-loaded with cyber-relevant snippets for hash analysis, encoding, subnet math, and more.',
+    tags:    ['Python', 'JavaScript', 'Bash'],
+    stat:    { label: 'Languages', value: '3' },
   },
   {
     href:    '/rf',
-    label:   'rf / tscm tools',
-    cmd:     'cd /rf',
-    desc:    'Frequency reference tables, free-space path loss calculator, WiFi and BLE channel maps, dBm↔mW converter, TSCM threat device database, and rogue AP / evil twin detection indicators.',
-    tags:    ['freq ref', 'fspl calc', 'channel maps', 'signal math', 'tscm devices', 'rogue ap'],
-    color:   'blue',
+    label:   'RF / TSCM',
+    status:  'operational',
+    desc:    'Frequency reference tables, free-space path loss calculator, WiFi and BLE channel maps, signal math, TSCM threat device database, and rogue AP detection indicators.',
+    tags:    ['Frequency Ref', 'Path Loss', 'Channel Maps', 'Signal Math', 'TSCM Devices'],
+    stat:    { label: 'Tools', value: '6' },
   },
   {
     href:    '/forensics',
-    label:   'forensics reference',
-    cmd:     'cd /forensics',
-    desc:    'Windows and Linux artifact locations, timeline analysis guides, memory forensics quick-ref, and tool cheat sheets. Built from FOR508/FOR585 field knowledge.',
-    tags:    ['windows artifacts', 'linux artifacts', 'memory', 'timeline'],
-    color:   'purple',
-
+    label:   'Digital Forensics',
+    status:  'operational',
+    desc:    'Windows and Linux artifact locations, registry hives, execution artifacts, browser and USB forensics, memory analysis workflow, and tool cheat sheets.',
+    tags:    ['Windows', 'Linux', 'Memory', 'Volatility', 'X-Ways', 'Axiom'],
+    stat:    { label: 'Sections', value: '4' },
+  },
+  {
+    href:    '/mobile',
+    label:   'Mobile Forensics',
+    status:  'operational',
+    desc:    'Android and iOS artifact paths, acquisition method reference, key SQLite databases, app artifact locations, ADB command reference, and iOS backup structure.',
+    tags:    ['Android', 'iOS', 'ADB', 'SQLite', 'FOR585'],
+    stat:    { label: 'Sections', value: '6' },
   },
 ]
 
-const colorMap: Record<string, { border: string; bg: string; text: string; tag: string; tagText: string; cmd: string }> = {
-  emerald: {
-    border:  'border-emerald-900 hover:border-emerald-700',
-    bg:      'hover:bg-emerald-950/20',
-    text:    'text-emerald-400',
-    tag:     'bg-emerald-950/60',
-    tagText: 'text-emerald-600',
-    cmd:     'text-emerald-400',
-  },
-  blue: {
-    border:  'border-blue-900 hover:border-blue-700',
-    bg:      'hover:bg-blue-950/20',
-    text:    'text-blue-400',
-    tag:     'bg-blue-950/60',
-    tagText: 'text-blue-700',
-    cmd:     'text-blue-400',
-  },
-  purple: {
-    border:  'border-purple-900 hover:border-purple-700',
-    bg:      'hover:bg-purple-950/20',
-    text:    'text-purple-400',
-    tag:     'bg-purple-950/60',
-    tagText: 'text-purple-700',
-    cmd:     'text-purple-400',
-  },
-}
+const STATS = [
+  { label: 'Tools',        value: '4' },
+  { label: 'Sections',     value: '20+' },
+  { label: 'Event IDs',    value: '30+' },
+  { label: 'ADB Commands', value: '40+' },
+]
 
 export default function HomePage() {
-  const [visibleLines, setVisibleLines] = useState(0)
-  const [showTools, setShowTools]       = useState(false)
-  const [typed, setTyped]               = useState('')
-  const [cursorOn, setCursorOn]         = useState(true)
-
-  // Boot sequence
-  useEffect(() => {
-    BOOT_LINES.forEach((line, i) => {
-      setTimeout(() => {
-        setVisibleLines(i + 1)
-        if (i === BOOT_LINES.length - 1) {
-          setTimeout(() => setShowTools(true), 300)
-        }
-      }, line.delay)
-    })
-  }, [])
-
-  // Cursor blink
-  useEffect(() => {
-    const id = setInterval(() => setCursorOn(c => !c), 530)
-    return () => clearInterval(id)
-  }, [])
-
-  // Typewriter for the prompt line
-  const PROMPT = 'operator@codeworld:~$ '
-  useEffect(() => {
-    if (!showTools) return
-    let i = 0
-    const id = setInterval(() => {
-      setTyped(PROMPT.slice(0, i + 1))
-      i++
-      if (i >= PROMPT.length) clearInterval(id)
-    }, 38)
-    return () => clearInterval(id)
-  }, [showTools])
-
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-300 font-mono">
+    <div className="min-h-full bg-zinc-950 text-zinc-300">
+      <div className="max-w-5xl mx-auto px-6 py-12">
 
-      {/* Top padding for fixed nav */}
-
-
-      <div className="max-w-3xl mx-auto px-6 py-16">
-
-        {/* Boot sequence */}
-        <div className="mb-8 text-xs leading-6">
-          {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
-            <div key={i} className={`${
-              line.text.startsWith('>')      ? 'text-emerald-400 font-semibold text-sm' :
-              line.text.includes('[OK]')     ? 'text-zinc-400' :
-              line.text === ''              ? '' :
-              'text-zinc-600'
-            }`}>
-              {line.text}
+        <div className="mb-10 pb-8 border-b border-zinc-800">
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight mb-2">
+                codeworld
+              </h1>
+              <p className="text-sm text-zinc-400 max-w-xl leading-relaxed">
+                A collection of reference tools and interactive utilities for cyber operations, TSCM, and digital forensics. Built for practitioners, not demos.
+              </p>
             </div>
+            <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded px-3 py-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+              All systems operational
+            </div>
+          </div>
+
+          <div className="flex gap-6 mt-6 flex-wrap">
+            {STATS.map(s => (
+              <div key={s.label}>
+                <div className="text-lg font-semibold text-zinc-100">{s.value}</div>
+                <div className="text-xs text-zinc-600">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {TOOLS.map(tool => (
+            <Link key={tool.href} href={tool.href} className="group block">
+              <div className="h-full border border-zinc-800 rounded-lg p-5 bg-zinc-900/20 hover:bg-zinc-900/60 hover:border-zinc-700 transition-all duration-150">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-zinc-100 group-hover:text-white transition-colors">
+                      {tool.label}
+                    </span>
+                  </div>
+                  <span className="text-xs text-zinc-600 group-hover:text-zinc-400 transition-colors">
+                    {tool.stat.value} {tool.stat.label} →
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 leading-relaxed mb-4">{tool.desc}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {tool.tags.map(tag => (
+                    <span key={tag} className="text-[10px] px-2 py-0.5 bg-zinc-800 text-zinc-500 rounded border border-zinc-700/50">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
 
-        {/* Prompt line */}
-        {showTools && (
-          <div className="text-xs mb-10 text-zinc-500">
-            {typed}
-            <span className={`inline-block w-2 h-3.5 bg-zinc-400 align-middle ml-px transition-opacity ${cursorOn ? 'opacity-100' : 'opacity-0'}`} />
-          </div>
-        )}
-
-        {/* Tool cards */}
-        {showTools && (
-          <div className="space-y-4">
-            {TOOLS.map(tool => {
-              const c = colorMap[tool.color]
-              return (
-                <Link key={tool.href} href={tool.href} className="block">
-                  <div className={`border rounded-lg p-5 transition-all duration-200 cursor-pointer ${c.border} ${c.bg}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`text-sm font-semibold ${c.text}`}>{tool.label}</span>
-                      <span className={`text-[11px] ${c.cmd}`}>{tool.cmd}</span>
-                    </div>
-                    <p className="text-xs text-zinc-500 leading-relaxed mb-3">{tool.desc}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {tool.tags.map(tag => (
-                        <span key={tag} className={`text-[10px] px-1.5 py-0.5 rounded ${c.tag} ${c.tagText}`}>{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Footer */}
-        {showTools && (
-          <div className="mt-12 text-[11px] text-zinc-700 border-t border-zinc-900 pt-4">
-            tools for cyber · tscm · digital forensics — built for ops, not demos
-          </div>
-        )}
+        <div className="mt-10 pt-6 border-t border-zinc-800 flex items-center justify-between flex-wrap gap-3">
+          <p className="text-xs text-zinc-700">Cyber · TSCM · Digital Forensics</p>
+          <p className="text-xs text-zinc-700">codeworld.codes</p>
+        </div>
 
       </div>
     </div>

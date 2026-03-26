@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
-import { Geist_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import TopNav from '@/components/nav/TopNav'
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-mono',
   subsets: ['latin'],
 })
 
@@ -13,7 +18,7 @@ export const metadata: Metadata = {
     default:  'codeworld',
     template: '%s | codeworld',
   },
-  description: 'Tools for cyber, TSCM, and digital forensics operations',
+  description: 'A collection of reference tools and interactive utilities for cyber operations, TSCM, and digital forensics.',
 }
 
 export default function RootLayout({
@@ -23,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geistMono.variable} font-mono antialiased bg-zinc-950`}>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-zinc-950`}>
         <TopNav />
         <div className="h-screen pt-10 flex flex-col">
           {children}
