@@ -464,6 +464,7 @@ export interface DarkWebSource {
   name: string
   type: string
   access: string
+  url?: string
   what: string
   notes: string
 }
