@@ -40,7 +40,7 @@ export default function CodePlayground() {
   const [pyStatus, setPyStatus]       = useState<PyStatus>('idle')
   const [activeId, setActiveId]       = useState(defaultSnippet.id)
   const [execMs, setExecMs]           = useState<number | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile]       = useState(false)
 
   const pyodideRef = useRef<any>(null)
