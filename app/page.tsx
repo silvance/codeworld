@@ -14,8 +14,8 @@ const TOOLS = [
     href:  '/rf',
     label: 'RF / TSCM',
     cmd:   'cd /rf',
-    desc:  'Frequency reference, path loss calculator, channel maps, signal math, sweep methodology, bug frequencies, physical indicators, counter-surveillance, SDR reference, and TSCM tool guide.',
-    tags:  ['Freq Ref', 'Path Loss', 'Sweep', 'TSCM Devices', 'SDR', 'Counter-Surv'],
+    desc:  'Frequency reference, path loss calculator, sweep methodology, bug frequencies, physical indicators, counter-surveillance, SDR reference, and TSCM tool guide.',
+    tags:  ['Freq Ref', 'Path Loss', 'Sweep', 'Bug Freq', 'SDR', 'Counter-Surv'],
     stat:  { label: 'Sections', value: '14' },
     color: 'blue',
   },
@@ -23,7 +23,7 @@ const TOOLS = [
     href:  '/forensics',
     label: 'Digital Forensics',
     cmd:   'cd /forensics',
-    desc:  'Windows and Linux artifact locations, registry hives, execution artifacts, browser and USB forensics, memory analysis workflow, and tool cheat sheets including X-Ways and Axiom.',
+    desc:  'Windows and Linux artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets for X-Ways, KAPE, Autopsy, and Axiom.',
     tags:  ['Windows', 'Linux', 'Memory', 'X-Ways', 'Axiom', 'KAPE'],
     stat:  { label: 'Sections', value: '4' },
     color: 'purple',
@@ -32,35 +32,45 @@ const TOOLS = [
     href:  '/mobile',
     label: 'Mobile Forensics',
     cmd:   'cd /mobile',
-    desc:  'Android and iOS artifact paths, acquisition method reference, key SQLite databases, app artifact locations, ADB command reference, and iOS backup structure.',
+    desc:  'Android and iOS artifact paths, acquisition method reference, key SQLite databases, app artifact locations, and ADB command reference.',
     tags:  ['Android', 'iOS', 'ADB', 'SQLite', 'FOR585'],
     stat:  { label: 'Sections', value: '6' },
     color: 'amber',
   },
   {
+    href:  '/network',
+    label: 'Network Utilities',
+    cmd:   'cd /network',
+    desc:  'Common ports with security notes, Wireshark display filters, Nmap scan reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), and network attack signatures.',
+    tags:  ['Ports', 'Wireshark', 'Nmap', 'Protocols', 'Attack Sigs'],
+    stat:  { label: 'Sections', value: '5' },
+    color: 'teal',
+  },
+  {
     href:  '/osint',
     label: 'OSINT Reference',
     cmd:   'cd /osint',
-    desc:  'Search operators and dorks, people search sources, sock puppet OPSEC, username enumeration, image OSINT, social media investigation, domain/IP/infrastructure, phone, dark web, and corporate intelligence.',
-    tags:  ['Search Ops', 'People Search', 'Sock Puppet', 'Infra', 'Dark Web', 'Corp Intel'],
+    desc:  'Search operators and dorks, people search sources, sock puppet OPSEC, username enumeration, image OSINT, social media, infrastructure, dark web, and corporate intel.',
+    tags:  ['Search Ops', 'People Search', 'Sock Puppet', 'Infra', 'Dark Web'],
     stat:  { label: 'Sections', value: '10' },
     color: 'coral',
   },
 ]
 
 const STATS = [
-  { label: 'Tools',        value: '5' },
-  { label: 'Sections',     value: '40+' },
-  { label: 'Event IDs',    value: '30+' },
-  { label: 'ADB Commands', value: '40+' },
+  { label: 'Tools',        value: '6' },
+  { label: 'Sections',     value: '50+' },
+  { label: 'Nmap Commands', value: '35+' },
+  { label: 'Wireshark Filters', value: '55+' },
 ]
 
 const colorMap: Record<string, { border: string; bg: string; text: string; tag: string; tagText: string }> = {
-  emerald: { border: 'border-emerald-900 hover:border-emerald-700', bg: 'hover:bg-emerald-950/20', text: 'text-emerald-400', tag: 'bg-emerald-950/60', tagText: 'text-emerald-600' },
-  blue:    { border: 'border-blue-900 hover:border-blue-700',       bg: 'hover:bg-blue-950/20',    text: 'text-blue-400',    tag: 'bg-blue-950/60',    tagText: 'text-blue-700' },
-  purple:  { border: 'border-purple-900 hover:border-purple-700',   bg: 'hover:bg-purple-950/20',  text: 'text-purple-400',  tag: 'bg-purple-950/60',  tagText: 'text-purple-700' },
-  amber:   { border: 'border-amber-900 hover:border-amber-700',     bg: 'hover:bg-amber-950/20',   text: 'text-amber-400',   tag: 'bg-amber-950/60',   tagText: 'text-amber-700' },
-  coral:   { border: 'border-red-900 hover:border-red-700',         bg: 'hover:bg-red-950/20',     text: 'text-red-400',     tag: 'bg-red-950/60',     tagText: 'text-red-700' },
+  emerald: { border: 'border-emerald-900 hover:border-emerald-700', bg: 'hover:bg-emerald-950/20', text: 'text-emerald-400', tag: 'bg-emerald-950/60', tagText: 'text-emerald-700' },
+  blue:    { border: 'border-blue-900 hover:border-blue-700',       bg: 'hover:bg-blue-950/20',    text: 'text-blue-400',    tag: 'bg-blue-950/60',    tagText: 'text-blue-700'    },
+  purple:  { border: 'border-purple-900 hover:border-purple-700',   bg: 'hover:bg-purple-950/20',  text: 'text-purple-400',  tag: 'bg-purple-950/60',  tagText: 'text-purple-700'  },
+  amber:   { border: 'border-amber-900 hover:border-amber-700',     bg: 'hover:bg-amber-950/20',   text: 'text-amber-400',   tag: 'bg-amber-950/60',   tagText: 'text-amber-700'   },
+  teal:    { border: 'border-teal-900 hover:border-teal-700',       bg: 'hover:bg-teal-950/20',    text: 'text-teal-400',    tag: 'bg-teal-950/60',    tagText: 'text-teal-700'    },
+  coral:   { border: 'border-red-900 hover:border-red-700',         bg: 'hover:bg-red-950/20',     text: 'text-red-400',     tag: 'bg-red-950/60',     tagText: 'text-red-700'     },
 }
 
 export default function HomePage() {
@@ -121,7 +131,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-zinc-800 flex items-center justify-between flex-wrap gap-3">
-          <p className="text-xs text-zinc-700">Cyber · TSCM · Digital Forensics</p>
+          <p className="text-xs text-zinc-700">Cyber · TSCM · Digital Forensics · Network</p>
           <p className="text-xs text-zinc-700">codeworld.codes</p>
         </div>
 

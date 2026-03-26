@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/rf',         label: 'RF / TSCM' },
   { href: '/forensics',  label: 'Forensics' },
   { href: '/mobile',  label: 'Mobile' },
+  { href: '/network', label: 'Network' },
   { href: '/osint',   label: 'OSINT' },
 ]
 
