@@ -465,7 +465,7 @@ export function ToolCheatSheets() {
 
   return (
     <div>
-      <SectionHeader title="Tool cheat sheets" sub="Volatility 3, EZ Tools, Autopsy, KAPE, Plaso, Velociraptor" />
+      <SectionHeader title="Tool cheat sheets" sub="Volatility 3, EZ Tools, Autopsy, KAPE, Plaso, Velociraptor, X-Ways, Axiom" />
 
       <div className="flex flex-wrap gap-1.5 mb-5">
         {toolSheets.map(t => (

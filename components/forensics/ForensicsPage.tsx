@@ -16,7 +16,7 @@ const NAV: NavItem[] = [
   { id: 'windows', label: 'Windows artifacts', sub: 'Event IDs · registry · execution · USB · LNK · browser', icon: '🪟' },
   { id: 'linux',   label: 'Linux artifacts',   sub: 'Auth · history · persistence · accounts',               icon: '🐧' },
   { id: 'memory',  label: 'Memory forensics',  sub: 'Volatility 3 · triage workflow · plugins',             icon: '🧠' },
-  { id: 'tools',   label: 'Tool cheat sheets', sub: 'EZ Tools · KAPE · Autopsy · Plaso · Velociraptor',     icon: '🛠' },
+  { id: 'tools',   label: 'Tool cheat sheets', sub: 'EZ Tools · KAPE · X-Ways · Axiom · Plaso',             icon: '🛠' },
 ]
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {

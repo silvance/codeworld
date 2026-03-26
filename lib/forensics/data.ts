@@ -591,4 +591,102 @@ export const toolSheets: ToolSheet[] = [
       { cmd: 'Artifact: Windows.Detection.Yara.Process',                               description: 'YARA scan running processes' },
     ],
   },
+  {
+    tool: 'X-Ways Forensics',
+    version: '20.x',
+    purpose: 'Disk/image forensics — highly efficient, low overhead, steep learning curve',
+    install: 'https://x-ways.net — license required. WinHex is the free base; XWF is the forensic tier',
+    commands: [
+      // Case setup
+      { cmd: 'File → New Case → set case folder path',                                         description: 'Always create a case first — sets the working directory for all output' },
+      { cmd: 'File → New Case → Case Properties → set investigator, case number',              description: 'Case metadata included in reports — fill out before anything else' },
+      // Adding evidence
+      { cmd: 'File → Add Evidence Object → Disk/Image File',                                   description: 'Add .E01, .dd, .vmdk, raw — XWF auto-detects format' },
+      { cmd: 'File → Add Evidence Object → Physical Memory Image',                             description: 'Add memory dump for file carving / string search' },
+      { cmd: 'Right-click evidence → Properties',                                              description: 'Verify hash, sector size, partition table before processing' },
+      { cmd: 'Right-click evidence → Open Disk / Partition',                                   description: 'Opens the volume in the directory browser — always do this before RVS' },
+      // Navigation (the nightmare part)
+      { cmd: 'F8 — toggle directory browser pane',                                             description: 'Main file tree. Left pane = tree, right pane = file list' },
+      { cmd: 'F6 — open Details window for selected file',                                     description: 'Shows metadata: timestamps (all 4 NTFS), size, attributes, sector offset' },
+      { cmd: 'Alt+F9 — Preview pane toggle',                                                   description: 'Hex/text/graphic preview of selected file. Use Type column to sort by detected type' },
+      { cmd: 'View → Directory Browser Options',                                               description: 'Add/remove columns. Add: type status, hash, ext, offset — critical for triage' },
+      { cmd: 'Click column header to sort; Shift+click for secondary sort',                    description: 'Sort by file type status to group known/unknown/notable files' },
+      { cmd: 'View → Show Directories Only (F11)',                                             description: 'Reduce noise — show folder tree only, then drill into folders of interest' },
+      // Filtering
+      { cmd: 'F10 — open Filter toolbar',                                                      description: 'Per-column filters. Type a value and hit Enter — essential for large images' },
+      { cmd: 'Filter → Filter Files by Path/Name → wildcard *.exe',                           description: 'Filter directory browser by filename/extension' },
+      { cmd: 'View → Filter → Modified between [date] and [date]',                            description: 'Date range filter on MTIME — narrow to incident window' },
+      { cmd: 'Options → Directory Browser → Show files in subdirectories (recursive view)',   description: 'Flat view of ALL files in selected tree node — powerful for triage' },
+      // RVS (Refine Volume Snapshot)
+      { cmd: 'Specialist → Refine Volume Snapshot (RVS) — F10 after opening partition',       description: 'THE main processing step — runs all selected analysis modules' },
+      { cmd: 'RVS → check: File header identification, Metadata extraction, Hash calculation', description: 'Minimum RVS options for most investigations' },
+      { cmd: 'RVS → check: Skin color detection',                                             description: 'Flags images with high skin-tone ratio — CSAM / HR investigations' },
+      { cmd: 'RVS → check: Index text',                                                       description: 'Enables keyword search across all file content — slow but essential' },
+      { cmd: 'RVS → Carve for lost files → check file types needed',                          description: 'File carving from unallocated — select only needed types to save time' },
+      // Search
+      { cmd: 'Specialist → Search (Ctrl+F) → Simultaneous search',                           description: 'Keyword search across evidence. Use simultaneous for multiple terms' },
+      { cmd: 'Search → GREP checkbox → enter regex pattern',                                  description: 'Regex search — use for IPs, emails, SSNs, patterns' },
+      { cmd: 'Search → Codepage → set to UTF-16 for Unicode strings',                         description: 'Add multiple codepages to catch both ASCII and Unicode in one pass' },
+      { cmd: 'Search hit list → right-click → Bookmark all',                                  description: 'Bookmark search hits for report inclusion' },
+      // Bookmarks / Report
+      { cmd: 'Right-click file → Bookmark (Ins key)',                                         description: 'Add file to report table. Add comment describing significance' },
+      { cmd: 'Specialist → Report Table Associations → create table',                         description: 'Organize bookmarks into named tables (e.g. "Execution Evidence", "Comms")' },
+      { cmd: 'File → Report → HTML Report → check tables to include',                        description: 'Generate HTML report with bookmarked items, thumbnails, metadata' },
+      { cmd: 'Report → Include: directory listing, search hits, thumbnails',                  description: 'Options for what to include — thumbnails add significant size' },
+      // Hash / Known files
+      { cmd: 'Tools → Hash Database → Import NSRL / custom hash set',                         description: 'Import known-good (NSRL) or known-bad hash sets for file categorization' },
+      { cmd: 'RVS → Hash calculation → Match against hash database',                          description: 'Auto-flag known files. Green = known good (exclude). Red = known bad (alert)' },
+      { cmd: 'View → Filter → Hash status = Notable',                                         description: 'Show only files matching known-bad hash sets' },
+      // Misc
+      { cmd: 'Tools → File Recovery → Recover/Copy (F5)',                                     description: 'Export selected files preserving directory structure and timestamps' },
+      { cmd: 'Tools → Copy → with Subdirectories and Dates',                                  description: 'Preserve MAC times on export — critical for evidence integrity' },
+      { cmd: 'Specialist → Decode (Ctrl+Alt+D)',                                              description: 'Base64, hex, URL decode selected data in preview pane' },
+      { cmd: 'View → Template Manager → apply NTFS $MFT template',                            description: 'Apply binary templates to interpret raw structures in hex view' },
+    ],
+  },
+  {
+    tool: 'Magnet AXIOM',
+    version: '7.x',
+    purpose: 'All-in-one acquisition + processing + analysis — strongest cloud and mobile artifact support',
+    install: 'https://www.magnetforensics.com/products/magnet-axiom — license required',
+    commands: [
+      // AXIOM Process (acquisition + processing)
+      { cmd: 'AXIOM Process → New Case → set case path and number',                           description: 'Process handles acquisition and processing; Examine handles analysis — two separate apps' },
+      { cmd: 'AXIOM Process → Evidence Sources → Computer → Image/Drive',                    description: 'Load .E01, .dd, L01, AD1 — supports most formats' },
+      { cmd: 'Evidence Sources → Computer → Windows → check all artifact categories',         description: 'Select artifact families to parse — uncheck irrelevant ones to reduce processing time' },
+      { cmd: 'Evidence Sources → Mobile → Android/iOS backup or image',                      description: 'Strongest mobile parser — handles GrayKey, Cellebrite, iTunes backups, UFED' },
+      { cmd: 'Evidence Sources → Cloud → connect account (Google, iCloud, Facebook, etc.)',   description: 'Direct cloud acquisition via OAuth — no device needed if credentials available' },
+      { cmd: 'Artifact Details → select custom artifact profiles',                            description: 'Save artifact selection as profile for recurring case types (e.g. "IP theft", "CSAM")' },
+      { cmd: 'Processing Details → enable: Keyword search, Hash lookup, Skin tone analysis',  description: 'Set before processing starts — cannot add these after without reprocessing' },
+      { cmd: 'Processing Details → Keyword List → import .txt wordlist',                      description: 'Pre-processing keyword list — hits flagged during artifact parsing' },
+      { cmd: 'Processing Details → Hash Sets → import Project VIC / CAID / custom',          description: 'Import known-bad hash sets before processing for auto-flagging' },
+      { cmd: 'Go → Process Evidence',                                                         description: 'Start processing — can take hours for large images. Runs in background' },
+      // AXIOM Examine (analysis)
+      { cmd: 'Open AXIOM Examine → load .mfdb case file',                                     description: 'Examine opens the processed case database. .mfdb = AXIOM case file' },
+      { cmd: 'Artifacts pane (left) → expand category → click artifact type',                 description: 'Main navigation — left pane is artifact tree, center is artifact list, right is detail' },
+      { cmd: 'Case Dashboard → Overview tab',                                                 description: 'High-level summary: artifact counts, timeline heatmap, keyword hit count' },
+      { cmd: 'Artifacts → Communication → Web Related → Browser History',                    description: 'All browser history normalized across Chrome/Firefox/Edge/IE into single view' },
+      { cmd: 'Artifacts → Communication → Email → select mail client',                       description: 'Parses Outlook PST/OST, Thunderbird, webmail artifacts' },
+      { cmd: 'Artifacts → Device Activity → Recently Accessed Files',                        description: 'Aggregates LNK, Jump Lists, MRU, shellbags into unified recent files view' },
+      { cmd: 'Artifacts → Device Activity → Program Execution',                              description: 'Prefetch, Shimcache, Amcache, UserAssist combined in one view' },
+      { cmd: 'Artifacts → Device Activity → Connected Devices',                              description: 'USB history from registry — normalized view of USBSTOR + MountedDevices' },
+      { cmd: 'Artifacts → Operating System → Windows Event Logs',                            description: 'Parsed event log artifacts grouped by event type' },
+      // Timeline
+      { cmd: 'Case Dashboard → Timeline tab',                                                 description: 'Unified timeline across all artifact timestamps — zoom to incident window' },
+      { cmd: 'Timeline → filter by artifact type checkboxes',                                 description: 'Reduce noise — show only relevant artifact types in window' },
+      { cmd: 'Timeline → date range picker → set to ±24h around known event',                description: 'Narrow to incident window before exporting or reviewing' },
+      // Search
+      { cmd: 'Global Search bar (top) → enter keyword',                                      description: 'Searches all artifact text fields. Use quotes for exact phrase' },
+      { cmd: 'Search → Advanced → regex checkbox → enter pattern',                           description: 'Regex search across all artifact content' },
+      { cmd: 'Artifacts list → right-click column header → Add filter',                      description: 'Per-column filtering on any artifact list — filter by value, date range, etc.' },
+      // Connections (link analysis)
+      { cmd: 'Connections tab → select artifact → View Connections',                         description: 'Visual link chart between artifacts sharing identifiers (email, IP, username)' },
+      { cmd: 'Connections → right-click node → Find in Artifacts',                           description: 'Jump from connection chart back to the underlying artifact' },
+      // Tagging / Export
+      { cmd: 'Right-click artifact → Tag → set tag color and label',                         description: 'Tag artifacts for report inclusion. Use consistent tag names across case' },
+      { cmd: 'File → Export → Tagged Artifacts → PDF/Excel/CSV',                             description: 'Export only tagged items to report. Choose format based on recipient' },
+      { cmd: 'File → Export → Full Report → HTML',                                           description: 'Full case report with all artifact categories, thumbnails, timeline' },
+      { cmd: 'Tools → Verify Evidence → re-hash source image',                               description: 'Verify evidence integrity — re-hash original image against stored hash' },
+    ],
+  },
 ]
