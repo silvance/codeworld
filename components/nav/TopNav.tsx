@@ -8,7 +8,8 @@ const LINKS = [
   { href: '/playground', label: 'Playground' },
   { href: '/rf',         label: 'RF / TSCM' },
   { href: '/forensics',  label: 'Forensics' },
-  { href: '/mobile',     label: 'Mobile' },
+  { href: '/mobile',  label: 'Mobile' },
+  { href: '/osint',   label: 'OSINT' },
 ]
 
 export default function TopNav() {

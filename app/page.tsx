@@ -6,7 +6,15 @@ const TOOLS = [
     label:   'Code Playground',
     status:  'operational',
     desc:    'Live Python, JavaScript, and Bash execution. Pre-loaded with cyber-relevant snippets for hash analysis, encoding, subnet math, and more.',
-    tags:    ['Python', 'JavaScript', 'Bash'],
+    tags:    ['Python', 'JavaScript', 'Bash'  {
+    href:    '/osint',
+    label:   'OSINT reference',
+    cmd:     'cd /osint',
+    desc:    'Search operators and dorks, people search sources, sock puppet OPSEC, username enumeration, image OSINT, social media investigation, domain/IP/infrastructure, phone, dark web, and corporate intelligence. CI-focused.',
+    tags:    ['search ops', 'people search', 'sock puppet', 'username', 'image', 'infra', 'dark web'],
+    color:   'coral',
+  },
+],
     stat:    { label: 'Languages', value: '3' },
   },
   {
