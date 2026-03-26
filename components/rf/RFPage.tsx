@@ -42,7 +42,7 @@ export default function RFPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className="flex h-screen bg-zinc-950 pt-10 text-zinc-100 overflow-hidden">
 
       {/* ── Sidebar ── */}
       <aside className={`
