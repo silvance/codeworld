@@ -1,3 +1,0 @@
-{"timestamp":"00:42:04.642","source":"Server","level":"ERROR","message":"Error: ENOENT: no such file or directory, scandir '/home/tcra-annex/Desktop/codeworld/codeworld/app'"}
-{"timestamp":"00:42:04.646","source":"Server","level":"ERROR","message":"⨯ \"unhandledRejection:\" Error: ENOENT: no such file or directory, scandir '/home/tcra-annex/Desktop/codeworld/codeworld/app'"}
-{"timestamp":"00:42:04.649","source":"Server","level":"ERROR","message":"⨯ \"unhandledRejection: \" Error: ENOENT: no such file or directory, scandir '/home/tcra-annex/Desktop/codeworld/codeworld/app'"}
