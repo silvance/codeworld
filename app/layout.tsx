@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import TopNav from '@/components/nav/TopNav'
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const inter = Inter({
   variable: '--font-inter',
@@ -34,6 +35,8 @@ export default function RootLayout({
         <div className="h-screen pt-10 flex flex-col">
           {children}
         </div>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
