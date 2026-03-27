@@ -134,8 +134,8 @@ export function SubnetCalculator() {
               <Row label="Subnet mask" value={result.subnetMask} />
               <Row label="Wildcard" value={result.wildcardMask} />
               <Row label="IP (hex)" value={result.hexIP} />
-              <Row label="Class" value={result.ipClass} />
-              <Row label="Type" value={result.type} />
+              <Row label="Class" value={result.ipClass ?? ''} />
+              <Row label="Type" value={result.type ?? ''} />
             </div>
           </Box>
           <Box>
@@ -689,7 +689,7 @@ export function JWTDecoder() {
 
       {result?.error && <p className="text-xs font-mono text-red-400">{result.error}</p>}
 
-      {result && !result.error && (
+      {result && !('error' in result) && (
         <div className="space-y-4">
           {result.expired !== null && (
             <div className={`text-xs font-mono px-3 py-2 rounded border ${result.expired ? 'bg-red-950/30 border-red-900 text-red-400' : result.notYetValid ? 'bg-amber-950/30 border-amber-900 text-amber-400' : 'bg-emerald-950/30 border-emerald-900 text-emerald-400'}`}>
@@ -1075,22 +1075,22 @@ export function MACLookup() {
 
       {result?.error && <p className="text-xs font-mono text-amber-500">{result.error}</p>}
 
-      {result && !result.error && (
+      {result && !('error' in result) && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Box>
             <BoxHeader title="Formats" />
             <div className="px-4">
-              <Row label="Colon" value={result.colon} />
-              <Row label="Dash" value={result.dash} />
-              <Row label="Dot" value={result.dot} />
-              <Row label="No separator" value={result.noSep} />
+              <Row label="Colon" value={result.colon ?? ''} />
+              <Row label="Dash" value={result.dash ?? ''} />
+              <Row label="Dot" value={result.dot ?? ''} />
+              <Row label="No separator" value={result.noSep ?? ''} />
             </div>
           </Box>
           <Box>
             <BoxHeader title="Vendor & type" />
             <div className="px-4">
-              <Row label="OUI" value={result.oui} />
-              <Row label="Vendor" value={result.vendor} />
+              <Row label="OUI" value={result.oui ?? ''} />
+              <Row label="Vendor" value={result.vendor ?? ''} />
               <Row label="Type" value={`${result.isUnicast ? 'Unicast' : 'Multicast'} / ${result.isUniversal ? 'Globally unique (UAA)' : 'Locally administered (LAA)'}`} />
               <Row label="Bit 0 (I/G)" value={`${result.firstByteBin[7]} — ${result.isMulticast ? 'multicast/broadcast' : 'unicast'}`} dim />
               <Row label="Bit 1 (U/L)" value={`${result.firstByteBin[6]} — ${result.isLocallyAdmin ? 'locally administered' : 'globally unique'}`} dim />
@@ -1099,8 +1099,8 @@ export function MACLookup() {
           <Box>
             <BoxHeader title="IPv6 derived" />
             <div className="px-4">
-              <Row label="EUI-64" value={result.eui64} />
-              <Row label="Modified EUI-64" value={result.modEui64} />
+              <Row label="EUI-64" value={result.eui64 ?? ''} />
+              <Row label="Modified EUI-64" value={result.modEui64 ?? ''} />
             </div>
           </Box>
         </div>
@@ -1192,21 +1192,21 @@ export function UUIDDecoder() {
 
       {result?.error && <p className="text-xs font-mono text-amber-500">{result.error}</p>}
 
-      {result && !result.error && (
+      {result && !('error' in result) && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Box>
             <BoxHeader title="Formats" />
             <div className="px-4">
-              <Row label="Standard" value={result.std} />
-              <Row label="Microsoft" value={result.ms} />
-              <Row label="No dashes" value={result.noSep} />
+              <Row label="Standard" value={result.std ?? ''} />
+              <Row label="Microsoft" value={result.ms ?? ''} />
+              <Row label="No dashes" value={result.noSep ?? ''} />
             </div>
           </Box>
           <Box>
             <BoxHeader title="Version & variant" />
             <div className="px-4">
-              <Row label="Version" value={result.versionName} />
-              <Row label="Variant" value={result.variant} />
+              <Row label="Version" value={result.versionName ?? ''} />
+              <Row label="Variant" value={result.variant ?? ''} />
               {result.timestamp && <Row label="Timestamp" value={result.timestamp} />}
               {result.clockSeq && <Row label="Clock seq" value={result.clockSeq} dim />}
               {result.node && <Row label="Node (MAC)" value={result.node} />}
