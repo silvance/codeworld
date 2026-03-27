@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import HashTools from '@/components/tools/HashTools'
+import ToolsPage from '@/components/tools/ToolsPage'
 
 export const metadata: Metadata = {
-  title: 'Hash & Encoding Tools',
-  description: 'MD5, SHA-1, SHA-256, SHA-512, Base64, hex, URL encoding, HTML entities, ROT13, and number base conversion — all local, nothing leaves the browser.',
+  title: 'Tools',
+  description: 'Hash & encoding, subnet calculator, timestamp converter, packet decoder, regex tester, JWT decoder, certificate decoder, entropy calculator, MAC lookup, UUID decoder, character inspector — all browser-native.',
 }
 
 export default function ToolsRoute() {
-  return <HashTools />
+  return <ToolsPage />
 }
