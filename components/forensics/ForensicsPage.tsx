@@ -86,7 +86,7 @@ export default function ForensicsPage() {
 
         <div className="px-4 py-3 border-t border-zinc-800">
           <div className="text-[9px] font-mono text-zinc-700 leading-relaxed">
-            SANS FOR508 / FOR585 methodology.
+            Digital forensics reference.
           </div>
         </div>
       </aside>
