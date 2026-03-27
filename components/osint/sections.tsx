@@ -220,7 +220,7 @@ export function ImageOSINT() {
     'Forensically': 'Forensics', 'FotoForensics': 'Forensics',
   }
 
-  const filtered = imageTools.filter(t => catFilter === 'ALL' || catMap[t.name] === catFilter)
+  const filtered = useMemo(() => imageTools.filter(t => catFilter === 'ALL' || catMap[t.name] === catFilter), [catFilter])
 
   return (
     <div>
@@ -420,7 +420,7 @@ export function DarkWebOSINT() {
     'Blockchain.com / Blockchair': 'Cryptocurrency', 'Etherscan': 'Cryptocurrency',
   }
 
-  const filtered = darkWebSources.filter(s => catFilter === 'ALL' || catMap[s.name] === catFilter)
+  const filtered = useMemo(() => darkWebSources.filter(s => catFilter === 'ALL' || catMap[s.name] === catFilter), [catFilter])
 
   return (
     <div>

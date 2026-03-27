@@ -89,8 +89,7 @@ export function SweepMethodology() {
   const phases = [...new Set(sweepMethodology.map(s => s.phase))]
   const [phaseFilter, setPhaseFilter] = useState('All')
 
-  const filtered = sweepMethodology.filter(s => phaseFilter === 'All' || s.phase === phaseFilter)
-
+  const filtered = useMemo(() => sweepMethodology.filter(s => phaseFilter === 'All' || s.phase === phaseFilter), [phaseFilter])
   return (
     <div>
       <SectionHeader title="Sweep methodology" sub="Systematic RF survey workflow from pre-sweep baseline through post-sweep documentation" />
@@ -371,7 +370,7 @@ export function TSCMToolRef() {
 
   const cats = ['ALL', ...Array.from(new Set(tscmTools.map(t => t.category)))]
 
-  const filtered = tscmTools.filter(t => catFilter === 'ALL' || t.category === catFilter)
+  const filtered = useMemo(() => tscmTools.filter(t => catFilter === 'ALL' || t.category === catFilter), [catFilter])
 
   return (
     <div>

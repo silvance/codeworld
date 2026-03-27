@@ -40,6 +40,14 @@ const LANG_TAB: Record<Language, string> = {
   ruby: 'RB',
 }
 
+// Hard limits
+const MAX_CODE_BYTES  = 64_000        // ~64 KB — well above any legitimate snippet
+const MAX_OUTPUT_CHARS = 100_000      // ~100 KB — prevents OOM from infinite-print loops
+const PISTON_TIMEOUT_MS = 15_000      // 15 s — Piston cold start can be slow
+
+const truncate = (s: string, max: number) =>
+  s.length > max ? s.slice(0, max) + `\n…(truncated at ${max} chars)` : s
+
 export default function CodePlayground() {
   const defaultCat     = categories[0]
   const defaultSnippet = defaultCat.snippets[0]
@@ -55,8 +63,9 @@ export default function CodePlayground() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile]       = useState(false)
 
-  const pyodideRef = useRef<any>(null)
-  const runCodeRef = useRef<() => void>(() => {})
+  const pyodideRef  = useRef<any>(null)
+  const runCodeRef  = useRef<() => void>(() => {})
+  const abortRef    = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -80,24 +89,30 @@ export default function CodePlayground() {
     if (cat?.snippets[0]) selectSnippet(cat.snippets[0])
   }
 
+  // ── Python (Pyodide) ──────────────────────────────────────────────────────
   const loadPyodide = async (): Promise<any> => {
     if (pyodideRef.current) return pyodideRef.current
     setPyStatus('loading')
-    if (!(window as any).loadPyodide) {
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script')
-        script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js'
-        script.onload  = () => resolve()
-        script.onerror = () => reject(new Error('Failed to load Pyodide'))
-        document.head.appendChild(script)
+    try {
+      if (!(window as any).loadPyodide) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js'
+          script.onload  = () => resolve()
+          script.onerror = () => reject(new Error('Failed to load Pyodide script'))
+          document.head.appendChild(script)
+        })
+      }
+      const py = await (window as any).loadPyodide({
+        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/',
       })
+      pyodideRef.current = py
+      setPyStatus('ready')
+      return py
+    } catch (e) {
+      setPyStatus('error')
+      throw e
     }
-    const py = await (window as any).loadPyodide({
-      indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/',
-    })
-    pyodideRef.current = py
-    setPyStatus('ready')
-    return py
   }
 
   const runPython = async (src: string): Promise<{ out: string; err: boolean }> => {
@@ -105,20 +120,25 @@ export default function CodePlayground() {
     let hasError = false
     try {
       const py = await loadPyodide()
-      py.setStdout({ batched: (s: string) => { out += s + '\n' } })
-      py.setStderr({ batched: (s: string) => { out += s + '\n'; hasError = true } })
+      py.setStdout({ batched: (s: string) => { out = truncate(out + s + '\n', MAX_OUTPUT_CHARS) } })
+      py.setStderr({ batched: (s: string) => { out = truncate(out + s + '\n', MAX_OUTPUT_CHARS); hasError = true } })
       await py.runPythonAsync(src)
-    } catch (e: any) {
-      out += (out ? '\n' : '') + (e.message ?? String(e))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      out += (out ? '\n' : '') + msg
       hasError = true
     }
     return { out, err: hasError }
   }
 
+  // ── JavaScript (browser sandbox) ─────────────────────────────────────────
+  // Note: new Function still has access to window/document. This is intentional
+  // for a developer tool — the user is running their own code in their own browser.
   const runJS = (src: string): { out: string; err: boolean } => {
     const lines: string[] = []
     let hasError = false
-    const stringify = (a: unknown) => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
+    const stringify = (a: unknown) =>
+      typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
     const consoleMock = {
       log:   (...args: unknown[]) => lines.push(args.map(stringify).join(' ')),
       error: (...args: unknown[]) => { lines.push('Error: ' + args.map(stringify).join(' ')); hasError = true },
@@ -130,40 +150,66 @@ export default function CodePlayground() {
       // eslint-disable-next-line no-new-func
       const fn = new Function('console', src)
       fn(consoleMock)
-    } catch (e: any) {
-      lines.push(e.message ?? String(e))
+    } catch (e: unknown) {
+      lines.push(e instanceof Error ? e.message : String(e))
       hasError = true
     }
-    return { out: lines.join('\n'), err: hasError }
+    const out = lines.join('\n')
+    return { out: truncate(out, MAX_OUTPUT_CHARS), err: hasError }
   }
 
   // ── Piston API (Go + Ruby) ────────────────────────────────────────────────
   const runPiston = async (lang: 'go' | 'ruby', src: string): Promise<{ out: string; err: boolean }> => {
     const PISTON = 'https://emkc.org/api/v2/piston/execute'
-    const versions: Record<string, string> = { go: '1.21.0', ruby: '3.3.0' }
+    const versions:  Record<string, string> = { go: '1.21.0', ruby: '3.3.0' }
     const filenames: Record<string, string> = { go: 'main.go', ruby: 'main.rb' }
+
+    if (new TextEncoder().encode(src).length > MAX_CODE_BYTES) {
+      return { out: `Error: code exceeds ${MAX_CODE_BYTES / 1000} KB limit`, err: true }
+    }
 
     setOutput(`Running ${LANG_LABELS[lang]} via Piston API...`)
 
-    const res = await fetch(PISTON, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: lang,
-        version: versions[lang],
-        files: [{ name: filenames[lang], content: src }],
-      }),
-    })
+    // Cancel any in-flight request
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
-    if (!res.ok) throw new Error(`Piston API error: ${res.status}`)
+    const timer = setTimeout(() => controller.abort(), PISTON_TIMEOUT_MS)
 
-    const data = await res.json()
-    const run = data.run ?? {}
-    const out = ((run.stdout ?? '') + (run.stderr ?? '')).trim() || '(no output)'
-    return { out, err: (run.code ?? 0) !== 0 }
+    try {
+      const res = await fetch(PISTON, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: lang,
+          version: versions[lang],
+          files: [{ name: filenames[lang], content: src }],
+        }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timer)
+
+      if (!res.ok) return { out: `Piston API error: HTTP ${res.status}`, err: true }
+
+      const data = await res.json() as { run?: { stdout?: string; stderr?: string; code?: number } }
+      const run = data.run ?? {}
+      const out = truncate(((run.stdout ?? '') + (run.stderr ?? '')).trim() || '(no output)', MAX_OUTPUT_CHARS)
+      return { out, err: (run.code ?? 0) !== 0 }
+    } catch (e: unknown) {
+      clearTimeout(timer)
+      if (e instanceof Error && e.name === 'AbortError') {
+        return { out: `Timed out after ${PISTON_TIMEOUT_MS / 1000}s — Piston may be unavailable`, err: true }
+      }
+      return { out: e instanceof Error ? e.message : String(e), err: true }
+    } finally {
+      abortRef.current = null
+    }
   }
 
   const runCode = useCallback(async () => {
+    if (isRunning) return   // guard against double-click races
     setIsRunning(true)
     setIsError(false)
     if (language === 'python' && !pyodideRef.current) {
@@ -185,14 +231,15 @@ export default function CodePlayground() {
       }
       setOutput(result.out.trim() || '(no output)')
       setIsError(result.err)
-    } catch (e: any) {
-      setOutput(String(e))
+    } catch (e: unknown) {
+      setOutput(e instanceof Error ? e.message : String(e))
       setIsError(true)
     }
     setExecMs(Math.round(performance.now() - t0))
     setIsRunning(false)
+  // runJS and runPiston are defined inline — stable, no deps needed
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language, code])
+  }, [language, code, isRunning])
 
   useEffect(() => { runCodeRef.current = runCode }, [runCode])
 
@@ -207,7 +254,6 @@ export default function CodePlayground() {
   if (isMobile) {
     return (
       <div className="flex flex-col h-full bg-zinc-950 text-zinc-100 overflow-hidden">
-        {/* Mobile top bar */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(o => !o)}
@@ -216,7 +262,7 @@ export default function CodePlayground() {
             {sidebarOpen ? '✕' : '☰'}
           </button>
           <span className="text-xs font-mono text-zinc-400 flex-1">
-            {activeId ? categories.flatMap(c => c.snippets).find(s => s.id === activeId)?.title : 'playground'}
+            {categories.flatMap(c => c.snippets).find(s => s.id === activeId)?.title ?? 'playground'}
           </span>
           <div className="flex gap-1">
             {categories.map(cat => (
@@ -236,7 +282,6 @@ export default function CodePlayground() {
           </button>
         </div>
 
-        {/* Snippet drawer overlay */}
         {sidebarOpen && (
           <div className="absolute inset-0 top-[calc(2.5rem+2.5rem)] z-40 bg-zinc-900 overflow-y-auto">
             {categories.map(cat => (
@@ -260,7 +305,6 @@ export default function CodePlayground() {
           </div>
         )}
 
-        {/* Code textarea (mobile — Monaco not suitable for touch) */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <textarea
             value={code}
@@ -272,13 +316,12 @@ export default function CodePlayground() {
           />
         </div>
 
-        {/* Output panel */}
         <div className="h-40 flex flex-col border-t border-zinc-800 flex-shrink-0">
           <div className="flex items-center px-3 py-1 bg-zinc-900 border-b border-zinc-800 flex-shrink-0">
             <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">output</span>
             {execMs !== null && (
               <span className="ml-3 text-[10px] font-mono text-zinc-700">
-                {execMs < 1000 ? `${execMs}ms` : `${(execMs/1000).toFixed(1)}s`}
+                {execMs < 1000 ? `${execMs}ms` : `${(execMs / 1000).toFixed(1)}s`}
               </span>
             )}
           </div>
@@ -320,7 +363,9 @@ export default function CodePlayground() {
         </button>
         <button onClick={runCode} disabled={isRunning}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium rounded transition-colors ${
-            isRunning ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100'
+            isRunning
+              ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+              : 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100'
           }`}>
           {isRunning ? <><span className="animate-pulse">●</span> running</> : <>▶ run</>}
         </button>
@@ -382,7 +427,7 @@ export default function CodePlayground() {
               <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">output</span>
               {execMs !== null && (
                 <span className="ml-3 text-[10px] font-mono text-zinc-700">
-                  {execMs < 1000 ? `${execMs}ms` : `${(execMs/1000).toFixed(1)}s`}
+                  {execMs < 1000 ? `${execMs}ms` : `${(execMs / 1000).toFixed(1)}s`}
                 </span>
               )}
               <div className="flex-1" />
@@ -396,9 +441,9 @@ export default function CodePlayground() {
                 </span>
               )}
               {language === 'javascript' && <span className="text-[10px] font-mono text-zinc-700">browser JS</span>}
-              {language === 'bash' && <span className="text-[10px] font-mono text-zinc-700">simulated</span>}
-              {language === 'go' && <span className="text-[10px] font-mono text-zinc-700">piston · go 1.21</span>}
-              {language === 'ruby' && <span className="text-[10px] font-mono text-zinc-700">piston · ruby 3.3</span>}
+              {language === 'bash'       && <span className="text-[10px] font-mono text-zinc-700">simulated</span>}
+              {language === 'go'         && <span className="text-[10px] font-mono text-zinc-700">piston · go 1.21</span>}
+              {language === 'ruby'       && <span className="text-[10px] font-mono text-zinc-700">piston · ruby 3.3</span>}
             </div>
             <pre className={`flex-1 overflow-auto px-3 py-2 text-xs font-mono leading-relaxed bg-zinc-950 ${
               isError ? 'text-red-400' : 'text-emerald-400'

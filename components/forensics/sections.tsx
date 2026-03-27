@@ -29,6 +29,21 @@ const Code = ({ children }: { children: string }) => (
 
 const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500'
 
+// Defined at module level so it isn't re-created on every parent render
+function Copy({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(text)
+          .then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
+          .catch(() => { /* clipboard unavailable — fail silently */ })
+      }}
+      className="text-[10px] font-mono text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0"
+    >{copied ? '✓' : 'copy'}</button>
+  )
+}
+
 // ─── 1. Windows Artifacts ────────────────────────────────────────────────────
 
 export function WindowsArtifacts() {
@@ -525,16 +540,6 @@ export function MacOSArtifacts() {
     const q = search.toLowerCase()
     return a.path.toLowerCase().includes(q) || a.title.toLowerCase().includes(q) || a.description.toLowerCase().includes(q)
   }), [search, catFilter])
-
-  const Copy = ({ text }: { text: string }) => {
-    const [copied, setCopied] = useState(false)
-    return (
-      <button
-        onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
-        className="text-[10px] font-mono text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0"
-      >{copied ? '✓' : 'copy'}</button>
-    )
-  }
 
   return (
     <div>

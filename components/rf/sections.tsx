@@ -542,12 +542,12 @@ export function TSCMFreqs() {
   const [search, setSearch] = useState('')
   const [riskFilter, setRiskFilter] = useState<'ALL' | 'HIGH' | 'MED' | 'LOW'>('ALL')
 
-  const filtered = tscmDevices.filter(d => {
+  const filtered = useMemo(() => tscmDevices.filter(d => {
     if (riskFilter !== 'ALL' && d.riskLevel !== riskFilter) return false
     if (!search) return true
     const q = search.toLowerCase()
     return d.name.toLowerCase().includes(q) || d.freqRange.toLowerCase().includes(q) || d.notes.toLowerCase().includes(q)
-  })
+  }), [riskFilter, search])
 
   return (
     <div>
