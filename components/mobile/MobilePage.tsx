@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AcquisitionMethods, DeviceArtifacts, iOSBackup, SQLiteDatabases, AppArtifacts, ADBReference } from './sections'
+import { AcquisitionRef, DeviceArtifacts, BackupStructure, SQLiteDatabases, AppArtifactPaths, ADBReference } from './sections'
 import {
   iOSUnifiedLog, AndroidLogs, CloudExtractionSection, AppDeepDivesSection,
   LocationForensics, CommCorrelation, MobileMalware, MobileAntiForensicsSection,
@@ -35,11 +35,11 @@ const NAV: NavItem[] = [
 ]
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {
-  acquisition:   <AcquisitionMethods />,
+  acquisition:   <AcquisitionRef />,
   artifacts:     <DeviceArtifacts />,
-  backups:       <iOSBackup />,
+  backups:       <BackupStructure />,
   sqlite:        <SQLiteDatabases />,
-  apps:          <AppArtifacts />,
+  apps:          <AppArtifactPaths />,
   adb:           <ADBReference />,
   ioslog:        <iOSUnifiedLog />,
   androidlog:    <AndroidLogs />,
