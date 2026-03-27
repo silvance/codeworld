@@ -1276,14 +1276,14 @@ export function CharInspector() {
 
       {stats && (
         <div className="flex flex-wrap gap-4 text-xs font-mono">
-          {[
+          {([
             ['Characters', stats.total],
             ['Unique', stats.unique],
             ['Non-printable', stats.nonPrint],
             ['Null bytes', stats.nulls],
             ['High (>127)', stats.high],
-          ].map(([label, val]) => (
-            <div key={String(label)}>
+          ] as [string, number][]).map(([label, val]) => (
+            <div key={label}>
               <span className="text-zinc-600">{label}: </span>
               <span className={val > 0 && label !== 'Characters' && label !== 'Unique' ? 'text-amber-400' : 'text-zinc-300'}>{val}</span>
             </div>
