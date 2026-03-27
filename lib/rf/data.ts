@@ -852,3 +852,592 @@ export const linkBudgetFormulas = [
   { name: 'Max detection range estimate', formula: 'd_max = 10^((EIRP − P_min − FSPL_fixed + G_RX) / 20) × (c / (4πf))', variables: 'Simplified: rearrange FSPL formula for d', example: 'If bug EIRP = 10 dBm, receiver sensitivity = −90 dBm, f = 433 MHz: solve FSPL ≤ 100 dB → d ≤ 10^((100−147.55+20·log₁₀(433e6))/20) ≈ 5 km. Practical range much less.' },
   { name: 'Noise floor estimate', formula: 'N(dBm) = −174 + 10·log₁₀(BW_Hz) + NF_dB', variables: 'BW = bandwidth in Hz, NF = receiver noise figure (dB)', example: 'RTL-SDR NF ≈ 6 dB, BW = 10 kHz: −174 + 40 + 6 = −128 dBm noise floor' },
 ]
+
+// ─── Technical Device Taxonomy ───────────────────────────────────────────────
+
+export interface ThreatDevice {
+  name: string
+  category: string
+  subcategory: string
+  powerSource: string
+  range: string
+  frequencies?: string
+  detectionMethod: string[]
+  indicators: string[]
+  sophistication: 'LOW' | 'MED' | 'HIGH' | 'NATION-STATE'
+  notes: string
+}
+
+export const threatDevices: ThreatDevice[] = [
+  // Acoustic
+  { name: 'Wired microphone (room mic)', category: 'Acoustic', subcategory: 'Wired', powerSource: 'Building power or battery', range: 'Unlimited (wired)', frequencies: 'N/A', detectionMethod: ['Physical inspection', 'NLJD', 'TDR on phone lines'], indicators: ['Unexpected wire runs', 'Extra conductors in cable', 'Unusual outlet box depth'], sophistication: 'LOW', notes: 'No RF emission — invisible to spectrum analysis. NLJD and physical inspection only. Extremely simple and reliable. Common in walls, furniture, phone handsets.' },
+  { name: 'Analog FM audio bug', category: 'Acoustic', subcategory: 'RF transmitter', powerSource: 'Battery or mains tap', range: '50–500 m', frequencies: '88–108 MHz (broadcast hide) or 100–500 MHz', detectionMethod: ['RF spectrum scan', 'NLJD', 'Signal correlation test'], indicators: ['Carrier on spectrum', 'Continuous or VOX-activated transmission', 'FM demodulates to voice'], sophistication: 'LOW', notes: 'Simplest bug type. Battery life 6–72 hours typical. Continuous carrier very visible on spectrum. VOX-activated reduces battery drain but creates intermittent signal.' },
+  { name: 'GSM / 4G audio bug', category: 'Acoustic', subcategory: 'Cellular', powerSource: 'Battery or mains', range: 'Unlimited (cellular)', frequencies: '700 MHz – 2.7 GHz (LTE band-dependent)', detectionMethod: ['GSM flutter (217 Hz on AM mode near 900 MHz)', 'NLJD', 'IMSI monitoring'], indicators: ['Periodic TDMA burst activity', 'Call-triggered activation', 'Unknown IMSI on IMSI catcher'], sophistication: 'MED', notes: 'Dial-in or SMS-triggered. Indefinite range. GSM burst creates audible 217 Hz buzz on AM receiver near 850/900 MHz band. LTE version has no characteristic flutter — harder to detect passively.' },
+  { name: 'FHSS audio bug', category: 'Acoustic', subcategory: 'RF transmitter (spread spectrum)', powerSource: 'Battery', range: '100 m – 2 km', frequencies: '400–900 MHz (custom hopping range)', detectionMethod: ['Waterfall display (stripe pattern)', 'Correlation test', 'Wideband power detector'], indicators: ['Elevated noise floor across hopping band in waterfall', 'Vertical stripes at irregular frequencies', 'Activity correlates with conversation'], sophistication: 'HIGH', notes: 'Specifically designed to defeat swept spectrum analyzers. Requires waterfall capture over 5–10 min minimum. Correlation test: make noise, watch for burst activity pattern on SDR waterfall.' },
+  { name: 'Laser/optical audio', category: 'Acoustic', subcategory: 'Optical', powerSource: 'External (attacker-side)', range: '10 m – 1 km (line of sight)', frequencies: 'N/A (optical, not RF)', detectionMethod: ['IR detector sweep', 'Window film', 'Physical window screening'], indicators: ['Window/glass vibration targeted from outside', 'No RF emission', 'External beam source'], sophistication: 'NATION-STATE', notes: 'Zero RF emission — completely invisible to spectrum analysis. Reads window glass vibration from outside. Countermeasure: anti-vibration window film, masking audio (white noise against glass), window screening. Used by intelligence services.' },
+  { name: 'Acoustic "resonator" (passive)', category: 'Acoustic', subcategory: 'Passive', powerSource: 'None (passive)', range: 'Room size when illuminated', frequencies: 'Illuminated by external microwave beam', detectionMethod: ['NLJD (resonant cavity response)', 'Microwave illumination check', 'X-ray of objects'], indicators: ['No battery, no wires, no transmission', 'Resonant cavity in innocuous object', 'Returns signal only when illuminated externally'], sophistication: 'NATION-STATE', notes: 'The "Thing" / Leon Theremin design. Completely passive — no power, no transmission until illuminated by external microwave beam. Invisible to all passive detection. Classic example: great seal bug in the US ambassador\'s office. Counter: X-ray inspection of gifts/objects, NLJD with sensitivity maximized.' },
+  // Video
+  { name: 'Pinhole camera (wired)', category: 'Optical/Video', subcategory: 'Wired', powerSource: 'Building power', range: 'Unlimited (wired)', frequencies: 'N/A', detectionMethod: ['Physical inspection (1–3mm lens)', 'RF lens detector (infrared reflection)', 'NLJD'], indicators: ['Small hole in wall/object facing meeting area', 'Unusual cable runs', 'NLJD hit in unexpected location'], sophistication: 'MED', notes: 'Lens detector (IR reflection) most effective detection tool. Scan surfaces at eye level in meeting rooms and facing entry points. Modern pinhole lenses are 1–2mm — very difficult to spot visually.' },
+  { name: 'WiFi IP camera', category: 'Optical/Video', subcategory: 'WiFi', powerSource: 'Battery or mains', range: 'WiFi range (30–100m)', frequencies: '2.4 / 5 GHz (802.11)', detectionMethod: ['WiFi scan (unknown BSSID/SSID)', 'RF spectrum (OFDM signal)', 'Network enumeration'], indicators: ['Unknown WiFi device in scan', 'Strong RSSI from unexpected direction', 'OFDM signal not matching known APs'], sophistication: 'LOW', notes: 'Easiest category to detect — appears as WiFi device in any wireless scan. Compare against inventory of known APs. Consumer "nanny cam" devices frequently used.' },
+  { name: 'Analog video TX (2.4/5.8 GHz)', category: 'Optical/Video', subcategory: 'RF transmitter', powerSource: 'Battery or mains', range: '50–300m', frequencies: '2.400–2.483 GHz or 5.725–5.850 GHz', detectionMethod: ['RF spectrum scan', 'Non-802.11 carrier in 2.4/5.8 GHz band'], indicators: ['Continuous wideband carrier (~6 MHz wide)', 'AM-VSB modulation visible on spectrum', 'Not following 802.11 channel spacing'], sophistication: 'LOW', notes: 'Analog video carriers have different spectral shape than OFDM WiFi — visible as smooth AM-modulated carrier vs flat-topped 802.11 bricks. Horn antenna best for 2.4/5.8 GHz direction finding.' },
+  // Carrier current
+  { name: 'Powerline carrier bug', category: 'Carrier Current', subcategory: 'Powerline', powerSource: 'Mains (tapped from powerline)', range: 'Entire building on same electrical phase', frequencies: '10–500 kHz (conducted on AC powerline)', detectionMethod: ['Powerline spectrum analyzer (10–500 kHz)', 'Airspy HF+ or SDR with direct sampling', 'REI TALAN on power line'], indicators: ['Carrier on powerline in 10–500 kHz range', 'Signal amplitude varies with speech', 'Present on AC wiring, absent in air'], sophistication: 'MED', notes: 'Signal conducted on AC wiring — completely invisible to airborne RF scan. Requires direct connection to powerline or powerline spectrum analyzer. Range limited to building electrical circuit. Highly persistent — constant power source.' },
+  { name: 'Telephone line bug (series)', category: 'Carrier Current', subcategory: 'Phone line', powerSource: 'Line-powered (draws from phone line voltage)', range: 'Distance to nearest telco junction', frequencies: 'Audio (0.3–3.4 kHz) on phone line', detectionMethod: ['REI TALAN (series device detection)', 'Line current measurement', 'TDR impedance analysis'], indicators: ['Increased line current draw', 'Slight impedance change detectable by TALAN', 'Voltage drop on line'], sophistication: 'LOW', notes: 'Series tap wired inline with phone line. Powers itself from line voltage (48V). Captures audio from handset. TALAN is definitive detection tool. Measure baseline line current then compare — series device draws additional current.' },
+  { name: 'Telephone line bug (parallel)', category: 'Carrier Current', subcategory: 'Phone line', powerSource: 'Line-powered or battery', range: 'As above', frequencies: 'Audio on phone line', detectionMethod: ['TALAN', 'Impedance measurement', 'Capacitance test'], indicators: ['Additional capacitive load on line', 'Slightly reduced line voltage', 'TALAN detects parallel component'], sophistication: 'LOW', notes: 'Connected in parallel across phone line — picks up audio when line is in use. TALAN most effective. Parallel tap creates detectable impedance change. Check telephone junction boxes — most common installation point.' },
+  // IoT / networked
+  { name: 'Trojanized IoT device', category: 'IoT / Networked', subcategory: 'Networked sensor', powerSource: 'Mains', range: 'Network-dependent (unlimited via internet)', frequencies: 'WiFi/Ethernet', detectionMethod: ['Network inventory audit', 'Traffic analysis (unusual outbound)', 'Firmware integrity check'], indicators: ['Unknown device on network scan', 'Unexpected outbound connections', 'Device not in authorized inventory'], sophistication: 'MED', notes: 'Smart speakers, cameras, or sensors with compromised firmware. The Eero mesh finding pattern — devices that ingest and potentially report neighbor RF profiles. Focus: network traffic analysis and strict inventory control.' },
+  { name: 'Rogue USB charging station', category: 'IoT / Networked', subcategory: 'Physical access', powerSource: 'Mains', range: 'Physical (USB connection)', frequencies: 'N/A', detectionMethod: ['Physical inspection', 'USB data blocker test'], indicators: ['Unknown USB charger in conference room or office', 'Charger runs warm when nothing connected', 'Non-standard USB pinout'], sophistication: 'MED', notes: 'Charges device while exfiltrating data or installing malware. Use USB data blockers (charge-only adapters) for any untrusted USB port. Physical inspection in visitor areas.' },
+]
+
+// ─── Threat Actor Profiles ────────────────────────────────────────────────────
+
+export interface ThreatActorProfile {
+  actor: string
+  category: string
+  motivation: string
+  sophistication: string
+  preferredDevices: string[]
+  placementMethods: string[]
+  operationalSecurity: string[]
+  indicators: string[]
+  targetedEnvironments: string[]
+  notes: string
+}
+
+export const threatActors: ThreatActorProfile[] = [
+  {
+    actor: 'Nation-state intelligence service',
+    category: 'Nation-State',
+    motivation: 'Strategic intelligence collection — military, diplomatic, technical secrets',
+    sophistication: 'Very High — purpose-built devices, custom frequencies, long-term operations',
+    preferredDevices: ['Passive resonator (no RF emission)', 'Custom FHSS with non-standard hopping patterns', 'Optical/laser (zero RF)', 'Compromised supply chain devices', 'Powerline carrier (persistent, no battery)', 'Optical fiber tap on comms infrastructure'],
+    placementMethods: ['Renovation access (construction crew)', 'Supply chain compromise (device before delivery)', 'Maintenance/service personnel', 'Long-term access agent in facility', 'Physical break-in during off-hours', 'Gift or diplomatic item placement'],
+    operationalSecurity: ['Passive devices requiring external illumination — never transmit independently', 'Custom frequencies outside standard TSCM sweep ranges', 'Low/no power consumption to evade thermal detection', 'Devices indistinguishable from legitimate facility hardware', 'Operational only during scheduled windows (schedule-aware activation)', 'Multiple redundant devices placed simultaneously'],
+    indicators: ['Access events: contractors, service personnel, deliveries shortly before use of space for sensitive discussions', 'Objects that cannot be fully accounted for in inventory', 'NLJD response in objects that should contain no electronics', 'Unusual resonance from objects when microwave-illuminated'],
+    targetedEnvironments: ['Embassies and diplomatic facilities', 'Military command posts and SCIFs', 'Defense contractor facilities', 'Government executive spaces', 'Sensitive compartmented spaces'],
+    notes: 'Most difficult threat class. Standard RF sweep may be completely ineffective against passive devices or custom-frequency FHSS. Require NLJD sweep of all objects, strict access control logging, and X-ray inspection of high-risk items (gifts, equipment deliveries). Assume any long-term access by unknown personnel has been exploited.',
+  },
+  {
+    actor: 'Corporate espionage (competitor)',
+    category: 'Corporate',
+    motivation: 'Competitive intelligence — M&A targets, R&D, pricing, strategy',
+    sophistication: 'Medium — commercial surveillance equipment, possibly hired professional',
+    preferredDevices: ['Commercial GSM bugs (Amazon/AliExpress sourced)', 'WiFi cameras disguised as office equipment', 'Compromised IoT devices', 'Commercial LTE trackers', 'Audio bugs in common objects (clocks, chargers, smoke detectors)'],
+    placementMethods: ['Visitor/client access to meeting rooms', 'Cleaning or maintenance contractor', 'Temporary employee or contractor', 'Targeted phishing for network access (virtual surveillance)', 'Delivery of "gift" containing device'],
+    operationalSecurity: ['Commercial devices with limited anti-detection features', 'May use generic consumer electronics to appear legitimate', 'Cloud exfiltration — data leaves via cellular to overseas server', 'Target-specific activation (motion, sound, scheduled)'],
+    indicators: ['New objects appearing in meeting rooms after visits', 'Competitors aware of internal discussions', 'Smoke detectors or clocks that differ from facility standard', 'Unauthorized personnel in sensitive areas', 'Unusual WiFi devices in pre-meeting AP scan'],
+    targetedEnvironments: ['Corporate boardrooms and meeting spaces', 'Executive offices', 'R&D laboratories', 'Conference and trade show facilities'],
+    notes: 'Commercial surveillance products widely available. Detection is achievable with standard TSCM. Focus on access control for visitor areas, pre-meeting WiFi and RF sweep, and inventory of all objects in sensitive spaces. Legal exposure for corporate espionage operators in US is substantial — deterrent factor.',
+  },
+  {
+    actor: 'Insider threat (current employee)',
+    category: 'Insider',
+    motivation: 'Financial gain, grievance, ideology, coercion, or recruitment by foreign intelligence',
+    sophistication: 'Variable — low (commercial devices) to high (if technically skilled)',
+    preferredDevices: ['Personal mobile phone (most common — no dedicated device needed)', 'Commercial audio bugs placed in own work area', 'Screen/document photographing with phone', 'USB keyloggers on shared workstations', 'Network tap on accessible infrastructure'],
+    placementMethods: ['Direct access to target space (no entry required)', 'Authorized presence in sensitive areas', 'After-hours access to spaces they have legitimate entry to', 'Social access to other employees\' spaces'],
+    operationalSecurity: ['Phone recording is lowest-risk and hardest to detect', 'May use personal hotspot to bypass corporate network monitoring', 'Device removal before sweep (if sweep schedule is known)', 'May be technically sophisticated — knows facility weaknesses'],
+    indicators: ['Behavioral: unusual hours, printing/downloading anomalies, resignation/departure planning', 'Device: personal phone at desk during sensitive meetings', 'Network: unusual outbound data, cloud sync activity', 'Physical: accessing areas not required for their role'],
+    targetedEnvironments: ['Any facility the insider has authorized access to', 'Particularly effective against: SCIFs (cleared insider), R&D spaces, executive areas'],
+    notes: 'Phone-in-pocket is the most common and hardest-to-prevent collection method. Policy and cultural controls (no-phone zones, device storage policy) are primary countermeasures. TSCM sweeps detect placed devices but not carried phones. Behavioral analytics and DLP are complementary controls.',
+  },
+  {
+    actor: 'Criminal organization',
+    category: 'Criminal',
+    motivation: 'Financial — extortion, fraud, stolen IP for sale, targeted theft intelligence',
+    sophistication: 'Low to Medium — commercial tools, hired specialists',
+    preferredDevices: ['Commercial GSM/LTE bugs purchased online', 'GPS trackers (vehicle surveillance)', 'Commercial WiFi cameras', 'Simple analog FM transmitters'],
+    placementMethods: ['Physical access during business hours (posing as customer/vendor)', 'Compromised contractor', 'Vehicle access in parking areas (GPS tracker)'],
+    operationalSecurity: ['Minimal OPSEC — commercial devices with standard frequencies', 'Short operational periods (days to weeks)', 'Rapid extraction after collection', 'Cloud-based exfiltration to anonymous accounts'],
+    indicators: ['Standard commercial device signatures on spectrum', 'Devices on known consumer frequencies (433 MHz, 2.4 GHz)', 'VT-detectable device firmware'],
+    targetedEnvironments: ['Financial institutions', 'Legal firms (litigation intelligence)', 'Targeted executives (personal surveillance)', 'Retail or hospitality (payment intelligence)'],
+    notes: 'Most detectable threat class. Commercial devices have standard signatures, detectable frequencies, and limited OPSEC. Standard TSCM sweep is effective. Primary vector is physical access — access control is the most effective countermeasure at this level.',
+  },
+  {
+    actor: 'Law enforcement / legal authority',
+    category: 'Authorized Intercept',
+    motivation: 'Criminal investigation under court order',
+    sophistication: 'High — access to professional equipment, legal authority for extended access',
+    preferredDevices: ['Court-authorized intercept devices meeting legal standards', 'Professional TSCM-grade equipment installed with authorized access', 'Carrier-level intercept (CALEA compliance — no device placement)'],
+    placementMethods: ['Legal authority with notice or covert court order', 'Carrier-level intercept (no physical device)', 'Search warrant execution'],
+    operationalSecurity: ['Devices designed to be undetectable during authorized surveillance period', 'CALEA intercept at carrier = no device on premises at all'],
+    indicators: ['Generally none — authorized and professional placement'],
+    targetedEnvironments: ['Any environment under investigation'],
+    notes: 'If you discover a device during a TSCM sweep that you believe may be a law enforcement intercept, stop the sweep, consult legal counsel immediately, and do not remove or disturb the device. Interference with authorized intercept is a federal crime. This is a distinct scenario from unauthorized surveillance.',
+  },
+]
+
+// ─── RF Spectrum Baseline ─────────────────────────────────────────────────────
+
+export interface SpectrumBaseline {
+  environment: string
+  band: string
+  freqRange: string
+  expectedSignals: string[]
+  anomalousSignals: string[]
+  noiseFloor: string
+  notes: string
+}
+
+export const spectrumBaselines: SpectrumBaseline[] = [
+  // Office / commercial building
+  { environment: 'Office / Commercial', band: 'VHF FM broadcast', freqRange: '88–108 MHz', expectedSignals: ['Commercial FM broadcast stations (strong, stable)'], anomalousSignals: ['Unknown carrier between stations', 'Carrier with voice modulation (NFM)'], noiseFloor: '–90 to –100 dBm', notes: 'Well-defined channels. Any carrier not matching a licensed station is anomalous.' },
+  { environment: 'Office / Commercial', band: 'VHF/UHF misc', freqRange: '136–174 MHz, 400–512 MHz', expectedSignals: ['Licensed two-way radio (business band)', 'NOAA weather (162.4–162.55 MHz)', 'Paging systems (152–158 MHz)'], anomalousSignals: ['Unknown NFM carrier', 'Carrier that activates with conversation', 'Signal present inside building but not outside'], noiseFloor: '–100 to –110 dBm', notes: 'Validate any carrier by demodulating in NFM mode. Voice content on unidentified carrier = anomalous.' },
+  { environment: 'Office / Commercial', band: 'ISM 433 MHz', freqRange: '433.05–434.79 MHz', expectedSignals: ['Wireless temperature sensors', 'Key fobs', 'Remote controls'], anomalousSignals: ['Continuous carrier', 'Voice-modulated signal', 'Signal correlated with conversation'], noiseFloor: '–100 dBm', notes: 'Busy band. Short burst devices are normal. Continuous or voice-modulated carrier is not.' },
+  { environment: 'Office / Commercial', band: 'Cellular', freqRange: '700–900 MHz, 1700–2700 MHz', expectedSignals: ['LTE/5G from macro towers (strong outside, attenuated inside)', 'DAS (distributed antenna system) in large buildings'], anomalousSignals: ['Unusually strong cellular signal from unexpected direction inside building', 'Unknown IMSI catcher (RSSI stronger than expected vs tower distance)', 'CDMA/GSM in LTE-only coverage area'], noiseFloor: '–100 to –120 dBm (indoors)', notes: 'Cellular signal should attenuate significantly indoors. Very strong cellular signal from within a room (not from outside) is suspicious.' },
+  { environment: 'Office / Commercial', band: '2.4 GHz WiFi/BT', freqRange: '2.400–2.483 GHz', expectedSignals: ['802.11 b/g/n/ax on channels 1, 6, 11 (APs per inventory)', 'Bluetooth piconets (2 MHz wide)', 'Microwave oven harmonics (~2.45 GHz, intermittent)'], anomalousSignals: ['Unknown BSSID not in AP inventory', 'Non-802.11 continuous carrier', 'OFDM signal on non-standard channel', 'Analog video carrier (smooth AM shape, not flat-topped)'], noiseFloor: '–85 to –95 dBm', notes: 'Compare all detected BSSIDs against documented AP inventory. Any unknown OFDM = unknown device transmitting data.' },
+  { environment: 'Office / Commercial', band: '5 GHz WiFi', freqRange: '5.150–5.850 GHz', expectedSignals: ['802.11 a/n/ac/ax on channels 36–165 (APs per inventory)', 'Weather radar secondary radar (DFS channels — intermittent)'], anomalousSignals: ['Unknown BSSID', 'Analog video TX (FPV drone range — 5.8 GHz)', 'Non-standard OFDM'], noiseFloor: '–90 to –100 dBm', notes: 'Less congested than 2.4 GHz. Unknown signals stand out more clearly. 5.8 GHz analog video TXs have distinctive spectral shape vs 802.11.' },
+  // Military installation
+  { environment: 'Military Installation', band: 'SINCGARS (VHF)', freqRange: '30–87.975 MHz', expectedSignals: ['SINCGARS FHSS (authorized nets — appears as broadband noise elevation across band during transmission)', 'AM aircraft comms (118–137 MHz — aviation band)'], anomalousSignals: ['Unknown FHSS activity outside authorized net schedules', 'Continuous carrier in this band', 'NFM voice not matching authorized nets'], noiseFloor: '–100 to –110 dBm', notes: 'SINCGARS FHSS is authorized — document it in baseline. Unknown FHSS not matching authorized net timing is anomalous.' },
+  { environment: 'Military Installation', band: 'UHF SATCOM / MUOS', freqRange: '225–400 MHz', expectedSignals: ['UHF SATCOM terminals (burst, directional)', 'MUOS waveform (CDMA-based)'], anomalousSignals: ['Continuous UHF carrier', 'Unknown burst activity inside facility'], noiseFloor: '–110 dBm', notes: 'Most UHF activity should be directional (antenna pointed skyward). Isotropic UHF signal source inside a facility = very suspicious.' },
+  { environment: 'Military Installation', band: 'ISM / commercial', freqRange: '900 MHz, 2.4 GHz, 5 GHz', expectedSignals: ['Authorized WiFi APs (documented, SSID-controlled)', 'Authorized Bluetooth devices'], anomalousSignals: ['Personal hotspot SSIDs', 'Unknown BSSIDs not in inventory', 'Consumer devices (Bluetooth headphones on unauthorized frequencies)', 'Any cellular device in RF-controlled area'], noiseFloor: 'Variable — RF shielding may lower floor significantly', notes: 'Military installations may have strict RF control policies. Baseline is tightly constrained — any deviation is anomalous.' },
+  // Industrial / ICS environment
+  { environment: 'Industrial / ICS', band: 'Legacy wireless', freqRange: '900 MHz ISM', expectedSignals: ['WirelessHART sensors (802.15.4 FHSS, 2.4 GHz)', 'ISA100.11a sensors', 'Legacy 900 MHz proprietary SCADA radios'], anomalousSignals: ['Unknown 900 MHz continuous carrier', 'New FHSS activity not matching authorized sensor schedule', 'Signal not present in previous baseline'], noiseFloor: '–80 to –100 dBm (industrial noise varies)', notes: 'Industrial environments have high RF noise from motors, VFDs, and arc welders. Baseline must be captured during normal operations to distinguish equipment noise from surveillance signals.' },
+  { environment: 'Industrial / ICS', band: 'Powerline', freqRange: '10–500 kHz (conducted)', expectedSignals: ['PLC signals (power line communication for lighting/control)', 'Variable frequency drive (VFD) harmonics', 'Smart meter signals (PRIME/G3-PLC: 3–500 kHz)'], anomalousSignals: ['Voice-frequency carrier (300–3400 Hz) on powerline', 'Unknown narrowband carrier in 50–500 kHz range', 'Signal correlated with nearby conversation'], noiseFloor: 'High — VFDs create significant wideband noise', notes: 'Powerline surveillance is a real threat in industrial environments where workers discuss sensitive matters near energized equipment. Requires specialized powerline spectrum analyzer or SDR with direct coupling.' },
+]
+
+// ─── TEMPEST / Emanations Reference ──────────────────────────────────────────
+
+export interface TempestEntry {
+  category: string
+  threat: string
+  mechanism: string
+  frequencies: string
+  range: string
+  countermeasures: string[]
+  standards: string[]
+  notes: string
+}
+
+export const tempestEntries: TempestEntry[] = [
+  {
+    category: 'Video emanations',
+    threat: 'Van Eck phreaking (CRT/LCD monitor eavesdropping)',
+    mechanism: 'CRT: horizontal sweep creates AM-modulated RF at video pixel clock frequency harmonics. LCD: differential signaling (TMDS/LVDS) leaks data at pixel clock harmonics. Video content reconstructable from RF.',
+    frequencies: '25 MHz – 1+ GHz (harmonics of pixel clock, typically 65–165 MHz fundamental)',
+    range: 'Tens of meters (practical), claimed hundreds of meters with directional antenna',
+    countermeasures: ['Distance and shielding between monitor and external wall', 'TEMPEST-certified displays (NSA EPL listed)', 'Electromagnetic shielded room (Faraday cage)', 'Noise masking generators (classified)', 'Random video refresh patterns (mitigates CRT, limited effect on LCD)'],
+    standards: ['NSTISSAM TEMPEST/1-92 (classified)', 'NATO SDIP-27 Level A/B/C', 'NSA/CSS EPL (Endorsed Products List)', 'CNSS No. 7000 (US government)'],
+    notes: 'Van Eck demonstrated in 1985. Modern LCD displays still leak via HDMI cable emanations. Wired connections (HDMI, DisplayPort cable runs) are often more significant emanation sources than the display itself. Cable routing and shielding are critical.',
+  },
+  {
+    category: 'Keyboard emanations',
+    threat: 'Electromagnetic keyboard eavesdropping',
+    mechanism: 'PS/2 and USB keyboards emit RF correlated with keystrokes via cable and ground plane coupling. Specific keystroke electromagnetic patterns are distinguishable at distance.',
+    frequencies: '1–100 MHz (USB keystroke coupling)',
+    range: 'Up to 20 meters (PS/2), 1–5 meters (USB) — varies significantly by hardware',
+    countermeasures: ['TEMPEST-certified keyboards', 'Shielded keyboard cables', 'Distance from external walls', 'Faraday shielded room'],
+    standards: ['NSA EPL for keyboards', 'NATO SDIP-27 compliance testing'],
+    notes: 'PS/2 keyboards are significantly worse emitters than USB. Wireless keyboards (Bluetooth, RF) have obvious RF emissions but also secondary emanations from the key matrix electronics. For sensitive spaces: use TEMPEST-certified wired USB keyboard.',
+  },
+  {
+    category: 'Network cable emanations',
+    threat: 'Ethernet cable crosstalk and near-field coupling',
+    mechanism: 'Ethernet differential signaling leaks near-field RF. Unshielded twisted pair (UTP) is a significant emitter at Ethernet clock frequencies. STP provides some reduction but imperfect.',
+    frequencies: '100 MHz fundamental (FastEthernet), 125 MHz (GigE), 2.5 GHz (10GbE)',
+    range: '1–3 meters practical (UTP), significantly reduced with STP and shielded conduit',
+    countermeasures: ['Shielded twisted pair (STP Cat6A) with proper grounding', 'Shielded conduit (metallic)', 'Physical access control to cable plant', 'Fiber optic for any runs in sensitive areas (zero RF)'],
+    standards: ['NSA cabling standards for classified facilities', 'BICSI 009 data center design (proximity rules)'],
+    notes: 'Cable routing proximity to facility perimeter is the primary concern. Ethernet cables running parallel to exterior walls or through accessible ceiling voids are exfiltration risk. Fiber eliminates electromagnetic emanations entirely.',
+  },
+  {
+    category: 'Power line conducted emissions',
+    threat: 'Data exfiltration or eavesdropping via power line',
+    mechanism: 'Electronic equipment modulates power line with data or compromised devices intentionally couple audio/data onto mains wiring. Conducted interference travels throughout building electrical circuit.',
+    frequencies: '10 kHz – 1 MHz (powerline signaling range)',
+    range: 'Entire electrical circuit on same phase — potentially entire building',
+    countermeasures: ['In-line mains power conditioner / EMI filter on sensitive equipment', 'Uninterruptible power supply with isolation transformer', 'Dedicated electrical circuits for sensitive areas', 'Regular powerline spectrum monitoring'],
+    standards: ['FCC Part 15 (unintentional conducted emissions limits)', 'MIL-STD-461 (conducted emissions — military equipment)'],
+    notes: 'The TEMPEST threat from power lines works in both directions: equipment leaks data onto power lines (unintentional), or an implanted device uses the power line as a communication channel (intentional carrier current bug). The Eero mesh network finding is adjacent to this concern — devices that access and potentially transmit observed RF data.',
+  },
+  {
+    category: 'Acoustic emanations',
+    threat: 'Printer, hard drive, and fan acoustic side-channels',
+    mechanism: 'Mechanical components (HDD actuator, CPU fan speed, printer carriage) produce acoustic emanations correlated with data processing. Air-gapped systems vulnerable.',
+    frequencies: '0.1 Hz – 20 kHz (acoustic spectrum)',
+    range: 'Several meters for equipment acoustics; ultrasonic exfil range varies',
+    countermeasures: ['SSD (eliminates HDD actuator channel)', 'Acoustic noise masking in sensitive spaces', 'White noise generators covering 20 Hz – 20 kHz', 'Physical access control to prevent near-field acoustic sensor placement'],
+    standards: ['TEMPEST/NONSTOP (acoustic TEMPEST — classified standard name)'],
+    notes: 'Academic demonstrations exist for RSA key extraction via acoustic emanations from laptops. More practically relevant: ultrasonic covert channels between smartphones (NUIT attack — near-ultrasound inaudible trojan). Countermeasure: ban mobile devices in sensitive spaces.',
+  },
+  {
+    category: 'RF covert channels',
+    threat: 'COTTONMOUTH / air-gap bridging via RF',
+    mechanism: 'Compromised USB devices or hardware implants generate controlled RF emissions encoding data. Air-gapped system can be exfiltrated without network connection. NSA ANT catalog documented commercial-grade implementations.',
+    frequencies: 'Various — implant-dependent, often FM broadcast band or cellular',
+    range: 'Depends on power; typically meters to tens of meters to a nearby receiver',
+    countermeasures: ['TEMPEST-certified hardware (limits unintentional and intentional emissions)', 'RF shielded facility', 'Device control policy (no unknown USB devices)', 'Regular hardware inspection for implants'],
+    standards: ['NSA ANT catalog (leaked, documents techniques)', 'NIST SP 800-115 (technical security testing)'],
+    notes: 'NSA ANT catalog documented RAGEMASTER (monitor emanation implant) and COTTONMOUTH (USB implant with RF exfil). These are nation-state capabilities. For most environments: hardware supply chain integrity and device control policy are the practical countermeasures.',
+  },
+]
+
+// ─── Countermeasures Reference ────────────────────────────────────────────────
+
+export interface Countermeasure {
+  name: string
+  category: string
+  effectiveAgainst: string[]
+  ineffectiveAgainst: string[]
+  implementation: string
+  cost: string
+  limitations: string
+  legalNotes?: string
+}
+
+export const countermeasures: Countermeasure[] = [
+  {
+    name: 'White noise / acoustic masking',
+    category: 'Acoustic',
+    effectiveAgainst: ['Room microphone (wired and wireless)', 'Laser/optical audio (if white noise source is against glass)', 'Acoustic side-channel attacks', 'Casual eavesdropping through walls'],
+    ineffectiveAgainst: ['Close-proximity recording (phone in pocket)', 'Vibration isolation already in place', 'Laser aimed at solid wall (not glass)'],
+    implementation: 'Speakers placed at perimeter (walls, windows, vents) broadcasting white or pink noise at 65–75 dB. Masking must be at the surface being monitored, not in the center of the room. Qt (quorum) of masking speakers around the room perimeter. White noise machines specifically at windows for laser countermeasure.',
+    cost: '$500–5,000 depending on room size and system quality',
+    limitations: 'Does not prevent close-range recording. Masking must cover the specific attack surface. Continuous operation required — gaps in masking create vulnerability windows. Some systems can be partially defeated by adaptive noise cancellation if attacker has reference signal.',
+    legalNotes: 'Legal in the US for protecting own space. Cannot be used to interfere with authorized court-ordered intercepts.',
+  },
+  {
+    name: 'RF shielding (Faraday enclosure)',
+    category: 'RF / TEMPEST',
+    effectiveAgainst: ['All RF transmitting bugs (frequency-independent)', 'TEMPEST/Van Eck emanations', 'Cellular-based surveillance', 'WiFi cameras', 'GPS trackers (prevents satellite signal)'],
+    ineffectiveAgainst: ['Wired exfiltration (anything that passes through shielded penetrations)', 'Acoustic collection outside the shielded space', 'Powerline-conducted emissions if power enters without filtering'],
+    implementation: 'MIL-SPEC shielded rooms (RF shielding enclosures) provide 80–120 dB attenuation. Commercial options include RF-shielded window film (~20–40 dB), conductive paint, and prefabricated shielded modular rooms. All penetrations (power, HVAC, data, plumbing) require RF filters or waveguides to maintain shield integrity.',
+    cost: 'Window film: $500–2,000 per room. Prefab shielded room: $50,000–500,000+. Custom built-in: $500,000+',
+    limitations: 'Effectiveness is only as strong as weakest penetration. HVAC ducts, power lines, and cable entries must all be addressed. Improperly installed shielding can create resonant cavities that amplify certain frequencies.',
+  },
+  {
+    name: 'Technical surveillance sweep (TSCM)',
+    category: 'Detection / Assurance',
+    effectiveAgainst: ['RF transmitting devices (spectrum analysis)', 'Electronic components regardless of emission state (NLJD)', 'Physical installation evidence', 'Phone line taps (TALAN)', 'Network-based surveillance (network scan)'],
+    ineffectiveAgainst: ['Phone-in-pocket recording during sweep (carrier phone present)', 'Devices activated only outside sweep windows', 'Nation-state passive devices (resonator) — require specialized NLJD technique', 'Virtual surveillance (network eavesdropping from remote)'],
+    implementation: 'Professional TSCM sweep per established methodology. Frequency: depends on threat level — sensitive facilities: before each significant meeting. Classified facilities: scheduled sweeps per program security plan. Always conduct before and after renovation, after maintenance access, and after any uncontrolled access event.',
+    cost: '$2,000–15,000 per sweep (professional team)',
+    limitations: 'Sweep provides assurance only at the time of sweep. Adversary with schedule knowledge can avoid detection. No sweep can provide absolute certainty against all threat types simultaneously.',
+  },
+  {
+    name: 'Device control policy (phone-free zones)',
+    category: 'Policy / Physical',
+    effectiveAgainst: ['Insider phone recording (most common real-world threat)', 'Consumer surveillance devices carried in', 'USB-based attacks', 'Bluetooth/WiFi surreptitious recording'],
+    ineffectiveAgainst: ['Externally placed devices', 'Nation-state implants pre-installed in facility hardware'],
+    implementation: 'Phone storage policy: secure phone lockers outside sensitive space. Badge readers or Faraday pouches at entry. Visitor device policy: no phones, or escorted with phone in Faraday bag. Signs are insufficient — policy enforcement requires physical mechanism. RF detection at entry points alerts to unauthorized devices.',
+    cost: '$500–5,000 for lockers/pouches. Enforcement cost is primarily procedural.',
+    limitations: 'Enforceability depends on organizational culture and compliance. Senior personnel often exempt themselves. Does not address smart watches, IoT clothing/accessories. Insider with authorized exception remains a risk.',
+  },
+  {
+    name: 'EMI power line filters',
+    category: 'TEMPEST / Power',
+    effectiveAgainst: ['Powerline carrier bugs (conducted RF on mains)', 'Equipment emanations conducted on power line', 'Data signals coupling onto mains from equipment'],
+    ineffectiveAgainst: ['Air-borne RF emanations', 'Data already exfiltrated via other means'],
+    implementation: 'In-line mains filter on all power entering sensitive space. TEMPEST-grade filters provide >80 dB conducted attenuation across relevant frequency range. UPS with isolation transformer provides significant additional attenuation. All power entering sensitive area should pass through filter.',
+    cost: '$200–2,000 per circuit for commercial EMI filters. TEMPEST-grade: $2,000–10,000 per circuit',
+    limitations: 'Only addresses conducted emissions on power lines. Does not address radiated emissions. Filter must be installed at entry point to sensitive space — not at individual equipment outlets.',
+  },
+  {
+    name: 'TSCM-grade network monitoring',
+    category: 'Network / Cyber',
+    effectiveAgainst: ['WiFi cameras and IoT surveillance devices', 'Rogue APs', 'Networked surveillance tools', 'Cellular data exfiltration via WiFi-cellular bridge devices'],
+    ineffectiveAgainst: ['Devices using personal cellular data (bypass network entirely)', 'Passive/wired devices with no network connection'],
+    implementation: 'Continuous WiFi monitoring with SSID/BSSID inventory enforcement. 802.1X authentication on all network ports. Network access control (NAC) to block unauthorized device enrollment. WIDS (Wireless Intrusion Detection) with alerts on new BSSIDs. Regular Nmap/Nessus scans of wired network for unauthorized devices.',
+    cost: '$0 (open source WIDS) to $50,000+ (enterprise wireless management)',
+    limitations: 'Devices using personal cellular data or OOB communication channels are invisible to network monitoring. The Eero/WiFi Pineapple scenario is detectable via this approach — but requires active monitoring and inventory comparison.',
+  },
+  {
+    name: 'Access control and visitor management',
+    category: 'Physical Security',
+    effectiveAgainst: ['Device placement by outsiders', 'Corporate espionage via visitor access', 'Service/maintenance exploitation'],
+    ineffectiveAgainst: ['Insider threat (authorized access)', 'Supply chain compromise (pre-installed)'],
+    implementation: 'Escort policy for all non-cleared visitors in sensitive areas. Pre/post visit sweep of meeting rooms. Maintenance access logging with before/after room inspection. Contractor access limited to necessary scope with escort. Inventory of all items in sensitive spaces before and after any uncontrolled access.',
+    cost: 'Primarily procedural — personnel time for escort and inspection',
+    limitations: 'Only effective when consistently enforced. Social engineering can defeat procedural controls.',
+  },
+  {
+    name: 'Anti-vibration window film / laminate',
+    category: 'Acoustic / Optical',
+    effectiveAgainst: ['Laser audio surveillance (reading window vibrations)', 'Acoustic coupling through glass'],
+    ineffectiveAgainst: ['Direct microphone in room', 'RF-based surveillance', 'Eavesdropping through walls (non-window)'],
+    implementation: 'Anti-vibration window film applied to interior glass. Film damps high-frequency vibration that laser systems read. Supplement with white noise speaker positioned against glass surface. Heavier laminated glass provides inherently better vibration isolation than single-pane.',
+    cost: '$15–50 per square foot installed',
+    limitations: 'Reduces but may not eliminate laser audio. High-powered laser systems with advanced processing may partially compensate for damped vibration. Must be combined with white noise for high-threat environments.',
+  },
+]
+
+// ─── Cellular Threat Analysis ─────────────────────────────────────────────────
+
+export interface CellularThreat {
+  name: string
+  category: string
+  mechanism: string
+  detectionIndicators: string[]
+  frequencies: string
+  legality: string
+  detectWith: string[]
+  countermeasures: string[]
+  notes: string
+}
+
+export const cellularThreats: CellularThreat[] = [
+  {
+    name: 'IMSI Catcher (Stingray / CSS)',
+    category: 'Active intercept',
+    mechanism: 'Broadcasts a stronger signal than legitimate cell towers, forcing nearby phones to downgrade to 2G (GSM) or register with the false base station. Device captures IMSI, location, and in some configurations intercepts calls/texts.',
+    detectionIndicators: [
+      'Unexpected 2G (GSM) signal where LTE should be dominant',
+      'Sudden change from LTE to 2G/3G (downgrade attack)',
+      'Cell tower with unusually strong signal that cannot be correlated to a known tower location',
+      'RSSI significantly stronger than expected for given distance from known towers',
+      'Phone battery drain spike (forced 2G/3G increases TX power)',
+      'SnoopSnitch or AIMSICD app alerts on unexpected base station',
+    ],
+    frequencies: '850/1900 MHz (GSM US), 700/1700/1900/2100 MHz (LTE)',
+    legality: 'Lawful use by law enforcement with court order. Unlawful use by unauthorized parties is a federal crime (18 USC 2511). Detection is not illegal.',
+    detectWith: ['SnoopSnitch (Android)', 'AIMSICD (Android)', 'IMSI Catcher Catcher research tools', 'Software-defined radio monitoring for unexpected base station broadcasts', 'Commercial IMSI catcher detection appliances (Pwnie Express, Bastille)'],
+    countermeasures: ['Use Signal or WhatsApp (E2E encrypted — intercept reveals nothing)', 'Avoid 2G — if phone allows, disable GSM fallback (iOS: Settings → Cellular → Enable LTE → Data Only)', 'VPN on all data traffic', 'Monitor for unexpected network downgrades', 'Use a Faraday pouch/cage in known-high-risk environments'],
+    notes: 'Law enforcement IMSI catchers are legal within their authority. Detection by citizens is legal in the US — no law prohibits detecting RF signals. The 2G downgrade attack is the key signature. Devices that refuse 2G connections (some Android "LTE Only" settings) are resistant to this specific attack vector.',
+  },
+  {
+    name: 'Rogue cellular base station (RBS)',
+    category: 'Active attack',
+    mechanism: 'Unauthorized base station transmitting on cellular frequencies to attract nearby devices. May be used for IMSI harvesting, traffic interception, denial of service, or as a relay for other attacks.',
+    detectionIndicators: [
+      'Cell tower on civilian map but no licensed installation nearby',
+      'Cellular signal in area without expected coverage (remote/rural unexpected strong signal)',
+      'Multiple devices in same area experiencing simultaneous connectivity issues',
+      'Cellular signal from unexpected direction (elevation or azimuth inconsistent with tower location)',
+      'FCC license database shows no authorized transmitter at apparent signal location',
+    ],
+    frequencies: 'All cellular bands: 700 MHz, 850 MHz, 1700 MHz, 1900 MHz, 2100 MHz, 2500 MHz, 3.5 GHz (CBRS)',
+    legality: 'Unlicensed cellular transmission is a federal crime (FCC violation + potential 18 USC 1030). Reporting suspected rogue base stations: FCC Enforcement Bureau.',
+    detectWith: ['OpenCelliD database (cross-reference tower location vs observed)', 'SnoopSnitch', 'Android Network Signal Guru', 'SDR monitoring — UMTS/LTE protocol analysis', 'Professional cellular monitoring equipment (Rohde & Schwarz TSMW)'],
+    countermeasures: ['E2E encrypted communications for all sensitive content', 'Correlation of observed cell ID vs public tower database', 'Network-layer VPN for all data', 'Report to FCC if confident of unauthorized transmission'],
+    notes: 'Distinguishing a legitimate small cell (femtocell, microcell) from a rogue base station requires cross-referencing with carrier network data. OpenCelliD provides community-sourced tower data. Carriers can also confirm whether a specific cell ID is part of their network.',
+  },
+  {
+    name: 'Carrier current surveillance (building wiring)',
+    category: 'Wired intercept',
+    mechanism: 'Audio or data modulated onto building electrical wiring (10–500 kHz). Uses AC powerline as a transmission medium — signal travels throughout the building on the same electrical phase and can be received at any power outlet.',
+    detectionIndicators: [
+      'Carrier in 10–500 kHz range detectable with SDR in direct-sampling mode or powerline analyzer',
+      'Signal amplitude varies with conversation near the transmitter',
+      'Signal present on powerline wiring but not in air',
+      'Signal disappears when circuit breaker to suspected room is tripped',
+    ],
+    frequencies: '10 kHz – 500 kHz (conducted, not radiated)',
+    legality: 'Unauthorized surveillance is illegal under Wiretap Act (18 USC 2511) regardless of transmission medium.',
+    detectWith: ['REI TALAN (powerline analysis mode)', 'Airspy HF+ Discovery (direct sampling 0.5 kHz – 31 MHz)', 'SDR with direct HF sampling and inductive coupling to powerline', 'Commercial powerline spectrum analyzers'],
+    countermeasures: ['In-line mains EMI filter (attenuates conducted signals)', 'Isolation transformer on power entering sensitive area', 'Regular powerline spectrum monitoring as part of sweep protocol'],
+    notes: 'The Eero mesh network incident is directly adjacent to this threat category. Mesh networking devices that passively observe RF environment (including WiFi probe requests, BLE advertising, and neighboring AP profiles) and sync this data to cloud infrastructure represent a new carrier current-analog threat where the communication channel is the internet rather than the powerline, but the information collection mechanism is similar in its passivity and persistence.',
+  },
+  {
+    name: 'Cellular-based bug (GSM/LTE audio device)',
+    category: 'Covert device',
+    mechanism: 'Embedded SIM card in a covert device. Dials out or accepts incoming call to deliver audio. LTE version streams audio continuously or on schedule via data connection.',
+    detectionIndicators: [
+      'TDMA burst activity near 850/1900 MHz (GSM — characteristic 217 Hz "buzz" on AM receiver)',
+      'Periodic LTE data burst from device inside facility',
+      'IMSI not matching any authorized device appears on IMSI catcher or carrier monitoring',
+      'NLJD response at unexpected location',
+      'Device powered by building mains — persistent operation',
+    ],
+    frequencies: 'GSM: 850/1900 MHz uplink. LTE: 700 MHz – 2700 MHz (band-dependent)',
+    legality: 'Placement without consent is illegal under Wiretap Act. Counterintelligence discovery and reporting is authorized.',
+    detectWith: ['GSM flutter detection (AM receiver at 850/1900 MHz during active call)', 'IMSI catcher/monitor (captures device IMSI when it registers)', 'NLJD (detects electronics regardless of RF state)', 'Commercial cellular monitor (detects uplink transmission)'],
+    countermeasures: ['Faraday shielding (prevents outbound cellular transmission)', 'Cellular jamming — ILLEGAL in the US regardless of context. Do not jam.', 'Detection and removal (TSCM sweep)', 'Mobile signal strength monitoring — anomalous uplink from inside facility'],
+    notes: 'CRITICAL: Cellular jamming is a federal crime in the US under 47 USC 333, regardless of context or authorization level. There is no legal exception for facility security. The only lawful countermeasures are detection, removal, and Faraday shielding.',
+  },
+]
+
+// ─── Training Scenario Builder ────────────────────────────────────────────────
+
+export interface TrainingScenario {
+  id: string
+  name: string
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT'
+  objective: string
+  timeRequired: string
+  equipment: string[]
+  planted: { device: string; location: string; detectionMethod: string; difficulty: string }[]
+  redHerrings: string[]
+  passConditions: string[]
+  failConditions: string[]
+  instructorNotes: string
+  debriefPoints: string[]
+}
+
+export const trainingScenarios: TrainingScenario[] = [
+  {
+    id: 'SCEN-01',
+    name: 'Basic RF sweep — single device',
+    difficulty: 'BEGINNER',
+    objective: 'Trainee successfully identifies and locates a single FM audio bug using spectrum analysis and physical inspection.',
+    timeRequired: '30–45 minutes',
+    equipment: ['TinySA Ultra or similar spectrum analyzer', 'Wideband antenna', 'FM receiver or SDR for demodulation', 'Planted device: simple FM transmitter (88–108 MHz or 300–500 MHz)'],
+    planted: [
+      { device: 'FM audio transmitter (~433 MHz)', location: 'Behind a power outlet faceplate', detectionMethod: 'Spectrum scan reveals unknown NFM carrier; demodulation reveals voice; direction-finding narrows to outlet', difficulty: 'Easy — continuous carrier, single device' },
+    ],
+    redHerrings: ['WiFi AP with normal activity', 'Bluetooth headset GFSK signal', 'Cordless phone base station on 5.8 GHz'],
+    passConditions: ['Identify carrier frequency within 500 kHz', 'Correctly identify modulation type (NFM/FM)', 'Locate device to correct room and surface within 30 cm', 'Document finding with frequency, level, modulation, location'],
+    failConditions: ['Miss the carrier during sweep', 'Identify a red herring as the threat device', 'Unable to physically locate the device after spectrum identification'],
+    instructorNotes: 'Set transmitter to activate VOX if trainee is struggling — creates obvious audio-correlated transmission. Ensure baseline scan is conducted first so trainee has reference. Use correlation test: talk near the device and show trainee how signal level changes.',
+    debriefPoints: ['Review sweep methodology — did they establish a baseline before entering?', 'Did they cover the full frequency range systematically?', 'Did they attempt demodulation to confirm it was audio?', 'Did they document frequency, level, and location per procedure?'],
+  },
+  {
+    id: 'SCEN-02',
+    name: 'Multi-device sweep — layered threats',
+    difficulty: 'INTERMEDIATE',
+    objective: 'Trainee identifies and locates three devices of different types: one RF, one requiring NLJD, one physical-only.',
+    timeRequired: '60–90 minutes',
+    equipment: ['TinySA Ultra', 'SDR (HackRF or RTL-SDR)', 'NLJD (ORION 2.4 or equivalent)', 'Directional antenna (log-periodic)', 'Planted devices: see below'],
+    planted: [
+      { device: 'GSM bug (SIM-based audio transmitter)', location: 'Inside a clock on the conference table', detectionMethod: 'GSM TDMA flutter on AM mode at 900 MHz; NLJD confirms electronics in clock; physical inspection', difficulty: 'Medium — intermittent transmission, requires AM demodulation knowledge' },
+      { device: 'Wired microphone with no RF (hardwired to adjacent room)', location: 'Behind acoustic ceiling tile, wire runs to junction box', detectionMethod: 'NLJD detects mic capsule; physical inspection reveals wire run; no RF signature', difficulty: 'Hard — no RF, NLJD required' },
+      { device: 'Power outlet bug (wired audio, hidden in outlet body)', location: 'Non-functional outlet behind desk', detectionMethod: 'Physical inspection reveals non-standard outlet depth; NLJD detects electronics; outlet cover has unusually new screw', difficulty: 'Medium — physical indicators' },
+    ],
+    redHerrings: ['UPnP device on WiFi (shows up in network scan)', 'Smoke detector with normal Bluetooth occupancy sensing', 'Cordless phone creating expected 2.4 GHz signal'],
+    passConditions: ['Find all three devices', 'Correctly characterize each (RF vs wired vs physical)', 'Document using sweep report format', 'No false positives from red herrings declared as threats'],
+    failConditions: ['Miss the wired device (no RF)', 'Declare any red herring as a threat without further investigation', 'Find less than 2 of 3 devices'],
+    instructorNotes: 'The wired mic with no RF is the most important lesson — standard RF sweep is insufficient. Ensure trainee uses NLJD on all surfaces, not just where spectrum shows activity. The wired device teaches the critical lesson that NLJD is required for complete sweep.',
+    debriefPoints: ['What would have happened if they skipped NLJD?', 'How did they handle the red herrings — did they investigate before excluding?', 'Was the sweep systematic or were they reacting to spectrum findings?', 'Did they document all three devices and the red herrings?'],
+  },
+  {
+    id: 'SCEN-03',
+    name: 'FHSS detection exercise',
+    difficulty: 'ADVANCED',
+    objective: 'Trainee detects and characterizes a frequency-hopping device that defeats standard swept spectrum analysis.',
+    timeRequired: '45–60 minutes',
+    equipment: ['SDR with waterfall capability (HackRF + SDR++ or GQRX)', 'TinySA Ultra in waterfall mode', 'Wideband antenna', 'Planted device: HackRF One with PortaPack transmitting FHSS bursts, or commercial DECT phone as FHSS example'],
+    planted: [
+      { device: 'HackRF with PortaPack transmitting FHSS pattern (300–500 MHz hopping range)', location: 'Concealed in plant or decorative object', detectionMethod: 'Waterfall mode on SDR shows characteristic vertical stripe pattern across hopping range; max hold shows elevated noise floor; correlation test (make noise → increased burst activity)', difficulty: 'Hard — invisible to swept display, requires waterfall knowledge' },
+    ],
+    redHerrings: ['WiFi activity (OFDM, brick-shaped)', 'BLE advertising (known GFSK on 2.4 GHz advertising channels)'],
+    passConditions: ['Detect FHSS activity using waterfall display', 'Identify approximate hopping range', 'Perform and interpret correlation test correctly', 'Unable to initially locate — correctly escalate to NLJD for physical sweep'],
+    failConditions: ['Complete sweep without detecting FHSS activity', 'Correctly see waterfall pattern but not recognize it as FHSS', 'Fail to attempt correlation test'],
+    instructorNotes: 'This scenario teaches the most important TSCM lesson: standard swept analysis misses FHSS. Run the scenario in two phases: first let trainee sweep normally and find nothing, then demonstrate the waterfall approach. Use the correlation test — make noise near the device and show how burst activity increases. This is the key technique.',
+    debriefPoints: ['Why did the standard sweep miss it?', 'What does the waterfall stripe pattern indicate?', 'How does the correlation test work and why is it necessary?', 'What would the NLJD have found even if RF detection failed?', 'What commercial devices use FHSS and should be in the baseline?'],
+  },
+  {
+    id: 'SCEN-04',
+    name: 'Network-based surveillance detection',
+    difficulty: 'INTERMEDIATE',
+    objective: 'Trainee detects unauthorized wireless surveillance devices through network analysis rather than RF spectrum analysis.',
+    timeRequired: '30–45 minutes',
+    equipment: ['WiFi scanner (Kismet or WiFi Pineapple Mark VII)', 'Laptop with Nmap', 'Known AP inventory list', 'Planted devices: Raspberry Pi zero W with webcam streaming to internet via WiFi, fake AP (ESP8266 captive portal)'],
+    planted: [
+      { device: 'Raspberry Pi Zero W running mjpeg-streamer (hidden WiFi camera)', location: 'Inside power strip or book on shelf', detectionMethod: 'Unknown BSSID/client in WiFi scan; Nmap of network finds unknown host; HTTP port 80 returns MJPEG stream', difficulty: 'Medium — requires network methodology, not just RF scan' },
+      { device: 'ESP8266 rogue AP (same SSID as corporate WiFi with slightly different BSSID)', location: 'Plugged into outlet behind furniture', detectionMethod: 'WiFi scan shows duplicate SSID with different BSSID; signal strength analysis shows second SSID from different direction', difficulty: 'Medium — requires SSID/BSSID correlation check' },
+    ],
+    redHerrings: ['Bluetooth speaker (legitimate)', 'Authorized AP in adjacent room (detectable but expected)'],
+    passConditions: ['Identify unknown WiFi client', 'Identify rogue AP (duplicate SSID)', 'Determine camera streaming via HTTP', 'Document both findings with BSSID, RSSI, location'],
+    failConditions: ['Miss either device', 'Fail to correlate rogue AP BSSID against inventory'],
+    instructorNotes: 'This scenario directly reflects the WiFi Pineapple / Eero finding from your real-world exercise. The ESP8266 rogue AP scenario tests BSSID inventory discipline. Emphasize that network methodology (Kismet, Nmap) is complementary to RF spectrum analysis — some devices are easier to detect via network than spectrum.',
+    debriefPoints: ['What did the RF spectrum show for these devices vs what the network scan showed?', 'Why is BSSID inventory important?', 'What would happen if the Pi used a cellular connection instead of WiFi?', 'How does this connect to the Eero mesh network data sovereignty finding?'],
+  },
+  {
+    id: 'SCEN-05',
+    name: 'Full threat simulation — certification standard',
+    difficulty: 'EXPERT',
+    objective: 'Complete sweep of a conference room with 4 planted devices of varying types, 3 red herrings, time pressure, and documentation requirement. Mirrors real-world sweep conditions.',
+    timeRequired: '90–120 minutes',
+    equipment: ['Full TSCM kit: TinySA Ultra, SDR (HackRF/RTL-SDR), NLJD, directional antenna', 'Sweep documentation forms', 'Planted devices: see below'],
+    planted: [
+      { device: 'FM bug at 433 MHz (continuous)', location: 'Behind ceiling tile near HVAC vent', detectionMethod: 'Spectrum scan (continuous carrier); direction finding with log-periodic; physical inspection of ceiling tiles', difficulty: 'Medium' },
+      { device: 'GSM bug (call-triggered)', location: 'Concealed in artificial plant on conference table', detectionMethod: 'NLJD detects electronics in plant; physical inspection; GSM flutter if call is initiated during sweep', difficulty: 'Hard — requires NLJD, may not be transmitting during RF scan' },
+      { device: 'Wired mic (no RF, connected to room next door)', location: 'Behind wall socket near head of table', detectionMethod: 'NLJD detects microphone capsule behind outlet; new screw on faceplate; physical inspection', difficulty: 'Hard — no RF emission' },
+      { device: 'WiFi camera (connected to corporate guest WiFi)', location: 'Inside a USB charger on side credenza', detectionMethod: 'Unknown BSSID in WiFi scan; strong RSSI from unexpected direction; physical inspection of charger', difficulty: 'Medium — network scan required' },
+    ],
+    redHerrings: ['Smoke detector with legitimate BLE occupancy sensor (newer Kidde model)', 'UPS on credenza with normal powerline signaling (PFC emissions)', 'Cordless conference phone on 5.8 GHz DECT'],
+    passConditions: ['Find all 4 planted devices', 'Correctly characterize each device type', 'Correctly exclude all 3 red herrings with documentation rationale', 'Complete sweep documentation form', 'Finish within time limit'],
+    failConditions: ['Miss any planted device', 'Flag any red herring as confirmed threat without further investigation note', 'Incomplete documentation', 'Exceed time limit by more than 15 minutes'],
+    instructorNotes: 'Calibrate difficulty by deciding whether to trigger the GSM bug during the sweep (makes it easier) or leave it dormant (requires trainee to rely on NLJD). Vary time pressure to simulate real-world urgency. The DECT phone red herring is particularly important — DECT FHSS looks similar to a bug in waterfall mode. Trainee must identify it as a known authorized device via physical inspection and documentation.',
+    debriefPoints: ['Which device was hardest to find and why?', 'What would have been missed with RF-only approach?', 'Were red herrings investigated before exclusion?', 'Review documentation completeness and accuracy', 'What would they do differently?'],
+  },
+]
+
+// ─── Survey Report Template Data ─────────────────────────────────────────────
+
+export interface SurveyReportData {
+  zones: string[]
+  findingCategories: string[]
+  deviceCategories: string[]
+  riskLevels: { level: string; description: string; action: string }[]
+  reportFields: { section: string; fields: { name: string; type: string; placeholder: string }[] }[]
+}
+
+export const surveyReportTemplate: SurveyReportData = {
+  zones: ['Lobby / Reception', 'Conference Room A', 'Conference Room B', 'Executive Suite', 'Server Room', 'Open Office Area', 'SCIF / Classified Area', 'Restrooms', 'Break Room', 'Storage / Utility', 'Exterior / Perimeter', 'Other (specify)'],
+  findingCategories: ['RF anomaly — identified', 'RF anomaly — unresolved', 'NLJD hit — electronic device confirmed', 'NLJD hit — false positive (corrosion/metal)', 'Physical indicator — suspicious', 'Physical indicator — benign explanation', 'Network anomaly — unauthorized device', 'Phone line anomaly', 'Powerline anomaly', 'Device recovered', 'No findings'],
+  deviceCategories: ['Audio bug — RF transmitting', 'Audio bug — wired (no RF)', 'Audio bug — cellular (GSM/LTE)', 'Video device — wired', 'Video device — wireless', 'Tracking device — GPS', 'Tracking device — cellular', 'Network device — unauthorized', 'Phone line tap — series', 'Phone line tap — parallel', 'Carrier current device', 'Unknown — submitted for analysis'],
+  riskLevels: [
+    { level: 'CRITICAL', description: 'Active surveillance device confirmed and recovered', action: 'Immediate notification of security officer. Preserve chain of custody. Do not discuss in facility. Brief in secure alternate location.' },
+    { level: 'HIGH', description: 'Strong indicator of surveillance device — unresolved anomaly or suspected device not yet confirmed', action: 'Suspend sensitive discussions in affected space pending resolution. Escalate to senior TSCM. Schedule follow-up sweep within 48 hours.' },
+    { level: 'MEDIUM', description: 'Physical indicators or anomaly requiring investigation — no device confirmed', action: 'Document and monitor. Schedule detailed inspection. Do not ignore.' },
+    { level: 'LOW', description: 'Minor anomaly with plausible benign explanation — documented and resolved', action: 'Document explanation. No further action unless recurs.' },
+    { level: 'NO FINDINGS', description: 'Sweep completed with no anomalies detected', action: 'Document sweep completion. Schedule next sweep per facility security plan.' },
+  ],
+  reportFields: [
+    {
+      section: 'Case Information',
+      fields: [
+        { name: 'Case Number', type: 'text', placeholder: 'TSCM-YYYY-NNNN' },
+        { name: 'Facility / Location', type: 'text', placeholder: 'Building, Room, Address' },
+        { name: 'Date of Survey', type: 'date', placeholder: '' },
+        { name: 'Survey Start Time', type: 'time', placeholder: '' },
+        { name: 'Survey End Time', type: 'time', placeholder: '' },
+        { name: 'Lead Examiner', type: 'text', placeholder: 'Name, Certification' },
+        { name: 'Team Members', type: 'textarea', placeholder: 'Name, Role' },
+        { name: 'Requesting Authority', type: 'text', placeholder: 'Name, Organization, Authorization reference' },
+        { name: 'Classification', type: 'select', placeholder: 'UNCLASSIFIED / CUI / CONFIDENTIAL / SECRET' },
+      ],
+    },
+    {
+      section: 'Equipment Used',
+      fields: [
+        { name: 'Spectrum Analyzers', type: 'textarea', placeholder: 'Make, model, serial, calibration date' },
+        { name: 'NLJD', type: 'textarea', placeholder: 'Make, model, serial, last calibration' },
+        { name: 'SDR Receivers', type: 'textarea', placeholder: 'Make, model, serial' },
+        { name: 'Phone Line Analyzer', type: 'textarea', placeholder: 'Make, model, serial' },
+        { name: 'Other Equipment', type: 'textarea', placeholder: 'List all other tools used' },
+      ],
+    },
+    {
+      section: 'Environmental Baseline',
+      fields: [
+        { name: 'Ambient Noise Floor (dBm)', type: 'text', placeholder: 'e.g. -95 dBm at 433 MHz' },
+        { name: 'Known Authorized RF Sources', type: 'textarea', placeholder: 'List all authorized APs, phones, devices with frequency and level' },
+        { name: 'Pre-sweep WiFi AP Inventory', type: 'textarea', placeholder: 'SSID, BSSID, channel, RSSI for each AP' },
+        { name: 'Baseline Anomalies', type: 'textarea', placeholder: 'Any expected anomalies noted before sweep' },
+      ],
+    },
+    {
+      section: 'Zones Surveyed',
+      fields: [
+        { name: 'Zones Included', type: 'textarea', placeholder: 'List each zone swept with start/end time' },
+        { name: 'Zones Excluded', type: 'textarea', placeholder: 'List any areas not swept with reason for exclusion' },
+        { name: 'Access Limitations', type: 'textarea', placeholder: 'Any areas inaccessible during sweep' },
+      ],
+    },
+    {
+      section: 'Findings',
+      fields: [
+        { name: 'Finding #', type: 'text', placeholder: 'F-001, F-002...' },
+        { name: 'Zone / Location', type: 'text', placeholder: 'Specific room, surface, object' },
+        { name: 'Finding Category', type: 'select', placeholder: 'Select category' },
+        { name: 'Description', type: 'textarea', placeholder: 'Detailed description of anomaly or device' },
+        { name: 'Frequency / Level', type: 'text', placeholder: 'If RF: frequency in MHz, level in dBm' },
+        { name: 'Modulation', type: 'text', placeholder: 'If RF: NFM / FM / FHSS / OFDM / etc.' },
+        { name: 'Risk Level', type: 'select', placeholder: 'CRITICAL / HIGH / MEDIUM / LOW' },
+        { name: 'Action Taken', type: 'textarea', placeholder: 'What was done with this finding' },
+        { name: 'Evidence / Photos', type: 'text', placeholder: 'Reference to supporting documentation' },
+      ],
+    },
+    {
+      section: 'Conclusions and Recommendations',
+      fields: [
+        { name: 'Overall Assessment', type: 'textarea', placeholder: 'Summary assessment of sweep results' },
+        { name: 'Immediate Actions Required', type: 'textarea', placeholder: 'Any actions required before space is used again' },
+        { name: 'Long-term Recommendations', type: 'textarea', placeholder: 'Countermeasure recommendations, access control, re-sweep schedule' },
+        { name: 'Next Sweep Recommended', type: 'date', placeholder: '' },
+        { name: 'Examiner Certification', type: 'text', placeholder: 'Signature, certification number, date' },
+      ],
+    },
+  ],
+}
