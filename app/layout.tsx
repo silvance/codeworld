@@ -34,6 +34,7 @@ export default function RootLayout({
         <div className="h-screen pt-10 flex flex-col">
           {children}
         </div>
+        <Analytics />
       </body>
     </html>
   )
