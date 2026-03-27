@@ -20,7 +20,7 @@ const Copy = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false)
   return (
     <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+      onClick={() => { navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) }).catch(() => { setCopied(false) }) }}
       className="text-[10px] font-mono text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0"
     >{copied ? '✓' : 'copy'}</button>
   )
@@ -142,7 +142,7 @@ export function WiresharkFilters() {
                     f.category === 'Credentials' ? 'bg-orange-950 text-orange-400' :
                     'bg-zinc-800 text-zinc-500'
                   } />
-                  <p className="text-[11px] text-zinc-500">{f.description}</p>
+                  <p className="text-xs text-zinc-500">{f.description}</p>
                 </div>
                 <code className="text-xs font-mono text-emerald-400 break-all">{f.filter}</code>
                 {f.notes && <p className="text-[10px] font-mono text-zinc-600 mt-1">{f.notes}</p>}
@@ -188,7 +188,7 @@ export function NmapReference() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   <Badge text={c.category} cls="bg-blue-950 text-blue-400" />
-                  <p className="text-[11px] text-zinc-400">{c.description}</p>
+                  <p className="text-xs text-zinc-400">{c.description}</p>
                 </div>
                 <code className="text-xs font-mono text-emerald-400 break-all">{c.cmd}</code>
                 {c.notes && (

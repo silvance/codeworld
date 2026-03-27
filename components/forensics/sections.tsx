@@ -22,7 +22,7 @@ const Badge = ({ text, cls }: { text: string; cls: string }) => (
 )
 
 const Code = ({ children }: { children: string }) => (
-  <code className="font-mono text-[11px] bg-zinc-800 text-emerald-400 px-1.5 py-0.5 rounded whitespace-pre-wrap break-all">
+  <code className="font-mono text-xs bg-zinc-800 text-emerald-400 px-1.5 py-0.5 rounded whitespace-pre-wrap break-all">
     {children}
   </code>
 )
@@ -126,7 +126,7 @@ function EventIDs() {
                 <Badge text={e.category} cls={catColors[e.category] ?? 'bg-zinc-800 text-zinc-400'} />
               </div>
             </div>
-            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{e.notes}</p>
+            <p className="text-xs font-mono text-zinc-500 leading-relaxed">{e.notes}</p>
           </div>
         ))}
       </div>
@@ -144,7 +144,7 @@ function RegistryHives() {
             className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900/40 hover:bg-zinc-900 transition-colors text-left">
             <div className="flex items-center gap-3">
               <span className="text-sm font-mono font-bold text-emerald-400">{h.hive}</span>
-              <span className="text-[11px] font-mono text-zinc-500 hidden sm:block">{h.path}</span>
+              <span className="text-xs font-mono text-zinc-500 hidden sm:block">{h.path}</span>
             </div>
             <span className="text-zinc-600 text-xs">{open === h.hive ? '▲' : '▼'}</span>
           </button>
@@ -159,7 +159,7 @@ function RegistryHives() {
                 <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">Key artifacts</div>
                 <ul className="space-y-1.5">
                   {h.keyArtifacts.map((a, i) => (
-                    <li key={i} className="text-[11px] font-mono text-zinc-400 flex gap-2">
+                    <li key={i} className="text-xs font-mono text-zinc-400 flex gap-2">
                       <span className="text-zinc-700 flex-shrink-0">→</span>
                       <span>{a}</span>
                     </li>
@@ -184,7 +184,7 @@ function ExecutionArtifacts() {
             className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900/40 hover:bg-zinc-900 transition-colors text-left">
             <div className="flex items-center gap-3">
               <span className="text-sm font-mono font-bold text-purple-400">{a.name}</span>
-              <span className="text-[11px] font-mono text-zinc-600">{a.os}</span>
+              <span className="text-xs font-mono text-zinc-600">{a.os}</span>
             </div>
             <span className="text-zinc-600 text-xs">{open === a.name ? '▲' : '▼'}</span>
           </button>
@@ -198,19 +198,19 @@ function ExecutionArtifacts() {
                 <div>
                   <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">Provides</div>
                   <ul className="space-y-1">
-                    {a.provides.map((p, i) => <li key={i} className="text-[11px] font-mono text-emerald-400 flex gap-2"><span className="text-zinc-700">✓</span>{p}</li>)}
+                    {a.provides.map((p, i) => <li key={i} className="text-xs font-mono text-emerald-400 flex gap-2"><span className="text-zinc-700">✓</span>{p}</li>)}
                   </ul>
                 </div>
                 <div>
                   <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">Limitations</div>
                   <ul className="space-y-1">
-                    {a.limitations.map((l, i) => <li key={i} className="text-[11px] font-mono text-amber-500 flex gap-2"><span className="text-zinc-700">!</span>{l}</li>)}
+                    {a.limitations.map((l, i) => <li key={i} className="text-xs font-mono text-amber-500 flex gap-2"><span className="text-zinc-700">!</span>{l}</li>)}
                   </ul>
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Tooling</div>
-                <p className="text-[11px] font-mono text-blue-400">{a.tooling}</p>
+                <p className="text-xs font-mono text-blue-400">{a.tooling}</p>
               </div>
             </div>
           )}
@@ -223,7 +223,7 @@ function ExecutionArtifacts() {
 function USBArtifacts() {
   return (
     <div className="space-y-3">
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 text-[11px] font-mono text-zinc-500 mb-4">
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 text-xs font-mono text-zinc-500 mb-4">
         USB correlation workflow: USBSTOR serial → MountedDevices drive letter → MountPoints2 user attribution → setupapi.dev.log first connection time → Event ID 6416
       </div>
       {usbArtifacts.map(a => (
@@ -233,7 +233,7 @@ function USBArtifacts() {
           </div>
           <div className="mb-2"><Code>{a.location}</Code></div>
           <p className="text-xs font-mono text-zinc-300 mb-1.5">{a.provides}</p>
-          <p className="text-[11px] font-mono text-zinc-500">{a.notes}</p>
+          <p className="text-xs font-mono text-zinc-500">{a.notes}</p>
         </div>
       ))}
     </div>
@@ -251,13 +251,13 @@ function LNKArtifacts() {
             <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">Provides</div>
             <ul className="space-y-1">
               {a.provides.map((p, i) => (
-                <li key={i} className="text-[11px] font-mono text-zinc-300 flex gap-2">
+                <li key={i} className="text-xs font-mono text-zinc-300 flex gap-2">
                   <span className="text-zinc-700 flex-shrink-0">→</span>{p}
                 </li>
               ))}
             </ul>
           </div>
-          <p className="text-[11px] font-mono text-zinc-500">{a.notes}</p>
+          <p className="text-xs font-mono text-zinc-500">{a.notes}</p>
         </div>
       ))}
     </div>
@@ -315,7 +315,7 @@ function BrowserArtifacts() {
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] font-mono text-zinc-600 mt-2">Hover rows to see what each artifact provides</p>
+      <p className="text-xs font-mono text-zinc-600 mt-2">Hover rows to see what each artifact provides</p>
     </div>
   )
 }
@@ -362,7 +362,7 @@ export function LinuxArtifacts() {
             </div>
             <div className="mb-1.5"><Code>{a.path}</Code></div>
             <p className="text-xs font-mono text-zinc-300 mb-1">{a.provides}</p>
-            <p className="text-[11px] font-mono text-zinc-500">{a.notes}</p>
+            <p className="text-xs font-mono text-zinc-500">{a.notes}</p>
           </div>
         ))}
       </div>
@@ -401,7 +401,7 @@ export function MemoryForensics() {
 
       {tab === 'triage' && (
         <div className="space-y-3">
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded p-3 text-[11px] font-mono text-zinc-500 mb-4">
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded p-3 text-xs font-mono text-zinc-500 mb-4">
             Assumes Volatility 3 with symbol tables installed. Run on a copy — never on the original capture file.
           </div>
           {memoryTriage.map(step => (
@@ -414,7 +414,7 @@ export function MemoryForensics() {
                     <div key={i} className="mb-1"><Code>{c}</Code></div>
                   ))}
                 </div>
-                <p className="text-[11px] font-mono text-zinc-500">{step.notes}</p>
+                <p className="text-xs font-mono text-zinc-500">{step.notes}</p>
               </div>
             </div>
           ))}
@@ -460,7 +460,7 @@ export function MemoryForensics() {
               </tbody>
             </table>
           </div>
-          <p className="text-[11px] font-mono text-zinc-700 mt-2">● = include in initial triage run</p>
+          <p className="text-xs font-mono text-zinc-700 mt-2">● = include in initial triage run</p>
         </div>
       )}
     </div>
@@ -496,13 +496,13 @@ export function ToolCheatSheets() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <div className="text-sm font-mono font-semibold text-zinc-100">{tool.tool}</div>
-            <div className="text-[11px] font-mono text-zinc-500 mt-0.5">{tool.purpose}</div>
+            <div className="text-xs font-mono text-zinc-500 mt-0.5">{tool.purpose}</div>
           </div>
           <Badge text={`v${tool.version}`} cls="bg-zinc-800 text-zinc-500" />
         </div>
         <div className="mt-2">
           <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">Install: </span>
-          <span className="text-[11px] font-mono text-blue-400">{tool.install}</span>
+          <span className="text-xs font-mono text-blue-400">{tool.install}</span>
         </div>
       </div>
 
@@ -517,7 +517,7 @@ export function ToolCheatSheets() {
         {filteredCmds.map((c, i) => (
           <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
             <div className="mb-1.5"><Code>{c.cmd}</Code></div>
-            <p className="text-[11px] font-mono text-zinc-500">{c.description}</p>
+            <p className="text-xs font-mono text-zinc-500">{c.description}</p>
           </div>
         ))}
       </div>
@@ -590,11 +590,11 @@ export function MacOSArtifacts() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 mb-2">
-                  <code className="text-[11px] font-mono text-emerald-400 break-all flex-1">{a.path}</code>
+                  <code className="text-xs font-mono text-emerald-400 break-all flex-1">{a.path}</code>
                   <Copy text={a.path} />
                 </div>
                 <p className="text-xs font-mono text-zinc-400 mb-1">{a.description}</p>
-                <p className="text-[11px] font-mono text-zinc-600">{a.notes}</p>
+                <p className="text-xs font-mono text-zinc-600">{a.notes}</p>
               </div>
             ))}
             <div className="text-[10px] font-mono text-zinc-700 pt-1">{filtered.length} / {macArtifacts.length} artifacts</div>
@@ -604,14 +604,14 @@ export function MacOSArtifacts() {
 
       {tab === 'unifiedlog' && (
         <div className="space-y-2">
-          <div className="bg-blue-950/20 border border-blue-900/30 rounded p-3 mb-4 text-[11px] font-mono text-blue-400">
+          <div className="bg-blue-950/20 border border-blue-900/30 rounded p-3 mb-4 text-xs font-mono text-blue-400">
             Unified Log replaced most traditional log files since macOS Sierra (10.12). Binary tracev3 format stored in /var/db/diagnostics/. Use <code className="text-emerald-400">log show</code> to query live or <code className="text-emerald-400">log collect</code> to archive for offline analysis.
           </div>
           {macUnifiedLogQueries.map((q, i) => (
             <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-mono text-zinc-400 mb-1.5">{q.description}</p>
+                  <p className="text-xs font-mono text-zinc-400 mb-1.5">{q.description}</p>
                   <code className="text-xs font-mono text-emerald-400 break-all">{q.query}</code>
                 </div>
                 <Copy text={q.query} />
@@ -629,7 +629,7 @@ export function MacOSArtifacts() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-blue-950 text-blue-400">{t.tool}</span>
-                    <span className="text-[11px] font-mono text-zinc-400">{t.description}</span>
+                    <span className="text-xs font-mono text-zinc-400">{t.description}</span>
                   </div>
                   <code className="text-xs font-mono text-emerald-400 break-all">{t.cmd}</code>
                 </div>

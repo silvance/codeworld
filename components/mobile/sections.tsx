@@ -20,7 +20,7 @@ const Badge = ({ text, cls }: { text: string; cls: string }) => (
 )
 
 const Code = ({ children }: { children: string }) => (
-  <code className="font-mono text-[11px] bg-zinc-800 text-emerald-400 px-1.5 py-0.5 rounded whitespace-pre-wrap break-all">{children}</code>
+  <code className="font-mono text-xs bg-zinc-800 text-emerald-400 px-1.5 py-0.5 rounded whitespace-pre-wrap break-all">{children}</code>
 )
 
 const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500'
@@ -84,7 +84,7 @@ export function AcquisitionRef() {
                     <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-2">Data access</div>
                     <ul className="space-y-1">
                       {m.dataAccess.map((d, i) => (
-                        <li key={i} className="text-[11px] font-mono text-emerald-400 flex gap-2">
+                        <li key={i} className="text-xs font-mono text-emerald-400 flex gap-2">
                           <span className="text-zinc-700 flex-shrink-0">✓</span>{d}
                         </li>
                       ))}
@@ -94,7 +94,7 @@ export function AcquisitionRef() {
                     <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-2">Limitations</div>
                     <ul className="space-y-1">
                       {m.limitations.map((l, i) => (
-                        <li key={i} className="text-[11px] font-mono text-amber-400 flex gap-2">
+                        <li key={i} className="text-xs font-mono text-amber-400 flex gap-2">
                           <span className="text-zinc-700 flex-shrink-0">!</span>{l}
                         </li>
                       ))}
@@ -103,7 +103,7 @@ export function AcquisitionRef() {
                 </div>
                 <div>
                   <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Tools</div>
-                  <p className="text-[11px] font-mono text-blue-400">{m.tools.join(' · ')}</p>
+                  <p className="text-xs font-mono text-blue-400">{m.tools.join(' · ')}</p>
                 </div>
               </div>
             )}
@@ -164,7 +164,7 @@ export function DeviceArtifacts() {
             </div>
             <div className="mb-2"><Code>{a.path}</Code></div>
             <p className="text-xs font-mono text-zinc-300 mb-1">{a.provides}</p>
-            <p className="text-[11px] font-mono text-zinc-500">{a.notes}</p>
+            <p className="text-xs font-mono text-zinc-500">{a.notes}</p>
           </div>
         ))}
       </div>
@@ -181,7 +181,7 @@ export function BackupStructure() {
     <div>
       <SectionHeader title="iOS backup structure" sub="iTunes, encrypted iTunes, iCloud, and GrayKey — what each contains and limitations" />
 
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-[11px] font-mono text-zinc-500 space-y-1">
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-xs font-mono text-zinc-500 space-y-1">
         <div className="text-zinc-400 font-semibold mb-1">Seizure priority</div>
         <div>1. Airplane mode immediately — prevent remote wipe</div>
         <div>2. Keep plugged in — prevent BFU state on reboot</div>
@@ -212,7 +212,7 @@ export function BackupStructure() {
                     <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-2">Contents</div>
                     <ul className="space-y-1">
                       {b.contents.map((c, i) => (
-                        <li key={i} className="text-[11px] font-mono text-emerald-400 flex gap-2">
+                        <li key={i} className="text-xs font-mono text-emerald-400 flex gap-2">
                           <span className="text-zinc-700 flex-shrink-0">✓</span>{c}
                         </li>
                       ))}
@@ -222,14 +222,14 @@ export function BackupStructure() {
                     <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-2">Limitations</div>
                     <ul className="space-y-1">
                       {b.limitations.map((l, i) => (
-                        <li key={i} className="text-[11px] font-mono text-amber-400 flex gap-2">
+                        <li key={i} className="text-xs font-mono text-amber-400 flex gap-2">
                           <span className="text-zinc-700 flex-shrink-0">!</span>{l}
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
-                <p className="text-[11px] font-mono text-zinc-500">{b.notes}</p>
+                <p className="text-xs font-mono text-zinc-500">{b.notes}</p>
               </div>
             )}
           </div>
@@ -253,7 +253,7 @@ export function SQLiteDatabases() {
     <div>
       <SectionHeader title="SQLite databases" sub="Key databases, tables, columns, and epoch conversion notes" />
 
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-[11px] font-mono space-y-1 text-zinc-500">
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-xs font-mono space-y-1 text-zinc-500">
         <div className="text-zinc-400 font-semibold mb-1">Epoch conversions</div>
         <div>Unix epoch (Android):  seconds or ms since <span className="text-emerald-400">1970-01-01</span></div>
         <div>Apple/Mac epoch (iOS): seconds since <span className="text-blue-400">2001-01-01</span> → add 978307200 for Unix</div>
@@ -291,7 +291,7 @@ export function SQLiteDatabases() {
                     {db.keyTables.map((t, i) => (
                       <div key={i} className="bg-zinc-900 border border-zinc-800 rounded p-3">
                         <div className="text-xs font-mono font-semibold text-amber-400 mb-1">{t.table}</div>
-                        <div className="text-[11px] font-mono text-zinc-300 mb-1">{t.keyColumns}</div>
+                        <div className="text-xs font-mono text-zinc-300 mb-1">{t.keyColumns}</div>
                         <div className="text-[10px] font-mono text-zinc-500">{t.notes}</div>
                       </div>
                     ))}
@@ -351,17 +351,17 @@ export function AppArtifactPaths() {
             </button>
             {open === a.app && (
               <div className="px-4 py-4 border-t border-zinc-800 space-y-3">
-                <div className="text-[11px] font-mono text-zinc-500">Bundle ID: <span className="text-zinc-400">{a.bundleId}</span></div>
+                <div className="text-xs font-mono text-zinc-500">Bundle ID: <span className="text-zinc-400">{a.bundleId}</span></div>
                 <div className="space-y-2">
                   {a.artifacts.map((art, i) => (
                     <div key={i} className="bg-zinc-900 border border-zinc-800 rounded p-3">
                       <div className="text-xs font-mono text-zinc-300 font-semibold mb-1">{art.name}</div>
                       <div className="mb-1"><Code>{art.path}</Code></div>
-                      <div className="text-[11px] font-mono text-zinc-500">{art.provides}</div>
+                      <div className="text-xs font-mono text-zinc-500">{art.provides}</div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[11px] font-mono text-zinc-500 border-t border-zinc-800 pt-3">{a.notes}</p>
+                <p className="text-xs font-mono text-zinc-500 border-t border-zinc-800 pt-3">{a.notes}</p>
               </div>
             )}
           </div>
@@ -390,7 +390,7 @@ export function ADBReference() {
     <div>
       <SectionHeader title="ADB command reference" sub="Setup, device info, file ops, app enumeration, logs, and forensic data extraction" />
 
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-[11px] font-mono text-zinc-500 space-y-1">
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-xs font-mono text-zinc-500 space-y-1">
         <div className="text-zinc-400 font-semibold mb-1">Prerequisites</div>
         <div>USB debugging must be enabled: Settings → Developer Options → USB Debugging</div>
         <div>Developer Options: tap Build Number 7 times in Settings → About Phone</div>
@@ -412,7 +412,7 @@ export function ADBReference() {
           <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
             <div className="mb-1.5"><Code>{c.cmd}</Code></div>
             <p className="text-xs font-mono text-zinc-400">{c.description}</p>
-            {c.notes && <p className="text-[11px] font-mono text-zinc-600 mt-1">{c.notes}</p>}
+            {c.notes && <p className="text-xs font-mono text-zinc-600 mt-1">{c.notes}</p>}
           </div>
         ))}
       </div>

@@ -230,7 +230,7 @@ export function PathLossCalc() {
         </div>
       )}
 
-      <div className="mt-4 bg-zinc-900/50 border border-zinc-800 rounded p-3 text-[11px] font-mono text-zinc-500 space-y-1">
+      <div className="mt-4 bg-zinc-900/50 border border-zinc-800 rounded p-3 text-xs font-mono text-zinc-500 space-y-1">
         <div>EIRP = TX Power + TX Antenna Gain − Cable Loss</div>
         <div>Received Power = EIRP − FSPL + RX Antenna Gain</div>
         <div>Typical sensitivity: WiFi −80 dBm · BLE −93 dBm · GSM −100 dBm</div>
@@ -350,7 +350,7 @@ export function ChannelMaps() {
               </div>
             </div>
           ))}
-          <div className="mt-2 text-[11px] font-mono text-zinc-600">
+          <div className="mt-2 text-xs font-mono text-zinc-600">
             All 5 GHz channels are 20 MHz wide. 40/80/160 MHz bonds use contiguous channel groups. UNII-2 channels require DFS — AP must listen for radar before transmitting.
           </div>
         </div>
@@ -379,7 +379,7 @@ export function ChannelMaps() {
               </div>
             ))}
           </div>
-          <div className="mt-4 bg-zinc-900 border border-zinc-800 rounded p-3 text-[11px] font-mono text-zinc-500 space-y-1">
+          <div className="mt-4 bg-zinc-900 border border-zinc-800 rounded p-3 text-xs font-mono text-zinc-500 space-y-1">
             <div>Advertising channels: 37 (2402 MHz), 38 (2426 MHz), 39 (2480 MHz) — spaced to avoid WiFi ch 1/6/11</div>
             <div>Data channels 0–36 used for FHSS connections after pairing</div>
             <div>BLE 5.x adds 2 Mbit/s PHY and coded PHY (125/500 kbit/s long range)</div>
@@ -467,7 +467,7 @@ export function SignalMath() {
               <input className={inputCls} value={mw} onChange={e => handleMwChange(e.target.value)} />
             </div>
           </div>
-          <div className="mt-3 text-[11px] font-mono text-zinc-600 space-y-0.5">
+          <div className="mt-3 text-xs font-mono text-zinc-600 space-y-0.5">
             <div>dBm = 10 · log₁₀(mW)</div>
             <div>mW = 10^(dBm/10)</div>
           </div>
@@ -496,7 +496,7 @@ export function SignalMath() {
               <div className="text-2xl font-mono font-semibold text-blue-400">{eirpResult} <span className="text-sm">dBm</span></div>
             </div>
           )}
-          <div className="mt-2 text-[11px] font-mono text-zinc-600">EIRP = TX − Cable Loss + Antenna Gain</div>
+          <div className="mt-2 text-xs font-mono text-zinc-600">EIRP = TX − Cable Loss + Antenna Gain</div>
         </div>
       </div>
 
@@ -598,7 +598,7 @@ export function TSCMFreqs() {
             <p className="text-xs text-zinc-400 mb-2">{d.notes}</p>
             <div className="flex items-start gap-2">
               <span className="text-[10px] font-mono text-zinc-600 flex-shrink-0 mt-0.5">DETECT</span>
-              <span className="text-[11px] font-mono text-blue-400">{d.detectionHint}</span>
+              <span className="text-xs font-mono text-blue-400">{d.detectionHint}</span>
             </div>
           </div>
         ))}
@@ -659,12 +659,12 @@ export function RogueAP() {
                 <span className="text-xs font-mono font-semibold text-zinc-100 min-w-[160px]">{tool.tool}</span>
                 {badge(tool.platform, 'bg-blue-950 text-blue-400')}
               </div>
-              <div className="text-[11px] font-mono text-amber-400 mb-1.5">{tool.primaryUse}</div>
+              <div className="text-xs font-mono text-amber-400 mb-1.5">{tool.primaryUse}</div>
               <p className="text-xs text-zinc-400">{tool.notes}</p>
             </div>
           ))}
 
-          <div className="mt-2 bg-zinc-900 border border-zinc-800 rounded p-3 text-[11px] font-mono text-zinc-500 space-y-1">
+          <div className="mt-2 bg-zinc-900 border border-zinc-800 rounded p-3 text-xs font-mono text-zinc-500 space-y-1">
             <div className="text-zinc-400 font-semibold mb-1">OUI lookup tips</div>
             <div>Pineapple Mark VII → 94:83:C4 (GL.iNet / GL Technologies)</div>
             <div>Alfa AWUS036 in AP mode → 00:C0:CA</div>
