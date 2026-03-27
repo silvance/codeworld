@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { WindowsArtifacts, LinuxArtifacts, MemoryForensics, ToolCheatSheets } from './sections'
+import { WindowsArtifacts, LinuxArtifacts, MemoryForensics, ToolCheatSheets, MacOSArtifacts } from './sections'
 
-type SectionId = 'windows' | 'linux' | 'memory' | 'tools'
+type SectionId = 'windows' | 'linux' | 'macos' | 'memory' | 'tools'
 
 interface NavItem {
   id: SectionId
@@ -15,6 +15,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { id: 'windows', label: 'Windows artifacts', sub: 'Event IDs · registry · execution · USB · LNK · browser', icon: '🪟' },
   { id: 'linux',   label: 'Linux artifacts',   sub: 'Auth · history · persistence · accounts',               icon: '🐧' },
+  { id: 'macos',   label: 'macOS artifacts',   sub: 'Unified Log · LaunchAgents · KnowledgeC · plist',       icon: '🍎' },
   { id: 'memory',  label: 'Memory forensics',  sub: 'Volatility 3 · triage workflow · plugins',             icon: '🧠' },
   { id: 'tools',   label: 'Tool cheat sheets', sub: 'EZ Tools · KAPE · X-Ways · Axiom · Plaso',             icon: '🛠' },
 ]
@@ -22,6 +23,7 @@ const NAV: NavItem[] = [
 const SECTIONS: Record<SectionId, React.ReactNode> = {
   windows: <WindowsArtifacts />,
   linux:   <LinuxArtifacts />,
+  macos:   <MacOSArtifacts />,
   memory:  <MemoryForensics />,
   tools:   <ToolCheatSheets />,
 }

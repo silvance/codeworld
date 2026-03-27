@@ -5,6 +5,7 @@ import {
   windowsEventIDs, registryHives, execArtifacts, usbArtifacts,
   lnkArtifacts, browserArtifacts, linuxArtifacts, volatilityPlugins,
   memoryTriage, toolSheets,
+  macArtifacts, macUnifiedLogQueries, macToolCommands,
 } from '@/lib/forensics/data'
 
 // ─── Shared primitives ───────────────────────────────────────────────────────
@@ -505,6 +506,134 @@ export function ToolCheatSheets() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ─── macOS Artifacts ──────────────────────────────────────────────────────────
+
+export function MacOSArtifacts() {
+  const [tab, setTab] = useState<'artifacts' | 'unifiedlog' | 'tools'>('artifacts')
+  const [search, setSearch] = useState('')
+  const [catFilter, setCatFilter] = useState('ALL')
+
+  const cats = ['ALL', ...Array.from(new Set(macArtifacts.map(a => a.category)))]
+
+  const filtered = useMemo(() => macArtifacts.filter(a => {
+    if (catFilter !== 'ALL' && a.category !== catFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return a.path.toLowerCase().includes(q) || a.title.toLowerCase().includes(q) || a.description.toLowerCase().includes(q)
+  }), [search, catFilter])
+
+  const Copy = ({ text }: { text: string }) => {
+    const [copied, setCopied] = useState(false)
+    return (
+      <button
+        onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+        className="text-[10px] font-mono text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0"
+      >{copied ? '✓' : 'copy'}</button>
+    )
+  }
+
+  return (
+    <div>
+      <SectionHeader
+        title="macOS artifacts"
+        sub="Shell history · browser data · Unified Log · persistence · quarantine · KnowledgeC · network"
+      />
+
+      <div className="flex gap-2 mb-5">
+        {(['artifacts', 'unifiedlog', 'tools'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${
+              tab === t ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+            }`}>
+            {t === 'artifacts' ? 'Artifact paths' : t === 'unifiedlog' ? 'Unified Log queries' : 'Tool commands'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'artifacts' && (
+        <>
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <input
+              placeholder="Search path, title, description..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="flex-1 min-w-48 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+            />
+            <select
+              value={catFilter}
+              onChange={e => setCatFilter(e.target.value)}
+              className="bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none"
+            >
+              {cats.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            {filtered.map((a, i) => (
+              <div key={i} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+                <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">{a.category}</span>
+                    <span className="text-xs font-mono font-semibold text-zinc-100">{a.title}</span>
+                  </div>
+                  {a.parseWith && (
+                    <span className="text-[10px] font-mono text-zinc-600">parse: {a.parseWith}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <code className="text-[11px] font-mono text-emerald-400 break-all flex-1">{a.path}</code>
+                  <Copy text={a.path} />
+                </div>
+                <p className="text-xs font-mono text-zinc-400 mb-1">{a.description}</p>
+                <p className="text-[11px] font-mono text-zinc-600">{a.notes}</p>
+              </div>
+            ))}
+            <div className="text-[10px] font-mono text-zinc-700 pt-1">{filtered.length} / {macArtifacts.length} artifacts</div>
+          </div>
+        </>
+      )}
+
+      {tab === 'unifiedlog' && (
+        <div className="space-y-2">
+          <div className="bg-blue-950/20 border border-blue-900/30 rounded p-3 mb-4 text-[11px] font-mono text-blue-400">
+            Unified Log replaced most traditional log files since macOS Sierra (10.12). Binary tracev3 format stored in /var/db/diagnostics/. Use <code className="text-emerald-400">log show</code> to query live or <code className="text-emerald-400">log collect</code> to archive for offline analysis.
+          </div>
+          {macUnifiedLogQueries.map((q, i) => (
+            <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-mono text-zinc-400 mb-1.5">{q.description}</p>
+                  <code className="text-xs font-mono text-emerald-400 break-all">{q.query}</code>
+                </div>
+                <Copy text={q.query} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'tools' && (
+        <div className="space-y-2">
+          {macToolCommands.map((t, i) => (
+            <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-blue-950 text-blue-400">{t.tool}</span>
+                    <span className="text-[11px] font-mono text-zinc-400">{t.description}</span>
+                  </div>
+                  <code className="text-xs font-mono text-emerald-400 break-all">{t.cmd}</code>
+                </div>
+                <Copy text={t.cmd} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -807,3 +807,126 @@ export const toolSheets: ToolSheet[] = [
     ],
   },
 ]
+
+// ─── macOS Artifacts ──────────────────────────────────────────────────────────
+
+export interface MacArtifact {
+  category: string
+  path: string
+  title: string
+  description: string
+  notes: string
+  parseWith?: string
+}
+
+export const macArtifacts: MacArtifact[] = [
+  // ── User activity ──────────────────────────────────────────────────────────
+  { category: 'Shell History',   path: '~/.bash_history',                   title: 'Bash history',              description: 'Bash command history. Appended on session close.', notes: 'HISTFILESIZE / HISTSIZE control size. Attacker may: unset HISTFILE, set HISTSIZE=0, rm ~/.bash_history, or use "history -c".', parseWith: 'cat, strings' },
+  { category: 'Shell History',   path: '~/.zsh_history',                    title: 'Zsh history (default shell since Catalina)', description: 'Zsh command history with timestamps if EXTENDED_HISTORY is set.', notes: 'Default shell since macOS Catalina (10.15). Format: ": timestamp:elapsed;command". Check /etc/shells for all installed shells.', parseWith: 'cat, strings' },
+  { category: 'Shell History',   path: '~/.local/share/fish/fish_history',  title: 'Fish shell history',        description: 'Fish shell YAML-format history with timestamps.', notes: 'Fish stores timestamps by default — more forensically valuable than bash/zsh.', parseWith: 'cat' },
+
+  // ── Browser artifacts ──────────────────────────────────────────────────────
+  { category: 'Browser',  path: '~/Library/Application Support/Google/Chrome/Default/History',                 title: 'Chrome history (SQLite)',        description: 'URLs, visit counts, typed URLs, download history.', notes: 'Tables: urls, visits, downloads. Lock file present while Chrome is open — copy before parsing.', parseWith: 'sqlite3, DB Browser' },
+  { category: 'Browser',  path: '~/Library/Application Support/Google/Chrome/Default/Cookies',                 title: 'Chrome cookies (SQLite)',        description: 'Session cookies, auth tokens, persistent cookies.', notes: 'Encrypted with macOS Keychain (AES-256). Chrome cookie decryption requires Keychain access or user password.', parseWith: 'sqlite3, hindsight' },
+  { category: 'Browser',  path: '~/Library/Safari/History.db',                                                  title: 'Safari history (SQLite)',        description: 'Visit history, search terms, webpage titles.', notes: 'Tables: history_items, history_visits. iCloud Safari history syncs across Apple devices.', parseWith: 'sqlite3, DB Browser' },
+  { category: 'Browser',  path: '~/Library/Safari/Downloads.plist',                                             title: 'Safari downloads (plist)',       description: 'Files downloaded via Safari — path, URL, date, size.', notes: 'Binary or XML plist. plutil -convert xml1 to convert.', parseWith: 'plutil, plistutil' },
+  { category: 'Browser',  path: '~/Library/Application Support/Firefox/Profiles/*.default/places.sqlite',       title: 'Firefox history (SQLite)',       description: 'moz_places and moz_historyvisits tables.', notes: 'Profile directory name is random. find ~/Library -name "places.sqlite" to locate.', parseWith: 'sqlite3, DB Browser' },
+
+  // ── System logs ───────────────────────────────────────────────────────────
+  { category: 'System Logs',  path: '/var/log/system.log',                  title: 'System log',                description: 'General system events (older macOS). Replaced by Unified Log in macOS 10.12+.', notes: 'Present on older systems. Sierra+ uses Unified Log (log show command) instead.', parseWith: 'cat, grep' },
+  { category: 'System Logs',  path: '/private/var/log/asl/',                 title: 'Apple System Log (ASL)',    description: 'Binary ASL log files — auth, crashes, kernel messages.', notes: 'Binary format. Parse with: syslog -f /var/log/asl/*.asl or use Console.app.', parseWith: 'syslog, Console.app' },
+  { category: 'System Logs',  path: '/var/db/diagnostics/',                  title: 'Unified Log store (tracev3)', description: 'macOS Unified Logging — most comprehensive log source since Sierra.', notes: 'Binary tracev3 format. Parse: log show --predicate \'eventMessage contains "sudo"\' --info. Time range: log show --start "2024-01-01" --end "2024-01-02". Export: log collect --output /tmp/logarchive.logarchive', parseWith: 'log show, Heimdall, UnifiedLogReader' },
+  { category: 'System Logs',  path: '/var/log/install.log',                  title: 'Install log',               description: 'Software installation events — packages, apps, updates.', notes: 'Shows what was installed and when. Look for unexpected installs or installers run from /tmp.', parseWith: 'cat, grep' },
+  { category: 'System Logs',  path: '/Library/Logs/DiagnosticReports/',      title: 'Crash reports',             description: 'Application and system crash reports (.ips files).', notes: 'Contains process names, binary paths, exception types, stack traces. Useful for identifying malware crashes.', parseWith: 'cat, plutil' },
+
+  // ── Authentication / Users ────────────────────────────────────────────────
+  { category: 'Auth / Users',  path: '/var/log/auth.log',                    title: 'Auth log (older macOS)',    description: 'sudo, ssh, login events on pre-Sierra systems.', notes: 'On modern macOS query Unified Log: log show --predicate \'subsystem == "com.apple.securityd"\'', parseWith: 'cat, grep' },
+  { category: 'Auth / Users',  path: '/Library/Preferences/com.apple.loginwindow.plist', title: 'Login window plist', description: 'Last logged-in user, auto-login settings.', notes: 'lastUserName key shows last interactive login. AutoLoginUser = auto-login configured.', parseWith: 'plutil, defaults read' },
+  { category: 'Auth / Users',  path: '/private/var/db/dslocal/nodes/Default/users/', title: 'Local user database', description: 'plist per local user account — UID, GID, shell, password hash (ShadowHash).', notes: 'Password hash in ShadowHashData key (PBKDF2-HMAC-SHA512). Requires root. Each file = one user. Usernames: ls /private/var/db/dslocal/nodes/Default/users/', parseWith: 'plutil (root required)' },
+  { category: 'Auth / Users',  path: '/private/etc/passwd, /private/etc/group', title: '/etc/passwd and group', description: 'User and group list (symlinks to /private).', notes: 'macOS still maintains these for compatibility. Actual auth via OpenDirectory/dslocal.', parseWith: 'cat' },
+
+  // ── Persistence ───────────────────────────────────────────────────────────
+  { category: 'Persistence',  path: '~/Library/LaunchAgents/',               title: 'User LaunchAgents',         description: 'Per-user launch agents — run as the user on login.', notes: 'Most common persistence location for user-level malware. plist format. Key fields: Label, ProgramArguments, RunAtLoad, StartInterval.', parseWith: 'plutil, cat' },
+  { category: 'Persistence',  path: '/Library/LaunchAgents/',                 title: 'System LaunchAgents',       description: 'System-wide launch agents — run for all users on login.', notes: 'Requires admin to write. Legitimate: Adobe, Google Update. Suspicious: random strings, /tmp paths, encoded commands.', parseWith: 'plutil, cat' },
+  { category: 'Persistence',  path: '/Library/LaunchDaemons/',                title: 'LaunchDaemons',             description: 'System services — run as root at boot, no user session needed.', notes: 'Highest-privilege persistence. Requires root. Look for ProgramArguments pointing to unusual paths or scripts.', parseWith: 'plutil, cat' },
+  { category: 'Persistence',  path: '~/Library/Application Support/com.apple.backgroundtaskmanagementagent/', title: 'Background Task Management', description: 'macOS 13+ (Ventura) background task registration database.', notes: 'BTM tracks all login items and launch agents. Query: sfltool dumpbtm. Shows when persistence was registered.', parseWith: 'sfltool dumpbtm' },
+  { category: 'Persistence',  path: '~/Library/Preferences/com.apple.loginitems.plist', title: 'Login items (older)', description: 'Apps and scripts set to launch at login (pre-Ventura).', notes: 'Ventura+ uses SMAppService. GUI: System Settings → General → Login Items. Key: SessionItems array.', parseWith: 'plutil' },
+  { category: 'Persistence',  path: '/Library/StartupItems/ (deprecated)',    title: 'Startup items (legacy)',    description: 'Pre-launchd startup scripts. Deprecated since Tiger but occasionally seen.', notes: 'No longer runs on modern macOS. Presence = legacy malware or very old system.', parseWith: 'ls, cat' },
+  { category: 'Persistence',  path: '~/.config/autostart/ (XDG, via Wine/Linux compat)', title: 'Cron jobs', description: 'User crontab entries.', notes: 'crontab -l (current user). System: /etc/cron* and /private/var/at/tabs/. launchd has mostly replaced cron on macOS.', parseWith: 'crontab -l, cat' },
+
+  // ── File system / MRU ─────────────────────────────────────────────────────
+  { category: 'File System / MRU',  path: '~/Library/Preferences/com.apple.finder.plist', title: 'Finder preferences', description: 'Recent folders, sidebar items, view settings, FXRecentFolders key.', notes: 'FXRecentFolders array shows recently accessed directories. RecentMoveAndCopyDestinations shows copy/move destinations.', parseWith: 'plutil, defaults read' },
+  { category: 'File System / MRU',  path: '~/Library/Application Support/com.apple.sharedfilelist/', title: 'Shared file lists (SFL2)', description: 'Recent documents and servers per application. Modern replacement for MRU plists.', notes: 'Binary SFL2 format. Parse with: python3 ccl_sfl2_parser.py or sfl2parser. Files: com.apple.LSSharedFileList.RecentDocuments.sfl2, etc.', parseWith: 'sfl2parser, ccl_sfl2_parser' },
+  { category: 'File System / MRU',  path: '~/.Trash/',                        title: 'Trash',                     description: 'Deleted files pending permanent deletion. Metadata preserved.', notes: 'Each user has ~/.Trash/. External drives: /Volumes/DriveName/.Trashes/UID/. Deleted file metadata in .DS_Store within Trash.', parseWith: 'ls -la, strings' },
+  { category: 'File System / MRU',  path: '/var/folders/*/*/T/',               title: 'Temp files',                description: 'Per-user temporary directory (TMPDIR). Location varies per user session.', notes: 'TMPDIR env var points to actual path. Files deleted on reboot. Malware staging area. Find: echo $TMPDIR', parseWith: 'ls, find' },
+  { category: 'File System / MRU',  path: '/.Spotlight-V100/',                 title: 'Spotlight index',           description: 'Full-text search index. Metadata for every indexed file including deleted ones.', notes: 'Records can survive file deletion. mdls <file> shows Spotlight metadata. mdfind -name searches index. Critical for timeline analysis.', parseWith: 'mdls, mdfind, spotlight_parser' },
+
+  // ── Network ───────────────────────────────────────────────────────────────
+  { category: 'Network',  path: '/Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist', title: 'WiFi network history', description: 'All Wi-Fi networks ever joined — SSIDs, BSSIDs, last join time, security type.', notes: 'KnownNetworks dictionary. LastAutoJoinAt timestamp per network. Shows location history indirectly.', parseWith: 'plutil, defaults read' },
+  { category: 'Network',  path: '/private/var/db/dhcpclient/leases/',           title: 'DHCP leases',              description: 'DHCP lease history per interface — assigned IPs, server IPs, lease times.', notes: 'One plist per interface. Shows network interfaces active on the system and their IP history.', parseWith: 'plutil' },
+  { category: 'Network',  path: '/etc/hosts',                                   title: '/etc/hosts',               description: 'Static host overrides.', notes: 'Malware may modify to redirect domains. Legitimate entries: localhost, broadcasthost. Compare against baseline.', parseWith: 'cat' },
+
+  // ── Execution evidence ────────────────────────────────────────────────────
+  { category: 'Execution',  path: '/private/var/folders/*/*/com.apple.dock.iconcache', title: 'Dock icon cache', description: 'Icons for apps that have appeared in the Dock — evidence of execution.', notes: 'Shows apps used by user even if app is deleted. Encoded icon data not human-readable but file presence is meaningful.', parseWith: 'ls, strings' },
+  { category: 'Execution',  path: '~/Library/Application Support/Knowledge/',   title: 'KnowledgeC database',      description: 'CoreData database tracking app usage, screen time, device activity.', notes: 'ZOBJECT table in knowledgeC.db. Tracks: app foreground/background, device locked/unlocked, user activity. Timestamps in Apple/Mac Absolute Time (seconds since 2001-01-01). Parse with: KnowledgeCParser or ileapp.', parseWith: 'sqlite3, KnowledgeCParser' },
+  { category: 'Execution',  path: '~/Library/Preferences/com.apple.recentitems.plist', title: 'Recent items',    description: 'Recently opened applications, documents, and servers.', notes: 'Bookmark data format. Convert bookmarks: python3 mac_alias.py. Applications array shows recently run apps.', parseWith: 'plutil, mac_alias' },
+  { category: 'Execution',  path: '/private/var/db/launchd.db/',                title: 'launchd database',         description: 'launchd job tracking database — registered services and their state.', notes: 'Binary format. Shows what launchd has loaded. Useful for identifying injected or unexpected launch jobs.', parseWith: 'strings, launchctl list' },
+
+  // ── Security features ──────────────────────────────────────────────────────
+  { category: 'Security',  path: '/Library/Preferences/com.apple.alf.plist',   title: 'Application Firewall config', description: 'macOS Application Firewall settings — enabled/disabled, allowed apps.', notes: 'globalstate: 0=off, 1=on, 2=block all. allowdownloadsignedenabled allows signed app exceptions.', parseWith: 'plutil' },
+  { category: 'Security',  path: '/private/var/db/auth.db',                     title: 'Authorization database',   description: 'Security policy rules for privileged operations.', notes: 'SQLite. Malware may modify to escalate privileges. Baseline: compare against clean macOS install.', parseWith: 'sqlite3' },
+  { category: 'Security',  path: '/Library/Apple/System/Library/CoreServices/XProtect.bundle/Contents/Resources/', title: 'XProtect signatures', description: 'Apple built-in malware signatures (Yara-like format).', notes: 'XProtect.yara (Ventura+) contains YARA rules. XProtect.plist (older) has basic signatures. Version in XProtect.meta.plist.', parseWith: 'cat, plutil' },
+  { category: 'Security',  path: '/Library/Preferences/com.apple.security.plist', title: 'Gatekeeper config',     description: 'Gatekeeper settings — allow apps from App Store only, App Store + identified developers, or anywhere.', notes: 'assess_key: 0=disabled (anywhere). Disabled Gatekeeper = unsigned code allowed. Common malware pre-req.', parseWith: 'plutil, spctl --status' },
+  { category: 'Security',  path: '/Library/Preferences/com.apple.SoftwareUpdate.plist', title: 'Software update history', description: 'Last update check, installed updates, deferred updates.', notes: 'LastSuccessfulDate shows last update. RecommendedUpdates shows pending patches. Useful for patch state assessment.', parseWith: 'plutil' },
+
+  // ── Quarantine / GateKeeper ────────────────────────────────────────────────
+  { category: 'Quarantine',  path: '~/Library/Preferences/com.apple.LaunchServices.QuarantineEventsV2', title: 'Quarantine events database', description: 'Every file downloaded from internet — URL, date, app that downloaded it.', notes: 'SQLite: LSQuarantineEvent table. Columns: LSQuarantineEventIdentifier, LSQuarantine TimeStamp, LSQuarantineAgentBundleIdentifier, LSQuarantineDataURLString, LSQuarantineOriginURLString. Critical for download history. Survives file deletion.', parseWith: 'sqlite3, quarantine_parser' },
+
+  // ── Cloud / iCloud ────────────────────────────────────────────────────────
+  { category: 'Cloud / iCloud',  path: '~/Library/Mobile Documents/',          title: 'iCloud Drive files',        description: 'User iCloud Drive contents synced locally.', notes: 'Subdirectories per app: com~apple~CloudDocs, com~apple~Pages, etc. Files not fully downloaded may show as .icloud stubs.', parseWith: 'ls, find' },
+  { category: 'Cloud / iCloud',  path: '~/Library/Application Support/CloudDocs/session/db/', title: 'iCloud session database', description: 'iCloud sync state, file metadata, account info.', notes: 'SQLite databases tracking iCloud sync state. server_items table shows cloud-side file metadata.', parseWith: 'sqlite3' },
+
+  // ── Time Machine ─────────────────────────────────────────────────────────
+  { category: 'Time Machine',  path: '/private/var/db/com.apple.TimeMachineStatus.plist', title: 'Time Machine status', description: 'Last backup time, backup destination, backup state.', notes: 'SnapshotDates array shows all local snapshot timestamps. ClientID identifies the machine. Check if backups stopped (possible indicator of attacker disabling TM).', parseWith: 'plutil' },
+  { category: 'Time Machine',  path: '/.MobileBackups/ (local snapshots)',      title: 'Time Machine local snapshots', description: 'Local Time Machine snapshots stored on-disk (APFS).', notes: 'List: tmutil listlocalsnapshots /. Mount: tmutil mount <snapshot>. Invaluable for recovering deleted files or prior system state.', parseWith: 'tmutil, mount' },
+]
+
+export const macUnifiedLogQueries = [
+  { description: 'All sudo usage',           query: 'log show --predicate \'eventMessage contains "sudo"\' --info --last 24h' },
+  { description: 'SSH connections',          query: 'log show --predicate \'process == "sshd"\' --info --last 7d' },
+  { description: 'Launch agent activity',    query: 'log show --predicate \'subsystem == "com.apple.launchd"\' --info --last 24h' },
+  { description: 'Gatekeeper assessments',   query: 'log show --predicate \'subsystem == "com.apple.security.assessment"\' --info' },
+  { description: 'XProtect detections',      query: 'log show --predicate \'subsystem == "com.apple.XProtect"\' --info' },
+  { description: 'Network connections (kernel)', query: 'log show --predicate \'process == "kernel" and eventMessage contains "ALLOW"\' --info' },
+  { description: 'User login/logout',        query: 'log show --predicate \'eventMessage contains "logind"\' --info --last 7d' },
+  { description: 'USB device attach',        query: 'log show --predicate \'eventMessage contains "USB" and eventMessage contains "attached"\' --info' },
+  { description: 'App launches (Spotlight)', query: 'log show --predicate \'process == "lsd" and eventMessage contains "launch"\' --info --last 24h' },
+  { description: 'TCC (privacy) decisions',  query: 'log show --predicate \'subsystem == "com.apple.TCC"\' --info' },
+  { description: 'Sandbox violations',       query: 'log show --predicate \'subsystem == "com.apple.sandbox"\' --info --last 24h' },
+  { description: 'Crash events',             query: 'log show --predicate \'process == "ReportCrash"\' --info --last 7d' },
+  { description: 'Time range query',         query: 'log show --start "2024-01-15 09:00:00" --end "2024-01-15 18:00:00" --info' },
+  { description: 'Export to archive',        query: 'log collect --last 7d --output /tmp/case.logarchive' },
+]
+
+export const macToolCommands = [
+  { tool: 'plutil',          cmd: 'plutil -convert xml1 -o - file.plist',        description: 'Convert binary plist to readable XML' },
+  { tool: 'plutil',          cmd: 'plutil -p file.plist',                         description: 'Pretty-print plist contents' },
+  { tool: 'defaults',        cmd: 'defaults read com.apple.finder',               description: 'Read plist via defaults domain' },
+  { tool: 'mdls',            cmd: 'mdls /path/to/file',                           description: 'Show Spotlight metadata for file' },
+  { tool: 'mdfind',          cmd: 'mdfind -name "malware.app" -onlyin ~/',        description: 'Spotlight search — finds files even in unusual locations' },
+  { tool: 'log',             cmd: 'log show --predicate \'...\' --info --last 1h',description: 'Query Unified Log (see queries above)' },
+  { tool: 'log',             cmd: 'log collect --last 7d --output case.logarchive', description: 'Export full log archive for offline analysis' },
+  { tool: 'sqlite3',         cmd: 'sqlite3 knowledgeC.db ".tables"',              description: 'List tables in SQLite artifact' },
+  { tool: 'sqlite3',         cmd: 'sqlite3 -csv -header db.sqlite "SELECT * FROM table;"', description: 'Export table to CSV' },
+  { tool: 'launchctl',       cmd: 'launchctl list',                               description: 'List all loaded launchd jobs' },
+  { tool: 'launchctl',       cmd: 'launchctl print-disabled user/$(id -u)',        description: 'Show disabled launch agents for user' },
+  { tool: 'sfltool',         cmd: 'sfltool dumpbtm',                              description: 'Dump Background Task Management (Ventura+) — persistence' },
+  { tool: 'codesign',        cmd: 'codesign -dvv /Applications/App.app',          description: 'Verify code signature and entitlements' },
+  { tool: 'spctl',           cmd: 'spctl -a -vv /Applications/App.app',           description: 'Assess Gatekeeper policy for app' },
+  { tool: 'tmutil',          cmd: 'tmutil listlocalsnapshots /',                  description: 'List local Time Machine snapshots' },
+  { tool: 'xattr',           cmd: 'xattr -l file.app',                            description: 'Show extended attributes — com.apple.quarantine reveals download source' },
+  { tool: 'xattr',           cmd: 'xattr -p com.apple.quarantine file',           description: 'Read quarantine attribute: 0083;timestamp;app;UUID' },
+  { tool: 'find',            cmd: 'find / -name "*.plist" -newer /tmp/ref -mtime -1 2>/dev/null', description: 'Find recently modified plists' },
+  { tool: 'fs_usage',        cmd: 'sudo fs_usage -f filesystem -w proc_name',     description: 'Live filesystem events for a process (root)' },
+  { tool: 'opensnoop',       cmd: 'sudo opensnoop -p PID',                        description: 'Files opened by process (DTrace-based)' },
+]
