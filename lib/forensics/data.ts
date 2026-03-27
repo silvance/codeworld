@@ -1341,3 +1341,754 @@ export const ciInvestigationChains: CIInvestigationChain[] = [
     ],
   },
 ]
+// ─── SRUM (System Resource Usage Monitor) ────────────────────────────────────
+
+export interface SrumTable {
+  table: string
+  description: string
+  ciRelevance: string
+  keyColumns: { column: string; type: string; meaning: string; ciValue: string }[]
+  queries: { description: string; sql: string }[]
+  notes: string
+}
+
+export const srumTables: SrumTable[] = [
+  {
+    table: 'NETWORK_USAGE (table: {973F5D5C-1D90-4944-BE8E-24B94231A174})',
+    description: 'Bytes sent and received per application per network interface, aggregated per hour. The single most important table for data exfiltration quantification.',
+    ciRelevance: 'Proves exactly how many bytes a specific process sent and received during each hour of operation. If Prefetch proves rclone.exe ran and SRUM shows it sent 4.2 GB during that window, you have both execution and exfiltration volume evidence. Entries persist for 30–60 days.',
+    keyColumns: [
+      { column: 'AppId', type: 'INTEGER', meaning: 'Foreign key to SruDbIdMapTable — resolves to application path or service name', ciValue: 'Join to SruDbIdMapTable to get full executable path. Path reveals what process generated the traffic.' },
+      { column: 'UserId', type: 'INTEGER', meaning: 'Foreign key to SruDbIdMapTable — resolves to SID', ciValue: 'Identifies which user account ran the process — proves subject\'s account sent the data, not a service account.' },
+      { column: 'TimeStamp', type: 'DATETIME', meaning: 'Hour-aligned UTC timestamp for this usage record', ciValue: 'Granularity is 1 hour. Timestamps are Windows FILETIME encoded — convert with SrumECmd or manual formula.' },
+      { column: 'BytesSent', type: 'INTEGER', meaning: 'Total bytes sent by this process during this hour via this interface', ciValue: 'Proves data volume exfiltrated. A staging tool sending 10 GB during business hours is immediately significant.' },
+      { column: 'BytesRecvd', type: 'INTEGER', meaning: 'Total bytes received by this process during this hour', ciValue: 'High receive + send for a cloud sync process = bidirectional sync activity.' },
+      { column: 'InterfaceLuid', type: 'INTEGER', meaning: 'Network interface identifier — distinguishes WiFi from Ethernet, and identifies specific adapter', ciValue: 'Identifies if data left via corporate network (Ethernet) vs personal hotspot (unknown WiFi adapter not in baseline).' },
+      { column: 'L2ProfileId', type: 'INTEGER', meaning: 'WiFi network profile identifier', ciValue: 'Cross-reference with WiFi network profiles to determine which network was in use during exfiltration.' },
+    ],
+    queries: [
+      { description: 'Top 20 processes by total bytes sent', sql: `SELECT app.AppId as Path, SUM(n.BytesSent) as TotalSent, SUM(n.BytesRecvd) as TotalRecvd
+FROM [{973F5D5C-1D90-4944-BE8E-24B94231A174}] n
+JOIN SruDbIdMapTable app ON n.AppId = app.IdIndex
+GROUP BY n.AppId
+ORDER BY TotalSent DESC LIMIT 20;` },
+      { description: 'Network usage for a specific process', sql: `SELECT datetime(TimeStamp, 'unixepoch') as Hour,
+  app.AppId as Process, user.AppId as User,
+  BytesSent, BytesRecvd
+FROM [{973F5D5C-1D90-4944-BE8E-24B94231A174}] n
+JOIN SruDbIdMapTable app ON n.AppId = app.IdIndex
+JOIN SruDbIdMapTable user ON n.UserId = user.IdIndex
+WHERE app.AppId LIKE '%rclone%'
+ORDER BY TimeStamp;` },
+      { description: 'All activity during specific time window', sql: `SELECT app.AppId, BytesSent, BytesRecvd,
+  datetime(TimeStamp, 'unixepoch') as Hour
+FROM [{973F5D5C-1D90-4944-BE8E-24B94231A174}] n
+JOIN SruDbIdMapTable app ON n.AppId = app.IdIndex
+WHERE TimeStamp BETWEEN
+  strftime('%s','2024-03-15') AND strftime('%s','2024-03-16')
+ORDER BY BytesSent DESC;` },
+      { description: 'Identify personal hotspot use (non-corporate interfaces)', sql: `SELECT DISTINCT InterfaceLuid, L2ProfileId, app.AppId
+FROM [{973F5D5C-1D90-4944-BE8E-24B94231A174}] n
+JOIN SruDbIdMapTable app ON n.AppId = app.IdIndex
+WHERE BytesSent > 1000000
+ORDER BY InterfaceLuid;` },
+    ],
+    notes: 'SRUM database is located at C:\\Windows\\System32\\sru\\SRUDB.dat (ESE format). Must be parsed with SrumECmd.exe (EZ Tools) or ese2csv. The live SRUDB.dat is locked — acquire from VSS or use SrumECmd which handles the lock. Timestamps are stored as Windows FILETIME (100-nanosecond intervals since Jan 1, 1601) — always use SrumECmd for correct conversion.',
+  },
+  {
+    table: 'APP_TIMELINE (table: {5C8CF1C7-7257-4F13-B223-970EF5939312})',
+    description: 'Foreground application usage with CPU time and display time. Shows which applications the user actively used and for how long.',
+    ciRelevance: 'Proves a user actively engaged with a specific application — not just that it ran in the background. High ForegroundCycleTime for a data staging tool proves sustained deliberate operation. Corroborates UserAssist focus time.',
+    keyColumns: [
+      { column: 'AppId', type: 'INTEGER', meaning: 'Application identifier (join to SruDbIdMapTable)', ciValue: 'Resolves to full executable path.' },
+      { column: 'ForegroundCycleTime', type: 'INTEGER', meaning: 'CPU cycles consumed while app was in foreground', ciValue: 'Non-trivial foreground CPU for a tool = user was actively watching/using it.' },
+      { column: 'BackgroundCycleTime', type: 'INTEGER', meaning: 'CPU cycles consumed in background', ciValue: 'High background with low foreground = automated tool running without user attention.' },
+      { column: 'ForegroundContextSwitches', type: 'INTEGER', meaning: 'Context switches while in foreground', ciValue: 'Indicator of active computation — useful for distinguishing idle vs active periods.' },
+    ],
+    queries: [
+      { description: 'Top apps by foreground time', sql: `SELECT app.AppId, SUM(ForegroundCycleTime) as TotalFG,
+  SUM(BackgroundCycleTime) as TotalBG
+FROM [{5C8CF1C7-7257-4F13-B223-970EF5939312}] t
+JOIN SruDbIdMapTable app ON t.AppId = app.IdIndex
+GROUP BY t.AppId ORDER BY TotalFG DESC LIMIT 20;` },
+    ],
+    notes: 'Less commonly parsed than NETWORK_USAGE but valuable for proving active user engagement with specific tools.',
+  },
+  {
+    table: 'ENERGY_USAGE (table: {FEE4E14F-02A9-4550-B5CE-5FA2DA202E37})',
+    description: 'Per-process energy consumption and battery state. On laptop systems, records battery percentage and charge state alongside application activity.',
+    ciRelevance: 'On laptops: can establish whether the device was plugged in or on battery — useful for establishing whether device was in office (plugged) or mobile (battery). Battery drain spikes correlate with high-CPU operations (large file encryption/compression before exfiltration).',
+    keyColumns: [
+      { column: 'AppId', type: 'INTEGER', meaning: 'Application identifier', ciValue: 'Identifies which process caused energy spike.' },
+      { column: 'EventTimestamp', type: 'DATETIME', meaning: 'Timestamp of energy event', ciValue: 'Timeline anchor for activity.' },
+      { column: 'StateTransition', type: 'INTEGER', meaning: 'Battery state change (AC/DC transition)', ciValue: 'AC→DC transition proves device was unplugged — may indicate device was removed from office.' },
+    ],
+    queries: [
+      { description: 'Battery state transitions (AC/DC)', sql: `SELECT datetime(EventTimestamp, 'unixepoch') as Time,
+  StateTransition, app.AppId
+FROM [{FEE4E14F-02A9-4550-B5CE-5FA2DA202E37}] e
+JOIN SruDbIdMapTable app ON e.AppId = app.IdIndex
+WHERE StateTransition IS NOT NULL
+ORDER BY EventTimestamp;` },
+    ],
+    notes: 'Most useful on laptop investigations. Desktop systems have limited energy data. Parse with SrumECmd — energy table has different timestamp format than network usage.',
+  },
+]
+
+export const srumWorkflow = [
+  { step: 'Acquire SRUDB.dat', detail: 'C:\\Windows\\System32\\sru\\SRUDB.dat — locked on live system. Options: (1) SrumECmd handles VSS automatically, (2) Copy from VSS shadow copy, (3) Velociraptor SRUM artifact collects live.', cmd: 'SrumECmd.exe --vss -f "C:\\Windows\\System32\\sru\\SRUDB.dat" --csv C:\\output' },
+  { step: 'Parse all tables', detail: 'SrumECmd outputs separate CSVs per table. Key outputs: NetworkUsages.csv, AppTimeline.csv, EnergyUsage.csv', cmd: 'SrumECmd.exe -f SRUDB.dat --csv C:\\output -r C:\\Windows\\System32\\config\\SOFTWARE' },
+  { step: 'Resolve AppIds', detail: 'SOFTWARE hive is required to resolve AppIds to human-readable process paths. Pass with -r flag.', cmd: '# SOFTWARE hive: C:\\Windows\\System32\\config\\SOFTWARE' },
+  { step: 'Identify high-volume processes', detail: 'Sort NetworkUsages.csv by BytesSent descending. Flag any process sending >100MB that is not a known browser/update service.', cmd: 'Import-Csv NetworkUsages.csv | Sort-Object {[long]$_.BytesSent} -Desc | Select-Object -First 20 | Format-Table ExeInfo, BytesSent, BytesRecvd, Timestamp' },
+  { step: 'Correlate with other artifacts', detail: 'Cross-reference high-volume SRUM entries with: Prefetch (confirms execution), Amcache (hash), Event 4688 (process creation), LNK (files opened by the process)', cmd: '# Timeline: merge SRUM timestamps with Prefetch timestamps for same executable' },
+]
+
+// ─── Cloud Storage Forensics ──────────────────────────────────────────────────
+
+export interface CloudArtifact {
+  provider: string
+  platform: 'Windows' | 'macOS' | 'Both'
+  artifactType: string
+  path: string
+  description: string
+  ciRelevance: string
+  queries?: { description: string; sql: string }[]
+  parseWith: string
+  notes: string
+}
+
+export const cloudArtifacts: CloudArtifact[] = [
+  // OneDrive
+  {
+    provider: 'OneDrive',
+    platform: 'Windows',
+    artifactType: 'Sync log',
+    path: '%LOCALAPPDATA%\\Microsoft\\OneDrive\\logs\\Personal\\SyncEngine\\*.odl',
+    description: 'OneDrive sync engine binary log files. Record every file synced, uploaded, downloaded, moved, or deleted.',
+    ciRelevance: 'Proves specific files were synced to OneDrive cloud. File names, paths, operation type (upload vs download), and timestamps. Files synced from sensitive directories are immediately significant.',
+    parseWith: 'onedrive-log-parser (FOSS), ODL parser script, Magnet AXIOM',
+    notes: 'ODL format is binary. Multiple log files rotated. AXIOM has the best automated coverage. Manual parsing requires ODL parser. Log retention varies — may have several weeks of history.',
+  },
+  {
+    provider: 'OneDrive',
+    platform: 'Windows',
+    artifactType: 'SQLite database',
+    path: '%LOCALAPPDATA%\\Microsoft\\OneDrive\\settings\\Personal\\*.dat (SQLite)',
+    description: 'OneDrive settings and sync state database. Contains file inventory of what is/was synced.',
+    ciRelevance: 'SyncedFiles table lists every file that has been synced, including files subsequently deleted locally. Proves cloud copies exist even if local copy was deleted.',
+    queries: [
+      { description: 'List all synced files', sql: `SELECT fileName, fileSize, lastModifiedTime, etag
+FROM SyncedFiles
+ORDER BY lastModifiedTime DESC;` },
+      { description: 'Files synced in date range', sql: `SELECT fileName, fileSize,
+  datetime(lastModifiedTime/10000000 - 11644473600, 'unixepoch') as SyncTime
+FROM SyncedFiles
+WHERE lastModifiedTime BETWEEN <start_filetime> AND <end_filetime>;` },
+    ],
+    parseWith: 'sqlite3, DB Browser, AXIOM',
+    notes: 'Multiple .dat files — check all. File names are encoded. lastModifiedTime is Windows FILETIME.',
+  },
+  {
+    provider: 'OneDrive',
+    platform: 'Windows',
+    artifactType: 'Registry keys',
+    path: 'HKCU\\Software\\Microsoft\\OneDrive\\Accounts\\Personal',
+    description: 'OneDrive account configuration — user ID, sync folder path, last sync time.',
+    ciRelevance: 'Proves OneDrive was configured for a specific Microsoft account. UserFolder value shows where local sync folder was. Enables targeted artifact collection from sync folder path.',
+    parseWith: 'RegRipper, RECmd, regedit',
+    notes: 'Check both Personal and Business sub-keys. CID value is the OneDrive user identifier.',
+  },
+  {
+    provider: 'OneDrive',
+    platform: 'Windows',
+    artifactType: 'Sync folder & placeholder files',
+    path: '%USERPROFILE%\\OneDrive\\ (default sync folder)',
+    description: 'Local sync folder. Files fully synced exist locally. Files stored cloud-only appear as .ini placeholder stubs.',
+    ciRelevance: 'Placeholder files (.ini cloud stubs) prove files exist in cloud even if not downloaded locally. Full sync folder shows current cloud content. MFT entries for deleted files in sync folder prove they were once synced.',
+    parseWith: 'Windows Explorer, MFT analysis (MFTECmd), Autopsy',
+    notes: 'User can relocate sync folder — check registry for actual path. Placeholder files have FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS attribute set in MFT.',
+  },
+  // SharePoint / Teams
+  {
+    provider: 'SharePoint / Teams',
+    platform: 'Windows',
+    artifactType: 'Teams cache and logs',
+    path: '%APPDATA%\\Microsoft\\Teams\\logs.txt and %APPDATA%\\Microsoft\\Teams\\IndexedDB\\',
+    description: 'Teams application logs and cached data including messages, file transfers, and meeting activity.',
+    ciRelevance: 'File sharing via Teams (SharePoint backend) is logged. logs.txt contains plaintext event log including file upload/download events. IndexedDB contains cached message content.',
+    parseWith: 'cat / grep on logs.txt, AXIOM, Cellebrite UFED (for mobile)',
+    notes: 'logs.txt is rotated — check all log files. IndexedDB is LevelDB format — requires specialized parser or AXIOM. Teams files are stored on SharePoint — legal process may be required for cloud-side logs.',
+  },
+  // Dropbox
+  {
+    provider: 'Dropbox',
+    platform: 'Windows',
+    artifactType: 'SQLite database',
+    path: '%APPDATA%\\Dropbox\\host.db and %LOCALAPPDATA%\\Dropbox\\instance1\\sync\\nucleus.sqlite3',
+    description: 'Dropbox sync database containing file inventory, sync events, and account information.',
+    ciRelevance: 'nucleus.sqlite3 contains comprehensive sync history including files uploaded, downloaded, and deleted. host.db contains account identifier (Base64 encoded).',
+    queries: [
+      { description: 'Recent sync events from nucleus.sqlite3', sql: `SELECT local_path, server_path, direction, ts
+FROM file_journal
+ORDER BY ts DESC LIMIT 100;` },
+      { description: 'Files uploaded to Dropbox', sql: `SELECT local_path, server_path,
+  datetime(ts, 'unixepoch') as SyncTime
+FROM file_journal
+WHERE direction = 'up'
+ORDER BY ts DESC;` },
+    ],
+    parseWith: 'sqlite3, DB Browser, AXIOM, Dropbox Forensics Toolkit',
+    notes: 'Dropbox schema changes between versions — column names may vary. Decode host.db Base64 to get account email/ID. Deleted files remain in journal with tombstone flag.',
+  },
+  {
+    provider: 'Dropbox',
+    platform: 'Windows',
+    artifactType: 'Registry and config',
+    path: 'HKCU\\Software\\Dropbox\\ks\\client and %APPDATA%\\Dropbox\\info.json',
+    description: 'Dropbox account configuration and local folder path.',
+    ciRelevance: 'info.json contains account email and sync folder path. Registry confirms Dropbox was installed and configured for specific account.',
+    parseWith: 'regedit, RECmd, cat',
+    notes: 'info.json is plaintext JSON — human readable. Contains personal path, account email, and host_id.',
+  },
+  // Google Drive
+  {
+    provider: 'Google Drive',
+    platform: 'Windows',
+    artifactType: 'Sync database',
+    path: '%LOCALAPPDATA%\\Google\\Drive\\user_default\\snapshot.db',
+    description: 'Google Drive for Desktop sync state database (SQLite).',
+    ciRelevance: 'cloud_entry table lists all files known to the sync client — including cloud-only files never downloaded locally. Proves existence of files in Google Drive even if never locally present.',
+    queries: [
+      { description: 'All cloud entries (files known to sync client)', sql: `SELECT filename, modified, size, doc_type,
+  is_folder, cloud_filename
+FROM cloud_entry
+ORDER BY modified DESC;` },
+      { description: 'Recently modified cloud files', sql: `SELECT filename, datetime(modified, 'unixepoch') as ModTime,
+  size, doc_type
+FROM cloud_entry
+WHERE modified > strftime('%s', date('now', '-30 days'))
+ORDER BY modified DESC;` },
+    ],
+    parseWith: 'sqlite3, DB Browser, AXIOM',
+    notes: 'Older Google Drive (Backup and Sync) used sync_config.db — schema differs. Google Drive for Desktop (current) uses snapshot.db. doc_type distinguishes Google Docs (never downloaded as files) from regular files.',
+  },
+  {
+    provider: 'Google Drive',
+    platform: 'Windows',
+    artifactType: 'Metadata log',
+    path: '%LOCALAPPDATA%\\Google\\Drive\\user_default\\*.log',
+    description: 'Google Drive sync engine plaintext logs.',
+    ciRelevance: 'Contains timestamped sync events including upload/download operations with file names and sizes.',
+    parseWith: 'grep, AXIOM',
+    notes: 'Logs rotate frequently. Search for "upload" and "download" keywords. Timestamps are local time.',
+  },
+  // Box
+  {
+    provider: 'Box',
+    platform: 'Windows',
+    artifactType: 'SQLite database',
+    path: '%APPDATA%\\Box\\Box\\data\\shell\\accounts\\<account_id>\\cache.db',
+    description: 'Box sync client cache database containing file sync history.',
+    ciRelevance: 'file_cache table records files synced to Box including timestamps and file sizes.',
+    queries: [
+      { description: 'Files synced to Box', sql: `SELECT name, size, modified_at, sync_state
+FROM file_cache
+ORDER BY modified_at DESC;` },
+    ],
+    parseWith: 'sqlite3, DB Browser, AXIOM',
+    notes: 'Account ID in path is a hash. Enumerate all account folders. Box also logs to Windows Event Log via its service.',
+  },
+  // iCloud
+  {
+    provider: 'iCloud',
+    platform: 'Windows',
+    artifactType: 'Sync logs and database',
+    path: '%APPDATA%\\Apple Computer\\Logs\\CrashReporter\\MobileDevice\\ and %LOCALAPPDATA%\\Apple Computer\\iCloud\\Logs\\',
+    description: 'iCloud for Windows sync logs.',
+    ciRelevance: 'iCloud Drive sync activity on Windows. Files synced to iCloud are accessible from all Apple devices — significant in cases involving both Windows work machine and personal Apple devices.',
+    parseWith: 'AXIOM, manual log parsing',
+    notes: 'iCloud forensics is complex — Windows client has limited logging compared to macOS. For comprehensive iCloud forensics, focus on macOS artifacts or legal process to Apple.',
+  },
+  // Mega
+  {
+    provider: 'Mega',
+    platform: 'Both',
+    artifactType: 'Browser history (primary artifact)',
+    path: 'Browser history — mega.nz visits (no local sync client artifacts as prominent)',
+    description: 'Mega is primarily accessed via browser. MEGAsync desktop client has minimal local forensic footprint.',
+    ciRelevance: 'Mega is specifically chosen by bad actors for end-to-end encryption and perceived law enforcement resistance. Browser history showing mega.nz uploads is primary artifact. MEGAsync logs exist but are sparse.',
+    parseWith: 'Browser history parsers (hindsight, BrowsingHistoryView)',
+    notes: 'Mega URL structure can reveal operation type. /fm/ = file manager view, /fm/transfers = upload/download in progress. SRUM will show megasync.exe or browser network usage regardless of encryption.',
+  },
+]
+
+// ─── Browser SQLite Queries ───────────────────────────────────────────────────
+
+export interface BrowserQuery {
+  browser: string
+  category: string
+  description: string
+  dbPath: string
+  sql: string
+  notes: string
+}
+
+export const browserQueries: BrowserQuery[] = [
+  // Chrome
+  {
+    browser: 'Chrome',
+    category: 'History',
+    description: 'All visited URLs with visit count and last visit time',
+    dbPath: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History',
+    sql: `SELECT u.url, u.title, u.visit_count,
+  datetime(u.last_visit_time/1000000 - 11644473600, 'unixepoch') as last_visit,
+  CASE v.transition & 255
+    WHEN 0 THEN 'link' WHEN 1 THEN 'typed'
+    WHEN 2 THEN 'auto_bookmark' WHEN 4 THEN 'auto_subframe'
+    WHEN 5 THEN 'manual_subframe' WHEN 6 THEN 'generated'
+    WHEN 7 THEN 'start_page' WHEN 8 THEN 'form_submit'
+    WHEN 9 THEN 'reload' WHEN 10 THEN 'keyword'
+    ELSE 'other' END as transition_type
+FROM urls u
+JOIN visits v ON u.id = v.url
+ORDER BY u.last_visit_time DESC;`,
+    notes: 'Chrome timestamp: microseconds since 1601-01-01. Divide by 1,000,000 then subtract 11644473600 to get Unix timestamp. transition_type=1 (typed) = user deliberately typed URL.',
+  },
+  {
+    browser: 'Chrome',
+    category: 'History',
+    description: 'Only typed URLs (user manually navigated — high intentionality)',
+    dbPath: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History',
+    sql: `SELECT u.url, u.title, u.visit_count, u.typed_count,
+  datetime(u.last_visit_time/1000000 - 11644473600, 'unixepoch') as last_visit
+FROM urls u
+JOIN visits v ON u.id = v.url
+WHERE (v.transition & 255) = 1
+ORDER BY u.last_visit_time DESC;`,
+    notes: 'typed_count on the urls table is independent — counts how many times the URL was typed directly into the address bar. Non-zero typed_count = deliberate repeated navigation.',
+  },
+  {
+    browser: 'Chrome',
+    category: 'Downloads',
+    description: 'All downloaded files with source URL and local save path',
+    dbPath: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History',
+    sql: `SELECT target_path, referrer_url, tab_url,
+  datetime(start_time/1000000 - 11644473600, 'unixepoch') as download_time,
+  datetime(end_time/1000000 - 11644473600, 'unixepoch') as complete_time,
+  received_bytes, total_bytes,
+  CASE state WHEN 1 THEN 'complete' WHEN 2 THEN 'cancelled'
+    WHEN 3 THEN 'interrupted' ELSE 'in_progress' END as status
+FROM downloads
+ORDER BY start_time DESC;`,
+    notes: 'target_path is the local save path — may show sensitive directory. referrer_url is the page the download was initiated from. Downloads persist even after file is deleted.',
+  },
+  {
+    browser: 'Chrome',
+    category: 'Cloud storage visits',
+    description: 'Visits to common cloud storage services',
+    dbPath: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History',
+    sql: `SELECT u.url, u.title, u.visit_count,
+  datetime(u.last_visit_time/1000000 - 11644473600, 'unixepoch') as last_visit
+FROM urls u
+WHERE u.url LIKE '%drive.google.com%'
+   OR u.url LIKE '%dropbox.com%'
+   OR u.url LIKE '%onedrive.live.com%'
+   OR u.url LIKE '%mega.nz%'
+   OR u.url LIKE '%box.com%'
+   OR u.url LIKE '%wetransfer.com%'
+   OR u.url LIKE '%mediafire.com%'
+   OR u.url LIKE '%sendspace.com%'
+ORDER BY u.last_visit_time DESC;`,
+    notes: 'Extend the WHERE clause for any other cloud/file sharing services relevant to the case. URL may contain path indicators — /upload, /sharing, /transferred show specific operations.',
+  },
+  {
+    browser: 'Chrome',
+    category: 'Search terms',
+    description: 'Google and other search queries extracted from URL parameters',
+    dbPath: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History',
+    sql: `SELECT u.url, u.title,
+  datetime(v.visit_time/1000000 - 11644473600, 'unixepoch') as search_time
+FROM urls u
+JOIN visits v ON u.id = v.url
+WHERE u.url LIKE '%google.com/search?%'
+   OR u.url LIKE '%bing.com/search?%'
+   OR u.url LIKE '%duckduckgo.com/?%'
+ORDER BY v.visit_time DESC;`,
+    notes: 'Extract q= parameter from URL to get search term. Python: urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("q", [""])[0]',
+  },
+  {
+    browser: 'Chrome',
+    category: 'Saved passwords',
+    description: 'Stored credentials (encrypted — decryption requires DPAPI or user password)',
+    dbPath: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Login Data',
+    sql: `SELECT origin_url, username_value,
+  datetime(date_created/1000000 - 11644473600, 'unixepoch') as created,
+  datetime(date_last_used/1000000 - 11644473600, 'unixepoch') as last_used
+FROM logins
+ORDER BY date_last_used DESC;`,
+    notes: 'password_value is AES-256-GCM encrypted with key from "Local State" file, itself DPAPI encrypted. Full decryption: use HackBrowserData or SharpChromium (requires user context). Username is stored plaintext — useful even without decryption.',
+  },
+  {
+    browser: 'Chrome',
+    category: 'Autofill',
+    description: 'Form autofill data — names, addresses, free-text entries',
+    dbPath: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Web Data',
+    sql: `SELECT name, value, count,
+  datetime(date_created, 'unixepoch') as created,
+  datetime(date_last_used, 'unixepoch') as last_used
+FROM autofill
+ORDER BY date_last_used DESC;`,
+    notes: 'autofill table uses Unix timestamps (not Chrome epoch). Autofill reveals aliases, email addresses, and free-text form entries the user has submitted repeatedly.',
+  },
+  // Firefox
+  {
+    browser: 'Firefox',
+    category: 'History',
+    description: 'All visited URLs with visit count and timing',
+    dbPath: '%APPDATA%\\Mozilla\\Firefox\\Profiles\\*.default\\places.sqlite',
+    sql: `SELECT p.url, p.title, p.visit_count,
+  datetime(p.last_visit_date/1000000, 'unixepoch') as last_visit,
+  h.visit_type
+FROM moz_places p
+JOIN moz_historyvisits h ON p.id = h.place_id
+WHERE p.visit_count > 0
+ORDER BY p.last_visit_date DESC;`,
+    notes: 'Firefox timestamps: microseconds since Unix epoch (1970). Divide by 1,000,000. visit_type: 1=link, 2=typed, 3=bookmark, 4=embed, 5=redirect_permanent, 6=redirect_temporary, 7=download, 8=framed_link.',
+  },
+  {
+    browser: 'Firefox',
+    category: 'Downloads',
+    description: 'Download history from Firefox',
+    dbPath: '%APPDATA%\\Mozilla\\Firefox\\Profiles\\*.default\\places.sqlite',
+    sql: `SELECT p.url as source_url,
+  datetime(h.visit_date/1000000, 'unixepoch') as download_time,
+  a.content as local_path
+FROM moz_places p
+JOIN moz_historyvisits h ON p.id = h.place_id
+LEFT JOIN moz_annos a ON p.id = a.place_id
+WHERE h.visit_type = 7
+ORDER BY h.visit_date DESC;`,
+    notes: 'Firefox also logs downloads to downloads.sqlite in older versions. Check both. moz_annos stores download metadata including local path.',
+  },
+  {
+    browser: 'Firefox',
+    category: 'Bookmarks',
+    description: 'All bookmarks with creation time',
+    dbPath: '%APPDATA%\\Mozilla\\Firefox\\Profiles\\*.default\\places.sqlite',
+    sql: `SELECT p.url, b.title,
+  datetime(b.dateAdded/1000000, 'unixepoch') as date_added,
+  datetime(b.lastModified/1000000, 'unixepoch') as last_modified
+FROM moz_bookmarks b
+JOIN moz_places p ON b.fk = p.id
+WHERE b.type = 1
+ORDER BY b.dateAdded DESC;`,
+    notes: 'Bookmarks of cloud storage, competitor sites, or unusual resources can establish premeditation. dateAdded is particularly valuable.',
+  },
+  // Edge
+  {
+    browser: 'Edge',
+    category: 'History',
+    description: 'Edge (Chromium) history — same schema as Chrome',
+    dbPath: '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\History',
+    sql: `SELECT u.url, u.title, u.visit_count,
+  datetime(u.last_visit_time/1000000 - 11644473600, 'unixepoch') as last_visit
+FROM urls u
+ORDER BY u.last_visit_time DESC;`,
+    notes: 'Edge is Chromium-based — same database schema as Chrome. Use identical queries. Edge may be the default browser on corporate Windows machines.',
+  },
+  {
+    browser: 'Edge',
+    category: 'Collections',
+    description: 'Edge Collections — user-curated content groups (like bookmarks with notes)',
+    dbPath: '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Collections\\collectionsSQLite',
+    sql: `SELECT title, url, author, date_modified,
+  custom_notes
+FROM items
+ORDER BY date_modified DESC;`,
+    notes: 'Collections are unique to Edge. custom_notes field may contain user annotations about why they saved a page. Useful for establishing intent.',
+  },
+  // Safari (macOS)
+  {
+    browser: 'Safari',
+    category: 'History',
+    description: 'Safari browsing history',
+    dbPath: '~/Library/Safari/History.db',
+    sql: `SELECT hi.url, hv.title,
+  datetime(hv.visit_time + 978307200, 'unixepoch') as visit_time,
+  hi.visit_count
+FROM history_visits hv
+JOIN history_items hi ON hv.history_item = hi.id
+ORDER BY hv.visit_time DESC;`,
+    notes: 'Safari timestamps: seconds since 2001-01-01 (Apple/Mac Absolute Time). Add 978307200 to convert to Unix timestamp. iCloud Safari history syncs — visits from other Apple devices appear here.',
+  },
+  {
+    browser: 'Safari',
+    category: 'Downloads',
+    description: 'Safari download history',
+    dbPath: '~/Library/Safari/Downloads.plist',
+    sql: `# plist format — parse with plutil:
+plutil -convert xml1 -o - ~/Library/Safari/Downloads.plist`,
+    notes: 'Not SQLite — binary plist. Contains DownloadURL (source), DownloadEntryPath (local save), DownloadEntryDateAddedKey, DownloadEntryDateFinishedKey.',
+  },
+]
+
+// ─── Anti-Forensics Detection ─────────────────────────────────────────────────
+
+export interface AntiForensicIndicator {
+  technique: string
+  category: string
+  description: string
+  detection: string[]
+  artifacts: string[]
+  tools: string[]
+  notes: string
+}
+
+export const antiForensicIndicators: AntiForensicIndicator[] = [
+  {
+    technique: 'Timestomping',
+    category: 'Timestamp manipulation',
+    description: 'Deliberate modification of file MAC times (Modified, Accessed, Created) to disguise when a file was created or modified. Tools: Timestomp (Metasploit), PowerShell, BulkFileChanger, touch command.',
+    detection: [
+      '$STANDARD_INFORMATION (SI) timestamps differ significantly from $FILE_NAME (FN) timestamps in the MFT — FN timestamps are harder to modify and reflect true creation/modification',
+      'SI timestamps precede file system creation date (impossible without manipulation)',
+      'SI timestamps all identical (00 seconds) — many timestomp tools set all four times to the same value',
+      'Nanosecond precision is zero (.0000000) — NTFS timestamps have 100ns precision; zeroed nanoseconds indicate external modification',
+      'SI timestamps precede parent directory creation timestamp',
+      'Prefetch or Shimcache last-modified timestamp contradicts MFT SI timestamp for same file',
+    ],
+    artifacts: ['$MFT — compare $SI vs $FN attribute timestamps', 'Shimcache — last modified time of binary at time of execution', 'Amcache — compile time from PE header vs $MFT timestamps'],
+    tools: ['MFTECmd.exe (EZ Tools) — extracts both SI and FN timestamps', 'Autopsy (MFT analyzer)', 'X-Ways Forensics (timestamp comparison view)', 'Plaso — timeline with MFT timestamps'],
+    notes: 'Key rule: $FN timestamps are updated by NTFS kernel — very difficult to modify without kernel-mode code. $SI timestamps are user-accessible. Discrepancy between the two is the primary indicator. Check: MFTECmd output, compare Created0x10 ($SI Created) vs Created0x30 ($FN Created). Also check parent MFT entry — a file cannot predate its parent directory creation.',
+  },
+  {
+    technique: 'Secure file deletion',
+    category: 'File deletion',
+    description: 'Overwriting file contents before deletion to prevent recovery. Tools: SDelete (Sysinternals), Eraser, cipher /w, dd if=/dev/urandom, manual overwrite-then-delete.',
+    detection: [
+      'SDelete leaves characteristic $Recycle.Bin entry even for securely deleted files in some versions',
+      'Prefetch for sdelete.exe, eraser.exe — proves tool was run',
+      'Shimcache entry for secure deletion tool',
+      'Jump List entries for secure deletion tool',
+      'USN Journal ($UsnJrnl) records file rename to ZZZ... pattern (SDelete renames before delete)',
+      'Event ID 4663 (object access) if auditing enabled — shows file access before deletion',
+      'VSS copies may preserve file before secure deletion if snapshot predates the operation',
+    ],
+    artifacts: ['Prefetch for SDelete.exe', '$UsnJrnl — rename chain from SDelete (file.docx → ZZZZZZZZZ.docx)', 'Shimcache — sdelete.exe entry with timestamp', 'Event logs (4663, 4660)'],
+    tools: ['MFTECmd.exe', 'ANJP (USN Journal Parser)', 'Autopsy', 'X-Ways'],
+    notes: 'SDelete v2.x renames the file to a series of Z characters before deletion — this rename is recorded in the USN Journal even if the file is then deleted. The USN Journal entry proves what file was deleted. SDelete on directories operates differently — wipe free space. cipher /w:<path> overwrites free space — no file-specific artifact but proves anti-forensics intent.',
+  },
+  {
+    technique: 'Log clearing',
+    category: 'Log tampering',
+    description: 'Deletion or clearing of Windows Event Logs, system logs, browser history, or other audit trails to conceal activity.',
+    detection: [
+      'Event ID 1102 — Security log cleared (records who cleared it and when)',
+      'Event ID 104 — System log cleared',
+      'Gaps in event log sequence numbers (logs have sequential record IDs — gaps indicate records were deleted)',
+      'Log file timestamps show older logs were modified more recently than expected',
+      'VSS copies of .evtx files may contain events prior to clearing',
+      'Sysmon Event ID 26 — File Delete Detected (if Sysmon deployed with file delete monitoring)',
+      'Browser history cleared but Prefetch shows high browser activity (or SRUM shows browser network usage)',
+    ],
+    artifacts: ['Security.evtx — Event 1102', 'System.evtx — Event 104', 'VSS copies of .evtx files in C:\\Windows\\System32\\winevt\\Logs\\', 'SRUM — browser network usage even after history cleared'],
+    tools: ['EvtxECmd.exe', 'Hayabusa', 'Chainsaw', 'Velociraptor (Windows.EventLogs.Cleared artifact)'],
+    notes: 'Event ID 1102 is the smoking gun — it records the account that cleared the log and the timestamp. It is the one event that survives a clearing operation. The clearing event itself cannot be deleted without also deleting 1102. Always check VSS for pre-clear event log state — this is the primary recovery mechanism.',
+  },
+  {
+    technique: 'Prefetch and shimcache deletion',
+    category: 'Execution evidence removal',
+    description: 'Deletion of Prefetch (.pf) files or manipulation of Shimcache to remove evidence of program execution.',
+    detection: [
+      'MFT $MFT entry for deleted .pf files — shows file existed even if deleted',
+      '$UsnJrnl records deletion of .pf files from C:\\Windows\\Prefetch\\',
+      'VSS copies of Prefetch directory contain .pf files deleted from live system',
+      'Amcache entries for tools may persist even if Prefetch is deleted',
+      'Shimcache cannot be selectively deleted without clearing entire cache (registry key reset)',
+      'Shimcache was cleared if all entries have timestamps newer than system install date (implausible)',
+    ],
+    artifacts: ['$MFT (unallocated entries for deleted .pf files)', '$UsnJrnl (deletion records)', 'VSS Prefetch copies', 'Amcache (independent execution evidence)'],
+    tools: ['MFTECmd.exe', 'PECmd.exe (on VSS copies)', 'ANJP', 'X-Ways (unallocated space for deleted .pf data)'],
+    notes: 'Individual .pf file deletion is rare and suspicious. Deleting a single .pf file for a specific tool while leaving others intact is a strong indicator of targeted anti-forensics. Shimcache cannot be selectively deleted — clearing requires a full registry key reset which itself leaves evidence in the registry hive transaction logs.',
+  },
+  {
+    technique: 'Volume encryption (full disk / container)',
+    category: 'Data concealment',
+    description: 'VeraCrypt, BitLocker, or other encryption used to conceal file contents. May be legitimate corporate security or deliberate concealment.',
+    detection: [
+      'VeraCrypt container file: large file with random-looking entropy (no file signature, high entropy on binwalk)',
+      'VeraCrypt installed: Prefetch for veracrypt.exe, Shimcache, Add/Remove Programs',
+      'BitLocker encrypted volume: $BitLockerMetadata file in root, Event ID 24577 (BitLocker enabled)',
+      'Encrypted container as email attachment or on removable media',
+      'LNK files pointing to mounted encrypted volumes (drive letters that no longer exist)',
+      'Shellbags for encrypted volume drive letters',
+    ],
+    artifacts: ['Prefetch for veracrypt.exe', 'LNK files with volume serial for encrypted container', 'Shellbags showing navigation into now-absent drive letter', 'Amcache — VeraCrypt hash'],
+    tools: ['binwalk (entropy analysis)', 'VeraCrypt (with correct password for examination)', 'BitLocker recovery via Active Directory or Microsoft account'],
+    notes: 'VeraCrypt containers are specifically designed to be deniable — a container can appear to be random data and VeraCrypt supports hidden volumes within containers. Forensic value is in proving the container existed and was used (even without decryption). LNK files and Shellbags for the mounted drive letter are the key artifacts.',
+  },
+  {
+    technique: 'Alternate data streams (ADS)',
+    category: 'Data hiding',
+    description: 'Files hidden within NTFS Alternate Data Streams attached to legitimate files. Data is not visible in normal directory listing but persists on NTFS volumes.',
+    detection: [
+      'dir /r command shows ADS: file.txt:hidden.exe:$DATA',
+      'Streams.exe (Sysinternals) enumerates all ADS on a volume',
+      'X-Ways Forensics — ADS shown as separate stream in file browser',
+      'Autopsy — ADS enumerated in Tika metadata',
+      'Zone.Identifier ADS is legitimate (marks downloaded files) — distinguish from malicious ADS',
+    ],
+    artifacts: ['$MFT — multiple $DATA attribute entries per file indicate ADS', 'Zone.Identifier — normal on downloaded files; unusual if on system files', 'Unusually large file size vs apparent content size'],
+    tools: ['Streams.exe (Sysinternals)', 'dir /r', 'X-Ways Forensics', 'Get-Item -Stream * (PowerShell)'],
+    notes: 'Zone.Identifier is the most common legitimate ADS — marks files downloaded from internet with zone information. Presence of Zone.Identifier on files confirms they were downloaded. Non-Identifier ADS on executable files or system files is suspicious. ADS do not survive copying to non-NTFS volumes (FAT32 thumb drives) — data hidden in ADS is stripped on copy.',
+  },
+  {
+    technique: 'Anti-forensic tools (SDelete, CCleaner, etc.)',
+    category: 'Tool use',
+    description: 'Use of dedicated anti-forensics or privacy cleaning tools to remove evidence. Presence of these tools and their execution is itself forensic evidence.',
+    detection: [
+      'Prefetch: sdelete.exe, ccleaner.exe, bleachbit.exe, eraser.exe, privacy.eraser.exe',
+      'Shimcache: same tools',
+      'Amcache: hash of tool binary — identifies specific version',
+      'UserAssist: GUI launch of cleaning tools',
+      'NTUSER.DAT MRU: CCleaner recent run keys',
+      'Registry: CCleaner leaves run configuration in HKCU\\Software\\Piriform\\CCleaner',
+    ],
+    artifacts: ['Prefetch for known anti-forensic tools', 'CCleaner registry configuration', 'Amcache tool hash', 'USN Journal — file deletions immediately after tool execution'],
+    tools: ['PECmd.exe (Prefetch)', 'AmcacheParser.exe (Amcache)', 'EvtxECmd.exe (4688 process creation)'],
+    notes: 'CCleaner Monitoring mode writes to HKCU\\Software\\Piriform\\CCleaner — check for (Monitoring)=True and last run time. CCleaner run is not necessarily evidence of bad intent — but in combination with other artifacts, it corroborates anti-forensics activity. Timing of CCleaner runs relative to other suspicious activity is the key indicator.',
+  },
+]
+
+// ─── Triage & Acquisition Workflows ──────────────────────────────────────────
+
+export interface AcquisitionMethod {
+  name: string
+  category: string
+  useCase: string
+  steps: { step: string; detail: string; cmd?: string }[]
+  tools: string[]
+  hashVerification: string
+  notes: string
+  priority: 'FIRST' | 'SECOND' | 'THIRD'
+}
+
+export const acquisitionMethods: AcquisitionMethod[] = [
+  {
+    name: 'Live response triage (KAPE)',
+    category: 'Live system',
+    useCase: 'System is powered on and accessible. Collect targeted artifacts without full imaging. Fastest method — 5–30 minutes. Use when: time is limited, full disk image is impractical, or targeted collection is authorized.',
+    priority: 'FIRST',
+    steps: [
+      { step: 'Document system state', detail: 'Photograph screen, note running processes, logged-in users, network connections before touching system', cmd: 'netstat -ano && tasklist && ipconfig /all' },
+      { step: 'Capture volatile data', detail: 'Memory and live system state — do this BEFORE any disk activity', cmd: 'winpmem_mini_x64.exe memory.raw' },
+      { step: 'Run KAPE triage collection', detail: 'Run KAPE with appropriate target modules from external media', cmd: 'kape.exe --tsource C: --tdest D:\\triage --target !BasicCollection,EvidenceOfExecution,BrowserHistory,CloudStorage,Antivirus --module !EZParser --mdest D:\\parsed' },
+      { step: 'Collect SRUM and registry hives', detail: 'SRUM requires VSS handling — use SrumECmd separately', cmd: 'SrumECmd.exe --vss -f "C:\\Windows\\System32\\sru\\SRUDB.dat" --csv D:\\parsed\\srum' },
+      { step: 'Hash output', detail: 'Hash the KAPE output container or all collected files', cmd: 'Get-FileHash -Path D:\\triage\\* -Algorithm SHA256 | Export-Csv D:\\triage_hashes.csv' },
+    ],
+    tools: ['KAPE (Kroll Artifact Parser and Extractor)', 'WinPmem (memory acquisition)', 'SrumECmd.exe', 'Everything (fast file search)'],
+    hashVerification: 'Hash all collected files immediately after collection. KAPE can auto-generate hashes. Store hash manifest separately from evidence.',
+    notes: 'Always boot and run KAPE from external (write-protected) media. Never install tools on the suspect system. KAPE targets define what to collect — use community targets from GitHub (KapeFiles). The !BasicCollection target covers most CI-relevant artifacts in one pass.',
+  },
+  {
+    name: 'Velociraptor live collection',
+    category: 'Live system / enterprise',
+    useCase: 'Enterprise environment with Velociraptor agent deployed. Remote collection across many endpoints simultaneously. Ideal for incident response affecting multiple systems.',
+    priority: 'FIRST',
+    steps: [
+      { step: 'Connect to Velociraptor server', detail: 'Access Velociraptor web console — authenticate with analyst credentials', cmd: '# Web UI: https://velociraptor-server:8889' },
+      { step: 'Hunt for IOC across fleet', detail: 'Use artifact hunt to search all endpoints for specific indicators', cmd: '# Hunt → New Hunt → Windows.Search.FileFinder with IOC path/hash' },
+      { step: 'Collect forensic artifacts remotely', detail: 'Select Windows.KapeFiles.Targets artifact for comprehensive collection', cmd: '# Artifact: Windows.KapeFiles.Targets → UseAutoAccessor=true → Target=!BasicCollection' },
+      { step: 'Collect SRUM remotely', detail: 'Use Windows.Forensics.SRUM artifact', cmd: '# Artifact: Windows.Forensics.SRUM' },
+      { step: 'Download collected artifacts', detail: 'Velociraptor automatically packages and delivers to server — download ZIP', cmd: '# Collected artifacts → Download → ZIP' },
+    ],
+    tools: ['Velociraptor', 'Velociraptor artifact exchange (custom artifacts)'],
+    hashVerification: 'Velociraptor automatically hashes all collected files. Verify collection hash in server UI before analysis.',
+    notes: 'Velociraptor is the most capable live response platform for enterprise environments. VQL (Velociraptor Query Language) allows custom artifact creation. For CI investigations, pre-built artifacts: Windows.Forensics.SRUM, Windows.Forensics.Shellbags, Windows.Timeline.MFT, Windows.EventLogs.Evtx.',
+  },
+  {
+    name: 'Dead-box imaging (FTK Imager)',
+    category: 'Offline / powered down',
+    useCase: 'System is powered off or must be imaged offline. Full forensic image of the disk. Use when: thorough examination required, live system is not available, or legal requirements mandate full image.',
+    priority: 'SECOND',
+    steps: [
+      { step: 'Write-block the drive', detail: 'Connect drive through hardware write blocker BEFORE any other step. Document write blocker model and serial.', cmd: '# Hardware: Tableau T8-R2, CRU WiebeTech, Logicube Talon' },
+      { step: 'Document drive details', detail: 'Note make, model, serial number, capacity from drive label and SMART data', cmd: '# FTK Imager: Evidence → Add Evidence Item → Physical Drive → note details' },
+      { step: 'Capture source hash', detail: 'Hash the source drive before imaging', cmd: '# FTK Imager: File → Create Disk Image → MD5 + SHA-1 simultaneously' },
+      { step: 'Create E01 image', detail: 'E01 (EnCase) format preserves metadata and supports segmentation', cmd: '# FTK Imager: Image type = E01, compression = 6, segment size = 1500 MB' },
+      { step: 'Verify image', detail: 'FTK Imager automatically verifies image hash matches source hash after completion', cmd: '# Verification report saved alongside .E01 file — document in chain of custody' },
+    ],
+    tools: ['FTK Imager (free)', 'dd / dcfldd (Linux)', 'Guymager (Linux GUI)', 'X-Ways Forensics'],
+    hashVerification: 'MD5 + SHA-1 of source drive, then verification hash of image. Both must match. Store verification report in case file.',
+    notes: 'E01 is the preferred format — supports compression, segmentation, case metadata, and built-in hash verification. Raw dd images are also acceptable but lack built-in metadata. Never image to the source drive — always image to a separate verified forensic media. Label all evidence with case number, date, examiner initials.',
+  },
+  {
+    name: 'Memory acquisition',
+    category: 'Volatile data',
+    useCase: 'Capture RAM contents from a live system. Essential for: encryption keys in memory, processes that leave no disk artifacts, malware residing only in memory, network connection state.',
+    priority: 'FIRST',
+    steps: [
+      { step: 'Determine system architecture', detail: 'Must use correct bitness tool for the OS', cmd: 'systeminfo | findstr /B /C:"OS Name" /C:"System Type"' },
+      { step: 'Run WinPmem', detail: 'Fastest option — single executable, no install required', cmd: 'winpmem_mini_x64.exe memory.raw' },
+      { step: 'Alternative: Magnet RAM Capture', detail: 'GUI tool, automatically detects RAM size', cmd: 'MagnetRAMCapture.exe /accepteula /go /output:memory.raw' },
+      { step: 'Verify with hash', detail: 'Hash immediately after capture — memory images are unique and non-reproducible', cmd: 'certutil -hashfile memory.raw SHA256' },
+      { step: 'Analyze with Volatility 3', detail: 'Run initial triage plugins', cmd: 'python3 vol.py -f memory.raw windows.info && python3 vol.py -f memory.raw windows.pstree && python3 vol.py -f memory.raw windows.netstat' },
+    ],
+    tools: ['WinPmem (preferred — open source)', 'Magnet RAM Capture (free)', 'DumpIt (Comae Technologies)', 'Volatility 3 (analysis)'],
+    hashVerification: 'Hash immediately after capture. Memory images cannot be re-acquired — the moment of capture is unique. Document system uptime and running processes at time of acquisition.',
+    notes: 'Memory acquisition modifies memory (loading the acquisition tool itself). This is unavoidable — document it. Hibernation file (hiberfil.sys) contains a compressed memory image from last hibernation — valuable if system was hibernated recently. Page file (pagefile.sys) contains memory pages swapped to disk — can recover artifacts from previous sessions.',
+  },
+  {
+    name: 'Cloud / remote acquisition',
+    category: 'Cloud evidence',
+    useCase: 'Collecting evidence from cloud services via legal process or authorized corporate access. No physical device required.',
+    priority: 'THIRD',
+    steps: [
+      { step: 'Identify applicable legal authority', detail: 'ECPA, 18 USC 2703 for US providers. SCA (Stored Communications Act) for email/stored content. Different standards for content vs metadata.', cmd: '# Consult legal counsel — requirements vary by provider and data type' },
+      { step: 'Preserve hold request', detail: 'Send legal hold to provider BEFORE formal process — prevents automatic deletion', cmd: '# US Law Enforcement: ecpa-service@google.com, legalrequests@x.com, etc.' },
+      { step: 'Corporate admin access (authorized)', detail: 'Microsoft 365 eDiscovery, Google Workspace Admin, Dropbox Business admin panel', cmd: '# Microsoft Purview Compliance Portal → Content Search → Exchange + SharePoint + OneDrive' },
+      { step: 'Export and hash', detail: 'Document export methodology, hash all exported data', cmd: '# Microsoft Purview: PST export with manifest. Hash PST with sha256sum.' },
+    ],
+    tools: ['Microsoft Purview (M365 eDiscovery)', 'Google Vault (Workspace)', 'Cellebrite Cloud Analyzer', 'MSAB XRY Cloud'],
+    hashVerification: 'Hash all exported data. Document export methodology and timestamp. Providers may include digital signatures on exports.',
+    notes: 'Cloud evidence collection is increasingly critical — most exfiltration today goes to cloud services. Corporate M365/Google Workspace admin access allows collection without legal process for corporate accounts. Personal cloud accounts require legal process. Log all access to cloud admin portals — document who accessed what and when.',
+  },
+]
+
+export const triageChecklist = [
+  { phase: 'Pre-acquisition', items: [
+    'Photograph screen showing date/time, open applications, and logged-in user',
+    'Document system make/model, serial number, hostname',
+    'Check and document write blocker (if applicable)',
+    'Note network connections (are they active? should they be severed?)',
+    'Check for encryption (BitLocker, FileVault, VeraCrypt) before powering off',
+    'Prepare evidence labels with case number, date, examiner initials',
+    'Ensure acquisition media (external drive) is forensically wiped and ready',
+  ]},
+  { phase: 'Volatile data (live system)', items: [
+    'Run processes (tasklist /v)',
+    'Network connections (netstat -ano)',
+    'Logged in users (query user)',
+    'System time and timezone (w32tm /query /status)',
+    'Memory acquisition (winpmem or Magnet RAM Capture)',
+    'DNS cache (ipconfig /displaydns)',
+    'Clipboard contents (if case-relevant)',
+  ]},
+  { phase: 'Live artifact triage', items: [
+    'KAPE or Velociraptor collection running',
+    'SRUM collection with VSS handling',
+    'Browser history and profile collection',
+    'Cloud sync client databases',
+    'Shellbags (NTUSER.DAT and UsrClass.dat)',
+    'Event logs (Security, System, PowerShell)',
+    'Prefetch directory',
+  ]},
+  { phase: 'Hash and document', items: [
+    'Hash all collected evidence files (SHA-256)',
+    'Photograph/screenshot evidence as collected',
+    'Complete chain of custody form',
+    'Note any anomalies during collection',
+    'Verify hashes before transporting evidence',
+    'Label all media with case number, date, examiner',
+  ]},
+]

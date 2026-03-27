@@ -2,85 +2,97 @@
 
 import { useState } from 'react'
 import { WindowsArtifacts, LinuxArtifacts, MemoryForensics, ToolCheatSheets, MacOSArtifacts, KeyArtifactsCI } from './sections'
+import { SRUMSection, CloudForensics, BrowserSQLSection, AntiForensicsSection, TriageSection } from './sectionsExtra'
 
-type SectionId = 'windows' | 'linux' | 'macos' | 'memory' | 'tools' | 'keyartifacts'
+type SectionId =
+  | 'windows' | 'linux' | 'macos' | 'keyartifacts' | 'memory' | 'tools'
+  | 'srum' | 'cloud' | 'browsersql' | 'antiforensics' | 'triage'
 
-interface NavItem {
-  id: SectionId
-  label: string
-  sub: string
-  icon: string
-}
+interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
 
 const NAV: NavItem[] = [
-  { id: 'windows',     label: 'Windows artifacts',  sub: 'Event IDs · registry · execution · USB · LNK · browser', icon: '🪟' },
-  { id: 'linux',       label: 'Linux artifacts',    sub: 'Auth · history · persistence · accounts',               icon: '🐧' },
-  { id: 'macos',       label: 'macOS artifacts',    sub: 'Unified Log · LaunchAgents · KnowledgeC · plist',       icon: '🍎' },
-  { id: 'keyartifacts',label: 'Key artifacts (CI)',  sub: 'Shellbags · LNK · Prefetch · VSS · chains',            icon: '🔑' },
-  { id: 'memory',      label: 'Memory forensics',   sub: 'Volatility 3 · triage workflow · plugins',             icon: '🧠' },
-  { id: 'tools',       label: 'Tool cheat sheets',  sub: 'EZ Tools · KAPE · X-Ways · Axiom · Plaso',             icon: '🛠' },
+  { id: 'windows',      label: 'Windows artifacts',  sub: 'Event IDs · registry · execution · USB',  icon: '🪟', group: 'OS Artifacts' },
+  { id: 'linux',        label: 'Linux artifacts',     sub: 'Auth · history · persistence',            icon: '🐧', group: 'OS Artifacts' },
+  { id: 'macos',        label: 'macOS artifacts',     sub: 'Unified Log · LaunchAgents · KnowledgeC', icon: '🍎', group: 'OS Artifacts' },
+  { id: 'keyartifacts', label: 'Key artifacts (CI)',  sub: 'Shellbags · LNK · Prefetch · VSS',        icon: '🔑', group: 'CI Analysis' },
+  { id: 'srum',         label: 'SRUM',                sub: 'Network bytes per process · exfil volume', icon: '📊', group: 'CI Analysis' },
+  { id: 'cloud',        label: 'Cloud storage',       sub: 'OneDrive · Dropbox · Google Drive · Box',  icon: '☁', group: 'CI Analysis' },
+  { id: 'antiforensics',label: 'Anti-forensics',      sub: 'Timestomping · wiping · log clearing',    icon: '🕵', group: 'CI Analysis' },
+  { id: 'browsersql',   label: 'Browser SQL',         sub: 'Chrome · Firefox · Edge · Safari queries', icon: '🌐', group: 'Reference' },
+  { id: 'memory',       label: 'Memory forensics',    sub: 'Volatility 3 · triage · plugins',         icon: '🧠', group: 'Reference' },
+  { id: 'triage',       label: 'Triage & acquisition',sub: 'KAPE · Velociraptor · imaging · memory',   icon: '🚑', group: 'Reference' },
+  { id: 'tools',        label: 'Tool cheat sheets',   sub: 'EZ Tools · KAPE · X-Ways · Axiom',        icon: '🛠', group: 'Reference' },
 ]
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {
-  windows:     <WindowsArtifacts />,
-  linux:       <LinuxArtifacts />,
-  macos:       <MacOSArtifacts />,
-  keyartifacts:<KeyArtifactsCI />,
-  memory:      <MemoryForensics />,
-  tools:       <ToolCheatSheets />,
+  windows:      <WindowsArtifacts />,
+  linux:        <LinuxArtifacts />,
+  macos:        <MacOSArtifacts />,
+  keyartifacts: <KeyArtifactsCI />,
+  srum:         <SRUMSection />,
+  cloud:        <CloudForensics />,
+  antiforensics:<AntiForensicsSection />,
+  browsersql:   <BrowserSQLSection />,
+  memory:       <MemoryForensics />,
+  triage:       <TriageSection />,
+  tools:        <ToolCheatSheets />,
 }
 
+const groups = ['OS Artifacts', 'CI Analysis', 'Reference']
+
 export default function ForensicsPage() {
-  const [active, setActive]         = useState<SectionId>('windows')
+  const [active, setActive]           = useState<SectionId>('windows')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
     <div className="flex h-full bg-zinc-950 text-zinc-100 overflow-hidden">
-
-      {/* ── Sidebar ── */}
       <aside className={`
         flex-shrink-0 w-56 bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden
-        ${mobileNavOpen ? 'fixed inset-y-0 left-0 z-50' : 'hidden md:flex'}
+        ${mobileNavOpen ? 'fixed inset-y-0 left-0 z-50 top-10' : 'hidden md:flex'}
       `}>
         <div className="px-4 py-3 border-b border-zinc-800">
           <div className="text-xs font-mono font-semibold text-zinc-300 tracking-tight">Forensics reference</div>
-          <div className="text-[10px] font-mono text-zinc-600 mt-0.5">artifacts · memory · tooling</div>
+          <div className="text-[10px] font-mono text-zinc-600 mt-0.5">artifacts · CI analysis · triage</div>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2">
-          {NAV.map(item => (
-            <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
-              className={`w-full text-left px-4 py-2.5 transition-colors border-l-2 ${
-                active === item.id
-                  ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
-                  : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
-              }`}>
-              <div className="flex items-center gap-2">
-                <span className="text-sm leading-none">{item.icon}</span>
-                <div>
-                  <div className="text-xs font-mono leading-tight">{item.label}</div>
-                  <div className="text-[10px] text-zinc-600 mt-0.5 leading-tight">{item.sub}</div>
-                </div>
+          {groups.map(group => (
+            <div key={group}>
+              <div className="px-4 pt-3 pb-1 text-[9px] font-mono font-semibold text-zinc-700 uppercase tracking-widest">
+                {group}
               </div>
-            </button>
+              {NAV.filter(n => n.group === group).map(item => (
+                <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
+                  className={`w-full text-left px-4 py-2 transition-colors border-l-2 ${
+                    active === item.id
+                      ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
+                      : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm leading-none">{item.icon}</span>
+                    <div>
+                      <div className="text-xs font-mono leading-tight">{item.label}</div>
+                      <div className="text-[9px] text-zinc-600 mt-0.5 leading-tight">{item.sub}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className="px-4 py-3 border-t border-zinc-800">
           <div className="text-[9px] font-mono text-zinc-700 leading-relaxed">
-            Reference material based on SANS FOR508 / FOR585 methodology.
+            SANS FOR508 / FOR585 methodology.
           </div>
         </div>
       </aside>
 
-      {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile header */}
         <div className="md:hidden flex items-center gap-3 px-4 py-2.5 border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
           <button onClick={() => setMobileNavOpen(o => !o)} className="text-zinc-400 text-xs font-mono">☰</button>
           <span className="text-xs font-mono text-zinc-300">{NAV.find(n => n.id === active)?.label}</span>
         </div>
-
         <main className="flex-1 overflow-y-auto p-6 md:p-8 w-full">
           {SECTIONS[active]}
         </main>
