@@ -1366,3 +1366,478 @@ export const ufedWorkflow = [
   { step: 'Timeline analysis', detail: 'UFED PA Timeline view correlates all artifact timestamps. Filter by date range for incident window. Export as CSV for further analysis.', cmd: 'UFED PA: Timeline → Date Filter → Export CSV' },
   { step: 'SQLite direct query', detail: 'For artifacts not decoded by UFED: UFED PA → File System → navigate to database → right-click → Open with SQLite Viewer, or extract and query with DB Browser.', cmd: 'Or: extract .tar.gz from UFED, mount filesystem, query with sqlite3' },
 ]
+// ─── Smartwatch Forensics ─────────────────────────────────────────────────────
+
+export interface SmartwatchPlatform {
+  name: string
+  devices: string
+  os: string
+  acquisitionMethods: { method: string; description: string; toolSupport: string; notes: string }[]
+  artifacts: { category: string; path: string; description: string; ciRelevance: string; format: string }[]
+  databases: { name: string; path: string; description: string; keyTables: { table: string; columns: string; ciValue: string }[] }[]
+  syncRelationship: string
+  encryptionNotes: string
+  legalProcess: string
+  tools: string[]
+  notes: string
+}
+
+export const smartwatchPlatforms: SmartwatchPlatform[] = [
+  {
+    name: 'Apple Watch (watchOS)',
+    devices: 'Apple Watch Series 1–9, Ultra, SE — all generations',
+    os: 'watchOS 1–10',
+    acquisitionMethods: [
+      {
+        method: 'Paired iPhone extraction',
+        description: 'Apple Watch data syncs to paired iPhone and is included in iTunes/iCloud backups. Most Watch data accessible via iPhone backup without touching the Watch.',
+        toolSupport: 'Cellebrite UFED, Elcomsoft Phone Breaker, iMazing — any tool that handles iTunes/iCloud backups',
+        notes: 'Most forensically practical method. Health data, activity, location, and app data from Watch appear in iPhone backup. Watch must be/have been paired with the iPhone being extracted.',
+      },
+      {
+        method: 'Filesystem extraction via paired iPhone',
+        description: 'Full filesystem extraction of iPhone includes Watch-synced data in dedicated Watch backup directories.',
+        toolSupport: 'Cellebrite UFED with filesystem extraction, GrayKey',
+        notes: 'iPhone filesystem at /private/var/mobile/Library/Backup/ contains Watch-specific backup. More complete than logical backup.',
+      },
+      {
+        method: 'Direct Watch extraction (limited)',
+        description: 'Apple Watch itself can be extracted via Cellebrite with the Watch connected directly. Requires watchOS version support and Watch to be unlocked.',
+        toolSupport: 'Cellebrite UFED (limited watchOS version support — check current release notes)',
+        notes: 'Direct Watch extraction is limited — Cellebrite support for watchOS versions lags behind iOS. Check UFED PA release notes for current supported watchOS versions. Watch must be unlocked (passcode entered or wrist detection active).',
+      },
+      {
+        method: 'iCloud backup (Watch-specific)',
+        description: 'Apple Watch has its own iCloud backup separate from iPhone backup. Contains Watch app data, settings, and configuration.',
+        toolSupport: 'Elcomsoft Phone Breaker, Cellebrite UFED Cloud',
+        notes: 'Separate from iPhone iCloud backup. Check Apple ID account for Watch-specific backup — visible in iCloud settings under Manage Storage. May contain Watch data not in iPhone backup.',
+      },
+    ],
+    artifacts: [
+      {
+        category: 'Health & Fitness',
+        path: 'iPhone backup: Health/ (CoreData + SQLite)',
+        description: 'Heart rate readings, step counts, calories, workout sessions, sleep analysis, blood oxygen, ECG results, crash detection events',
+        ciRelevance: 'Establishes physical presence and activity level at specific times. Heart rate spike + location data + workout session = subject was physically active at location X. Sedentary period + out-of-range HR = potential medical event or stress indicator. Crash detection activations log time and location.',
+        format: 'CoreData (healthdb.sqlite + healthdb_secure.sqlite)',
+      },
+      {
+        category: 'Location',
+        path: 'iPhone backup: Library/Caches/GeoServices/',
+        description: 'Location data collected via Watch GPS (standalone GPS in Series 2+). Route workouts contain GPS track logs.',
+        ciRelevance: 'Workout GPS tracks prove subject was at specific locations during exercise. Route maps reconstruct exact path taken. Timestamps correlate with other artifact timelines.',
+        format: 'SQLite, CoreData',
+      },
+      {
+        category: 'Activity & Workouts',
+        path: 'iPhone backup: Library/Application Support/com.apple.Workout.healthext/',
+        description: 'Detailed workout records with start/end time, route (GPS), heart rate during workout, calorie burn, workout type',
+        ciRelevance: 'Workout sessions establish alibi or presence — subject was running in park X between 07:15 and 08:02 on date Y. GPS route in workout proves physical location independently of cell tower data.',
+        format: 'CoreData/SQLite',
+      },
+      {
+        category: 'Sleep',
+        path: 'healthdb.sqlite — sleep analysis samples',
+        description: 'Sleep start/end times, sleep stages (awake, REM, core, deep), heart rate during sleep',
+        ciRelevance: 'Establishes when subject was asleep vs awake. Useful for alibi assessment — subject\'s Watch shows they were in deep sleep during the alleged activity window. Also establishes routine sleep patterns that can corroborate or contradict claimed schedules.',
+        format: 'SQLite (ZSAMPLE table in healthdb.sqlite)',
+      },
+      {
+        category: 'Notifications & Comms',
+        path: 'Watch mirrors iPhone notifications — no independent storage',
+        description: 'Apple Watch mirrors iPhone notifications and does not independently store message content. Communications evidence comes from iPhone.',
+        ciRelevance: 'Watch notification delivery timestamps can corroborate iPhone message timestamps — Watch shows notification was delivered even if iPhone message was deleted.',
+        format: 'Mirror of iPhone data',
+      },
+      {
+        category: 'App Data',
+        path: 'iPhone backup: Watch/Applications/<UUID>/Documents/',
+        description: 'Third-party Watch app data (fitness apps, navigation, communication apps with Watch extensions)',
+        ciRelevance: 'Third-party fitness/navigation apps may store independent location and activity data supplementing Apple Health data.',
+        format: 'App-dependent',
+      },
+      {
+        category: 'Crash Detection',
+        path: 'healthdb.sqlite — Fall/Crash detection events',
+        description: 'Automatic fall detection alerts, crash detection (vehicle collision) events with timestamp and location',
+        ciRelevance: 'Crash detection events are timestamped and geolocated — can place subject at scene of vehicle accident. Fall detection calls to emergency services creates carrier record corroborating event.',
+        format: 'SQLite',
+      },
+    ],
+    databases: [
+      {
+        name: 'healthdb.sqlite',
+        path: 'iPhone backup: Health/healthdb.sqlite',
+        description: 'Primary Apple Health database — all health samples from Watch and iPhone',
+        keyTables: [
+          { table: 'ZSAMPLE', columns: 'ZTYPE, ZSTARTDATE, ZENDDATE, ZVALUE, ZSOURCE, ZDEVICE', ciValue: 'ZSTARTDATE/ZENDDATE in Mac Absolute Time (add 978307200). ZTYPE maps to health data type (see ZSAMPLETYPE). Heart rate, steps, calories all stored here. ZDEVICE links to Watch vs iPhone source.' },
+          { table: 'ZSAMPLETYPE', columns: 'ZIDENTIFIER, ZDISPLAYNAME', ciValue: 'Maps ZTYPE integers to human-readable names: 9=HeartRate, 7=StepCount, 63=ActiveEnergyBurned, 72=SleepAnalysis, 133=HeartRateVariability.' },
+          { table: 'ZWORKOUTEVENT', columns: 'ZTYPE, ZDATE, ZDURATION, ZWORKOUT', ciValue: 'Workout sub-events (pause, resume, lap). Timestamps prove activity pattern within a workout session.' },
+          { table: 'ZWORKOUT', columns: 'ZWORKOUTACTIVITYTYPE, ZTOTALENERGYBURNEDQUANTITY, ZTOTALDISTANCEQUANTITY, ZSTARTDATE, ZENDDATE', ciValue: 'Each completed workout. ZWORKOUTACTIVITYTYPE: 37=Running, 13=Cycling, 3000=Walking. GPS routes in separate table.' },
+        ],
+      },
+    ],
+    syncRelationship: 'Apple Watch requires paired iPhone for setup and syncs all health and activity data to iPhone. Watch data appears in iPhone iTunes backup and iCloud backup. Watch maintains local storage of recent data (~7 days) before requiring iPhone sync. Unpaired Watch retains its local health database.',
+    encryptionNotes: 'Health data is encrypted with iOS Data Protection. healthdb_secure.sqlite requires full filesystem or physical extraction with decryption. Standard encrypted iTunes backup decrypts Health data with backup password. iCloud Health data uses end-to-end encryption (not accessible to Apple under legal process if Advanced Data Protection is enabled).',
+    legalProcess: 'Apple Watch data obtained via iPhone legal process (same as iPhone). Watch-specific iCloud backup via Apple legal process. Health data with Advanced Data Protection: Apple cannot decrypt — device extraction required.',
+    tools: ['Cellebrite UFED Physical Analyzer', 'Elcomsoft Phone Breaker (EPB)', 'iMazing', 'DB Browser for SQLite (healthdb.sqlite)', 'iLEAPP (Health module)', 'APOLLO (Apple Pattern of Life Lazy Output\'er) — healthdb.sqlite analysis'],
+    notes: 'APOLLO (by Sarah Edwards) is the most comprehensive free tool for Apple Health/Watch data analysis — generates timeline of all health events with human-readable output. Run against healthdb.sqlite extracted from iPhone backup or filesystem. Health data is among the most forensically valuable Watch artifacts — provides continuous biometric timeline that is very difficult to fabricate or delete selectively.',
+  },
+  {
+    name: 'Samsung Galaxy Watch (Wear OS / Tizen)',
+    devices: 'Galaxy Watch 4–6, Watch Active, Gear series (older Tizen)',
+    os: 'Wear OS 3/4 (Watch 4+), Tizen OS (older Gear series)',
+    acquisitionMethods: [
+      {
+        method: 'Samsung Health app extraction (Android)',
+        description: 'Samsung Galaxy Watch syncs data to Samsung Health app on paired Android phone. Extract Samsung Health databases from paired phone.',
+        toolSupport: 'Cellebrite UFED, Oxygen Forensic Detective, manual ADB (rooted)',
+        notes: 'Primary method. Samsung Health data on the phone includes all Watch-synced health and activity data. Path on Android: /data/data/com.samsung.android.app.health/',
+      },
+      {
+        method: 'Samsung Cloud extraction',
+        description: 'Samsung Health data syncs to Samsung Cloud. Accessible via legal process or with credentials.',
+        toolSupport: 'Cellebrite UFED Cloud, MSAB XRY Cloud',
+        notes: 'Samsung Health cloud data retained per Samsung privacy policy. Includes historical health data beyond what is on device.',
+      },
+      {
+        method: 'Direct Watch extraction (Wear OS)',
+        description: 'Wear OS watches can be accessed via ADB over Bluetooth or WiFi if developer mode is enabled.',
+        toolSupport: 'ADB (adb connect <watch_ip>:5555), Cellebrite UFED (limited)',
+        notes: 'Requires developer mode enabled on Watch. Most forensic targets will not have developer mode active. Wear OS 3+ has stricter ADB restrictions.',
+      },
+      {
+        method: 'Tizen Watch extraction (older Gear)',
+        description: 'Older Samsung Gear watches (Gear S3, Sport, etc.) running Tizen OS. Limited direct extraction options.',
+        toolSupport: 'Cellebrite UFED (limited Tizen support), MSAB XRY',
+        notes: 'Tizen-based Gear watches have limited forensic tool support. Primary method is still Samsung Health app on paired phone.',
+      },
+    ],
+    artifacts: [
+      {
+        category: 'Health & Activity',
+        path: '/data/data/com.samsung.android.app.health/databases/health.db (Android)',
+        description: 'Heart rate, steps, calories, sleep, stress level, blood oxygen, ECG, body composition (body fat %, muscle mass)',
+        ciRelevance: 'Samsung Health body composition data (from newer Watches with BIA sensor) provides biometric profile. Continuous heart rate and GPS activity data establishes presence and activity timeline.',
+        format: 'SQLite',
+      },
+      {
+        category: 'Location / GPS',
+        path: 'Samsung Health database location tables',
+        description: 'GPS track data from outdoor workouts, location-based activity tracking',
+        ciRelevance: 'GPS routes from Watch workouts provide independent location evidence. Samsung Health route data includes waypoints with timestamps.',
+        format: 'SQLite',
+      },
+      {
+        category: 'Sleep Analysis',
+        path: 'Samsung Health — sleep tables',
+        description: 'Sleep start/end, sleep stages, blood oxygen during sleep, snoring detection',
+        ciRelevance: 'Sleep timestamps establish awake/asleep status for alibi assessment.',
+        format: 'SQLite',
+      },
+      {
+        category: 'Notifications',
+        path: 'Galaxy Watch notification log — /data/data/com.samsung.android.app.watchmanager/',
+        description: 'Notification delivery log to Watch — message previews, app notifications',
+        ciRelevance: 'Notification timestamps and content previews on Watch can corroborate or contradict deleted phone message evidence.',
+        format: 'SQLite/SharedPreferences',
+      },
+    ],
+    databases: [
+      {
+        name: 'health.db (Samsung Health)',
+        path: '/data/data/com.samsung.android.app.health/databases/health.db',
+        description: 'Samsung Health primary database on paired Android phone',
+        keyTables: [
+          { table: 'health_data_heart_rate', columns: 'start_time, end_time, heart_rate, min, max, comment', ciValue: 'start_time/end_time in Unix milliseconds. Continuous heart rate log. High HR spikes during otherwise sedentary period = elevated stress/activity.' },
+          { table: 'health_data_pedometer_day_summary', columns: 'day_time, step_count, calorie, distance', ciValue: 'Daily step summary with Unix day timestamp. Proves device (and likely wearer) was physically active on given date.' },
+          { table: 'health_data_sleep', columns: 'start_time, end_time, time_offset, stage', ciValue: 'Sleep sessions with stages. stage: 40001=awake, 40002=light, 40003=deep, 40004=REM.' },
+          { table: 'health_data_location', columns: 'start_time, latitude, longitude, altitude, accuracy', ciValue: 'GPS waypoints during tracked activities. Timestamps in Unix milliseconds.' },
+        ],
+      },
+    ],
+    syncRelationship: 'Galaxy Watch requires Galaxy smartphone for initial setup. Syncs to Samsung Health app on phone. Data also uploaded to Samsung Health cloud. Watch retains local data buffer — exact retention varies by Watch model and storage capacity.',
+    encryptionNotes: 'Samsung Health database on Android is protected by Android app sandbox — requires root or physical extraction for direct access. Samsung Health data encrypted at rest on newer Android devices with FBE. Samsung Cloud health data encrypted in transit and at rest.',
+    legalProcess: 'Samsung Health data via legal process to Samsung. Korean company — international legal process via MLAT. US law enforcement: Samsung Electronics America (San Jose, CA). Faster: extract from paired Android phone via carrier/Google account legal process.',
+    tools: ['Cellebrite UFED Physical Analyzer', 'Oxygen Forensic Detective', 'MSAB XRY', 'DB Browser for SQLite', 'ADB (developer mode only)'],
+    notes: 'Samsung Health stress level data (0–100 score based on HRV) is unique to Samsung — provides continuous stress timeline not available from Apple Watch. Body composition data from BIA sensor (Galaxy Watch 4+) provides biometric profile. Samsung Health PC sync backup (samsung.com/health) may provide additional extraction path with account credentials.',
+  },
+  {
+    name: 'Fitbit (Google Wear OS / Fitbit OS)',
+    devices: 'Fitbit Sense 2, Versa 4, Charge 6, Inspire 3, Pixel Watch (Google)',
+    os: 'Fitbit OS / Google Wear OS (Pixel Watch)',
+    acquisitionMethods: [
+      {
+        method: 'Fitbit app database extraction (Android/iOS)',
+        description: 'Fitbit syncs data to companion app on paired smartphone. Extract Fitbit app databases.',
+        toolSupport: 'Cellebrite UFED, Oxygen Forensic Detective, manual (rooted Android)',
+        notes: 'Android path: /data/data/com.fitbit.FitbitMobile/. iOS: within app container via backup or filesystem extraction.',
+      },
+      {
+        method: 'Google Fit / Fitbit cloud extraction',
+        description: 'Fitbit data syncs to Fitbit servers (owned by Google since 2021). Accessible via Google account legal process as part of Google health data.',
+        toolSupport: 'Google Takeout (with credentials), legal process to Google',
+        notes: 'Since Google acquisition, Fitbit data may be accessible via Google account data export alongside Google Fit data. Google Takeout: Takeout/Fitbit/ directory.',
+      },
+    ],
+    artifacts: [
+      {
+        category: 'Activity',
+        path: 'Fitbit app database / cloud export',
+        description: 'Steps, distance, floors climbed, calories, active minutes, heart rate, SpO2',
+        ciRelevance: 'Continuous activity data establishes presence and mobility. Sedentary vs active periods establish routine.',
+        format: 'SQLite (app) / JSON (cloud export)',
+      },
+      {
+        category: 'Sleep',
+        path: 'Fitbit app database — sleep table',
+        description: 'Sleep start/end, sleep stages, heart rate during sleep, restlessness',
+        ciRelevance: 'Sleep timeline for alibi and routine assessment.',
+        format: 'SQLite / JSON',
+      },
+      {
+        category: 'GPS / Location',
+        path: 'Fitbit app / Google account location',
+        description: 'GPS available on higher-end Fitbits (Sense, Versa). Route data stored per workout.',
+        ciRelevance: 'Exercise route GPS proves location during workout.',
+        format: 'SQLite / GPX/JSON',
+      },
+      {
+        category: 'Google cloud export',
+        path: 'Google Takeout: Takeout/Fitbit/',
+        description: 'Complete Fitbit history export: activities, body measurements, food log, heart rate, sleep, weight',
+        ciRelevance: 'Historical data potentially years back. JSON format, easily parsed. Body weight history over time.',
+        format: 'JSON (per data type)',
+      },
+    ],
+    databases: [
+      {
+        name: 'Google Takeout Fitbit JSON',
+        path: 'Google Takeout → Takeout/Fitbit/Physical Activity/',
+        description: 'Complete Fitbit data export from Google account',
+        keyTables: [
+          { table: 'heart_rate-<date>.json', columns: 'time, value.bpm, value.confidence', ciValue: 'Per-second heart rate samples during active periods. Timestamps in ISO 8601.' },
+          { table: 'activities-<type>-<date>.json', columns: 'dateTime, value (steps/distance/calories)', ciValue: 'Activity summaries per day. dateTime in YYYY-MM-DD format.' },
+          { table: 'sleep-<date>.json', columns: 'dateOfSleep, startTime, endTime, duration, levels.data', ciValue: 'Sleep sessions with stage-by-stage breakdown. startTime/endTime in ISO 8601.' },
+        ],
+      },
+    ],
+    syncRelationship: 'Fitbit requires Fitbit/Google account and companion app on smartphone. Data syncs via Bluetooth to phone then to cloud. Since Google acquisition (2021), Fitbit data integrates with Google account.',
+    encryptionNotes: 'Fitbit app database on Android accessible with root. iOS app data via filesystem/backup extraction. Cloud data: Google account standard encryption. No end-to-end encryption for Fitbit data — Google can access under legal process.',
+    legalProcess: 'Fitbit data via Google legal process (post-2021 acquisition). Google law enforcement: google.com/transparencyreport. Pre-acquisition Fitbit data: Fitbit/Google (same process). Historical data potentially available from Google account.',
+    tools: ['Cellebrite UFED', 'Oxygen Forensic Detective', 'Google Takeout (with credentials)', 'DB Browser for SQLite', 'Python (JSON parsing of Takeout data)'],
+    notes: 'Google Takeout is the most complete Fitbit data source when credentials are available — provides years of historical data in clean JSON format. Parse heart rate JSON with Python for timeline analysis. Correlate with Google Location History for combined activity + location picture.',
+  },
+  {
+    name: 'Garmin',
+    devices: 'Fenix 7, Forerunner 9xx/2xx, Venu, Vivoactive, Instinct series',
+    os: 'Garmin OS (proprietary)',
+    acquisitionMethods: [
+      {
+        method: 'Garmin Connect app extraction',
+        description: 'Garmin syncs to Garmin Connect app on paired smartphone and to Garmin Connect cloud.',
+        toolSupport: 'Cellebrite UFED (Garmin Connect app data), manual (rooted Android)',
+        notes: 'Android: /data/data/com.garmin.android.apps.connectmobile/. Activity FIT files stored in app cache.',
+      },
+      {
+        method: 'Direct USB/mass storage access',
+        description: 'Garmin watches appear as USB mass storage when connected to computer. Activity files accessible directly as .FIT files.',
+        toolSupport: 'Direct file access, FIT SDK (Garmin open source), GPSBabel',
+        notes: 'Most forensically accessible method for Garmin. No root required. Connect Watch via USB — appears as drive. Activity files in /Garmin/Activities/ as .FIT format.',
+      },
+      {
+        method: 'Garmin Connect cloud',
+        description: 'All activity and health data syncs to Garmin Connect cloud (connect.garmin.com).',
+        toolSupport: 'Garmin Connect web export (with credentials), legal process to Garmin',
+        notes: 'Garmin (US company, Olathe, Kansas) responds to valid US legal process. Garmin Connect stores historical activity data. Data export available: connect.garmin.com/modern/account/billing → Export Your Data.',
+      },
+    ],
+    artifacts: [
+      {
+        category: 'Activity FIT files',
+        path: 'USB: /Garmin/Activities/*.fit — or Garmin Connect app cache',
+        description: 'Binary FIT (Flexible and Interoperable Data Transfer) files containing complete activity records: GPS track, heart rate, pace, elevation, temperature, power (cycling)',
+        ciRelevance: 'FIT files are the gold standard of fitness forensics — contain complete GPS track with sub-second timestamps, heart rate at each GPS point, and device serial number. Prove exact route taken, pace, and biometrics at every point.',
+        format: 'Binary FIT format (Garmin open spec)',
+      },
+      {
+        category: 'GPS track data',
+        path: 'Within FIT files — also in /Garmin/GPX/ on some devices',
+        description: 'Full GPS track for every outdoor activity — latitude, longitude, altitude, timestamp, accuracy',
+        ciRelevance: 'Most precise location evidence available from wearables. Sub-second GPS sampling. Can reconstruct exact path including stops, pace changes, and points of interest.',
+        format: 'FIT binary / GPX XML',
+      },
+      {
+        category: 'Device configuration',
+        path: 'USB: /Garmin/Settings.fit and /Garmin/Prefs.fit',
+        description: 'Device name, paired sensors, user profile (height, weight, birthdate, gender)',
+        ciRelevance: 'User profile confirms device owner identity. Device serial number in FIT files links activities to specific hardware.',
+        format: 'FIT binary',
+      },
+      {
+        category: 'Health snapshots',
+        path: '/Garmin/Health/ on USB mount',
+        description: 'Daily health summaries, stress scores, Body Battery (Garmin energy metric), sleep data, HRV status',
+        ciRelevance: 'Continuous health timeline. Body Battery depletion indicates physical exertion. Stress score elevation without physical activity indicates psychological stress event.',
+        format: 'FIT binary',
+      },
+    ],
+    databases: [
+      {
+        name: 'FIT file parsing',
+        path: '/Garmin/Activities/<timestamp>.fit',
+        description: 'Garmin FIT format is binary but well-documented with open-source SDK',
+        keyTables: [
+          { table: 'record messages', columns: 'timestamp, position_lat, position_long, heart_rate, speed, altitude', ciValue: 'One record per second during activity. position_lat/long in semicircles (multiply by 180/2^31 for degrees). timestamp in Garmin epoch (seconds since 1989-12-31) — add 631065600 for Unix.' },
+          { table: 'session messages', columns: 'start_time, total_elapsed_time, total_distance, avg_heart_rate, sport', ciValue: 'Summary of entire activity. start_time is Garmin epoch. sport field identifies activity type.' },
+          { table: 'device_info messages', columns: 'manufacturer, product, serial_number, software_version', ciValue: 'Device serial number links FIT file to specific Garmin unit. Can tie file to seized hardware.' },
+        ],
+      },
+    ],
+    syncRelationship: 'Garmin watches sync via USB (primary for activities) and via Garmin Connect app Bluetooth sync. USB connection provides direct access to FIT files without any tool. Cloud sync to Garmin Connect for long-term storage and social features.',
+    encryptionNotes: 'FIT files on USB are not encrypted — accessible directly. Garmin Connect app database on Android has standard Android app protection. FIT file format is documented and open — parse with fitparse (Python), Garmin FIT SDK (Java/C++), or GoldenCheetah.',
+    legalProcess: 'Garmin International (US company, Olathe, KS). US legal process via standard ECPA/SCA framework. Garmin publishes law enforcement guidelines. Historical activity data retained while account is active.',
+    tools: ['fitparse (Python library — pip install fitparse)', 'GPSBabel (FIT → GPX conversion)', 'GoldenCheetah (open source FIT analysis)', 'Garmin FIT SDK (official)', 'Cellebrite UFED (Garmin Connect app)', 'Basecamp (Garmin desktop app — opens FIT files)'],
+    notes: 'Garmin FIT files via USB are the simplest high-value extraction in wearable forensics — no root, no tool license required, just connect USB cable and copy files. fitparse Python library parses FIT files in seconds. Device serial number in every FIT file is a critical evidence link. Garmin watches used by military/law enforcement/athletes may have years of detailed GPS activity data.',
+  },
+]
+
+export const smartwatchQueries = [
+  {
+    platform: 'Apple Watch (healthdb.sqlite)',
+    description: 'All heart rate samples with timestamps',
+    sql: `SELECT
+  datetime(ZSTARTDATE + 978307200, 'unixepoch') as SampleTime,
+  ZVALUE as HeartRate,
+  ZDEVICE as DeviceID
+FROM ZSAMPLE
+WHERE ZTYPE = 9  -- 9 = HKQuantityTypeIdentifierHeartRate
+ORDER BY ZSTARTDATE DESC;`,
+  },
+  {
+    platform: 'Apple Watch (healthdb.sqlite)',
+    description: 'All workout sessions with type, duration, and distance',
+    sql: `SELECT
+  CASE ZWORKOUTACTIVITYTYPE
+    WHEN 37 THEN 'Running' WHEN 13 THEN 'Cycling'
+    WHEN 3000 THEN 'Walking' WHEN 20 THEN 'Functional Strength'
+    WHEN 46 THEN 'Swimming' ELSE CAST(ZWORKOUTACTIVITYTYPE AS TEXT)
+  END as WorkoutType,
+  datetime(ZSTARTDATE + 978307200, 'unixepoch') as StartTime,
+  datetime(ZENDDATE + 978307200, 'unixepoch') as EndTime,
+  ROUND((ZENDDATE - ZSTARTDATE) / 60.0, 1) as DurationMin,
+  ROUND(ZTOTALDISTANCEQUANTITY / 1000.0, 2) as DistanceKm
+FROM ZWORKOUT
+ORDER BY ZSTARTDATE DESC;`,
+  },
+  {
+    platform: 'Apple Watch (healthdb.sqlite)',
+    description: 'Sleep sessions with duration',
+    sql: `SELECT
+  datetime(ZSTARTDATE + 978307200, 'unixepoch') as SleepStart,
+  datetime(ZENDDATE + 978307200, 'unixepoch') as SleepEnd,
+  ROUND((ZENDDATE - ZSTARTDATE) / 3600.0, 2) as DurationHours,
+  ZVALUE as SleepStage  -- 0=InBed, 1=Asleep, 2=Awake, 3=Core, 4=Deep, 5=REM
+FROM ZSAMPLE
+WHERE ZTYPE = 72  -- HKCategoryTypeIdentifierSleepAnalysis
+ORDER BY ZSTARTDATE DESC;`,
+  },
+  {
+    platform: 'Samsung Health (health.db)',
+    description: 'Heart rate timeline',
+    sql: `SELECT
+  datetime(start_time/1000, 'unixepoch') as SampleTime,
+  heart_rate as BPM,
+  min as MinBPM,
+  max as MaxBPM
+FROM health_data_heart_rate
+ORDER BY start_time DESC
+LIMIT 500;`,
+  },
+  {
+    platform: 'Samsung Health (health.db)',
+    description: 'GPS location samples during activities',
+    sql: `SELECT
+  datetime(start_time/1000, 'unixepoch') as SampleTime,
+  latitude, longitude, altitude,
+  accuracy
+FROM health_data_location
+ORDER BY start_time DESC;`,
+  },
+  {
+    platform: 'Garmin FIT (Python)',
+    description: 'Parse FIT file GPS track to CSV',
+    sql: `import fitparse
+
+fit = fitparse.FitFile('activity.fit')
+print("timestamp,lat,lon,heart_rate,speed,altitude")
+for record in fit.get_messages('record'):
+    data = {f.name: f.value for f in record}
+    ts = data.get('timestamp', '')
+    # position in semicircles -> degrees
+    lat = data.get('position_lat', 0)
+    lon = data.get('position_long', 0)
+    if lat: lat = lat * (180 / 2**31)
+    if lon: lon = lon * (180 / 2**31)
+    print(f"{ts},{lat:.6f},{lon:.6f},{data.get('heart_rate','')},{data.get('speed','')},{data.get('altitude','')}")`,
+  },
+  {
+    platform: 'Garmin FIT (Python)',
+    description: 'Extract device serial number from FIT file',
+    sql: `import fitparse
+
+fit = fitparse.FitFile('activity.fit')
+for msg in fit.get_messages('device_info'):
+    for f in msg:
+        if f.name in ('manufacturer','product','serial_number','software_version'):
+            print(f"{f.name}: {f.value}")`,
+  },
+  {
+    platform: 'Fitbit (Google Takeout JSON)',
+    description: 'Parse heart rate JSON to timeline',
+    sql: `import json, glob
+from datetime import datetime
+
+for filepath in glob.glob('Fitbit/Physical Activity/heart_rate-*.json'):
+    with open(filepath) as f:
+        data = json.load(f)
+    for entry in data:
+        ts = datetime.strptime(entry['dateTime'], '%m/%d/%y %H:%M:%S')
+        bpm = entry['value']['bpm']
+        conf = entry['value']['confidence']
+        print(f"{ts.isoformat()},{bpm},{conf}")`,
+  },
+]
+
+export const smartwatchCIConsiderations = [
+  {
+    scenario: 'Alibi assessment',
+    description: 'Subject claims to have been at home asleep during the incident window.',
+    artifacts: ['Apple Health sleep analysis (was Watch worn? was sleep recorded?)', 'Heart rate continuity (sedentary HR during alleged sleep, or awake-level HR?)', 'Step count (zero steps during sleep = consistent; steps during sleep window = inconsistent)', 'GPS workout data (any outdoor activity recorded?)'],
+    notes: 'Absence of sleep data when Watch is normally worn is itself suspicious — subject may have removed Watch. Check Watch wear patterns across multiple nights to establish baseline.',
+  },
+  {
+    scenario: 'Physical presence at location',
+    description: 'Proving subject was at a specific location on a specific date.',
+    artifacts: ['Garmin FIT GPS track (most precise — sub-second waypoints)', 'Apple Watch workout GPS route', 'Samsung Health GPS location table', 'Heart rate elevation correlated with GPS location (active at location)'],
+    notes: 'FIT GPS tracks are exceptionally hard to fabricate — GPS waypoints include satellite signal data, accuracy values, and continuous HR correlation. Cross-reference with cell tower data and surveillance footage timestamps.',
+  },
+  {
+    scenario: 'Physical exertion / stress evidence',
+    description: 'Establishing physical condition around time of incident.',
+    artifacts: ['Heart rate data around incident time (elevated = physical exertion or stress)', 'HRV (Heart Rate Variability) — low HRV indicates high stress or poor recovery', 'Samsung Body Battery depletion', 'Garmin stress score', 'Activity data immediately before/after incident'],
+    notes: 'HR data can corroborate or contradict claims about physical capability at time of incident. Very high HR without GPS movement = stress response without physical activity.',
+  },
+  {
+    scenario: 'Identity of wearer',
+    description: 'Confirming the Watch was worn by the subject specifically.',
+    artifacts: ['User profile in device (height, weight, birthdate) — matches subject biometrics', 'Heart rate baseline and patterns consistent with subject\'s medical records', 'Sleep patterns consistent with subject\'s known schedule', 'Activity type (running pace, cycling power) consistent with subject\'s known fitness level'],
+    notes: 'Health biometrics in the Watch user profile are typically self-reported but corroborate identity. Persistent HR patterns across months of data develop a characteristic "fingerprint" that can be compared to medical records.',
+  },
+  {
+    scenario: 'Timeline reconstruction',
+    description: 'Building a minute-by-minute timeline of subject\'s activity.',
+    artifacts: ['Heart rate every second during activity', 'Step count every minute', 'Sleep staging throughout the night', 'Workout sessions with GPS routes', 'Notification delivery timestamps'],
+    notes: 'Wearable data provides the most continuous biometric timeline available in consumer forensics. Combine with phone location data, browser history, and SRUM for complete picture.',
+  },
+]

@@ -7,6 +7,7 @@ import {
   LocationForensics, CommCorrelation, MobileMalware, MobileAntiForensicsSection,
   JTAGWorkflow, UFEDReference,
 } from './sectionsAdvanced'
+import { SmartwatchForensics } from './SmartwatchSection'
 
 type SectionId =
   | 'acquisition' | 'artifacts' | 'backups' | 'sqlite' | 'apps' | 'adb'
@@ -30,6 +31,7 @@ const NAV: NavItem[] = [
   { id: 'comms',         label: 'Comms correlation',    sub: 'SMS · calls · iMessage identity',     icon: '💬', group: 'Advanced' },
   { id: 'malware',       label: 'Malware indicators',   sub: 'Jailbreak · stalkerware · root',      icon: '🦠', group: 'Advanced' },
   { id: 'antiforensics', label: 'Anti-forensics',       sub: 'Factory reset · wipe · encryption',   icon: '🕵', group: 'Advanced' },
+  { id: 'smartwatch',    label: 'Smartwatch forensics', sub: 'Apple Watch · Samsung · Fitbit · Garmin', icon: '⌚', group: 'Advanced' },
   { id: 'jtag',          label: 'JTAG / chip-off',      sub: 'Hardware extraction workflow',        icon: '🔧', group: 'Hardware' },
   { id: 'ufed',          label: 'Cellebrite / UFED',    sub: 'Extraction types · PA workflow',      icon: '🏛', group: 'Hardware' },
 ]
@@ -49,6 +51,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   comms:         <CommCorrelation />,
   malware:       <MobileMalware />,
   antiforensics: <MobileAntiForensicsSection />,
+  smartwatch:    <SmartwatchForensics />,
   jtag:          <JTAGWorkflow />,
   ufed:          <UFEDReference />,
 }
