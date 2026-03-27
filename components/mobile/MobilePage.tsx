@@ -12,7 +12,7 @@ import { SmartwatchForensics } from './SmartwatchSection'
 type SectionId =
   | 'acquisition' | 'artifacts' | 'backups' | 'sqlite' | 'apps' | 'adb'
   | 'ioslog' | 'androidlog' | 'cloud' | 'appdeep' | 'location'
-  | 'comms' | 'malware' | 'antiforensics' | 'jtag' | 'ufed'
+  | 'comms' | 'malware' | 'antiforensics' | 'smartwatch' | 'jtag' | 'ufed'
 
 interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
 
