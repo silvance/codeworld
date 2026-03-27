@@ -580,7 +580,7 @@ export function RegexTester() {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 font-mono text-sm">/</span>
             <input value={pattern} onChange={e => setPattern(e.target.value)}
               placeholder="pattern" spellCheck={false}
-              className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-6 pr-4 py-2.5 text-sm font-mono text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-zinc-500 ${result?.error ? 'border-red-700' : ''}`} />
+              className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-6 pr-4 py-2.5 text-sm font-mono text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-zinc-500 ${result && 'error' in result ? 'border-red-700' : ''}`} />
           </div>
           <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3">
             {allFlags.map(f => (
@@ -589,7 +589,7 @@ export function RegexTester() {
             ))}
           </div>
         </div>
-        {result?.error && <p className="text-xs font-mono text-red-400">{result.error}</p>}
+        {result && 'error' in result && <p className="text-xs font-mono text-red-400">{result.error}</p>}
         <textarea rows={5} value={testStr} onChange={e => setTestStr(e.target.value)}
           placeholder="Paste test string here..."
           className={`${inputCls} resize-none`} spellCheck={false} />
@@ -687,7 +687,7 @@ export function JWTDecoder() {
           className="text-[10px] font-mono text-zinc-600 hover:text-zinc-300 transition-colors">load example</button>
       </div>
 
-      {result?.error && <p className="text-xs font-mono text-red-400">{result.error}</p>}
+      {result && 'error' in result && <p className="text-xs font-mono text-red-400">{result.error}</p>}
 
       {result && !('error' in result) && (
         <div className="space-y-4">
@@ -1072,7 +1072,7 @@ export function MACLookup() {
         placeholder="AA:BB:CC:DD:EE:FF or AABBCCDDEEFF or AA-BB-CC-DD-EE-FF"
         className={inputCls} spellCheck={false} autoCapitalize="none" />
 
-      {result?.error && <p className="text-xs font-mono text-amber-500">{result.error}</p>}
+      {result && 'error' in result && <p className="text-xs font-mono text-amber-500">{result.error}</p>}
 
       {result && !('error' in result) && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -1191,7 +1191,7 @@ export function UUIDDecoder() {
         </div>
       </div>
 
-      {result?.error && <p className="text-xs font-mono text-amber-500">{result.error}</p>}
+      {result && 'error' in result && <p className="text-xs font-mono text-amber-500">{result.error}</p>}
 
       {result && !('error' in result) && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
