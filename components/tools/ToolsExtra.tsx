@@ -726,7 +726,7 @@ export function JWTDecoder() {
             <div className="px-4 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-amber-400 break-all flex-1">{result.signature}</span>
-                <CopyBtn text={result.signature} />
+                <CopyBtn text={result.signature ?? ''} />
               </div>
               <p className="text-[10px] font-mono text-zinc-700 mt-2">Signature is not verified — no secret key. Do not treat as trusted.</p>
             </div>
