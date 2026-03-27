@@ -930,3 +930,414 @@ export const macToolCommands = [
   { tool: 'fs_usage',        cmd: 'sudo fs_usage -f filesystem -w proc_name',     description: 'Live filesystem events for a process (root)' },
   { tool: 'opensnoop',       cmd: 'sudo opensnoop -p PID',                        description: 'Files opened by process (DTrace-based)' },
 ]
+
+// ─── Key Artifacts (CI-focused) ───────────────────────────────────────────────
+
+export interface KeyArtifact {
+  name: string
+  category: string
+  whatItProves: string
+  ciRelevance: string
+  locations: { hive: string; key: string; notes: string }[]
+  fields: { field: string; meaning: string; ciValue: string }[]
+  parseWith: string[]
+  queries: { description: string; command: string }[]
+  pitfalls: string[]
+  correlate: string[]
+}
+
+export const keyArtifacts: KeyArtifact[] = [
+  {
+    name: 'Shellbags',
+    category: 'Folder Access',
+    whatItProves: 'A user interactively opened and viewed a folder — including folders on removable media, network shares, deleted directories, and ZIP archives. Shellbags persist long after the folder or device is gone.',
+    ciRelevance: 'Proves subject accessed a specific network share, removable drive, or folder that no longer exists. Can reconstruct the full directory tree a subject navigated on an exfiltration device even after the device is returned or destroyed. Common in insider threat cases — subject browsed to competitor, cloud sync, or classified folder before departure.',
+    locations: [
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\Shell\\BagMRU', notes: 'Stores the tree of folders navigated. BagMRU = path tree, Bags = view settings per folder.' },
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\Shell\\Bags', notes: 'View settings (icon size, sort order) per folder. SlotID links Bags to BagMRU entries.' },
+      { hive: 'UsrClass.dat', key: 'Local Settings\\Software\\Microsoft\\Windows\\Shell\\BagMRU', notes: 'Primary shellbag hive since Vista. Stores Desktop, network, removable media navigation. UsrClass.dat is the more forensically valuable hive.' },
+      { hive: 'UsrClass.dat', key: 'Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags', notes: 'View settings. NodeSlot value ties to BagMRU entry.' },
+    ],
+    fields: [
+      { field: 'MRUListEx', meaning: 'Order of last access across sibling folders', ciValue: 'Establishes which folder was accessed most recently within a directory.' },
+      { field: 'NodeSlot', meaning: 'Integer linking BagMRU entry to Bags settings', ciValue: 'Used by parsers to reconstruct full path for each shellbag entry.' },
+      { field: 'Folder type (Desktop, Network, Drive, Zip)', meaning: 'Encoded in the binary ItemID shell item', ciValue: 'Identifies if access was to a local drive, network share (\\\\server\\share), removable disk, or inside a ZIP archive.' },
+      { field: 'Timestamps (modified, accessed, created)', meaning: 'FAT or NTFS timestamps of the folder at time of access, embedded in shell item', ciValue: 'Not the time the bag was created — the timestamp of the folder itself at the moment of access. Valuable for timeline reconstruction.' },
+      { field: 'Volume serial number', meaning: 'Embedded in shell item for drive-based paths', ciValue: 'Links to a specific physical device. Cross-reference with LNK volume serial numbers to confirm same device.' },
+      { field: 'Network share path', meaning: 'Full UNC path (\\\\server\\share\\folder) in network shell items', ciValue: 'Proves access to specific network resources — can identify unauthorized share access or exfiltration staging.' },
+    ],
+    parseWith: ['SBECmd.exe (EZ Tools) — most accurate', 'ShellBagsExplorer (GUI, EZ Tools)', 'RegRipper sb2.pl plugin', 'Autopsy Shellbag module'],
+    queries: [
+      { description: 'Parse shellbags from live system UsrClass.dat', command: 'SBECmd.exe -d "C:\\Users\\username" --csv C:\\output' },
+      { description: 'Parse from acquired hive', command: 'SBECmd.exe -f "UsrClass.dat" --csv C:\\output' },
+      { description: 'ShellBagsExplorer GUI', command: 'ShellBagsExplorer.exe → File → Load offline hive → UsrClass.dat' },
+      { description: 'RegRipper plugin', command: 'rip.pl -r UsrClass.dat -p shellbags' },
+    ],
+    pitfalls: [
+      'Shellbags are created on first open and persist indefinitely — a bag for a folder does NOT mean the folder was accessed recently, only that it was accessed at least once.',
+      'Timestamps in shellbags reflect folder metadata at time of access, not the time the bag was written — distinguish carefully.',
+      'UsrClass.dat is the primary hive since Vista. NTUSER.DAT shellbags are less complete on modern systems.',
+      'Zip file shellbags prove the user opened the ZIP and browsed its contents — not just that the ZIP existed.',
+      'Shellbags survive folder and file deletion — a bag for a path that no longer exists is strong evidence of prior access.',
+      'Profile deletion does not always remove shellbags from backup locations (VSS, roaming profiles).',
+    ],
+    correlate: ['LNK files (volume serial cross-reference)', 'USB artifacts (USBSTOR — same device)', 'Event ID 4663 (object access audit)', 'Prefetch (explorer.exe load times)', 'UserAssist (Explorer launched)'],
+  },
+  {
+    name: 'LNK Files / Jump Lists',
+    category: 'File Access',
+    whatItProves: 'A specific file was opened by a user — including the original full path, volume label, volume serial number, MAC timestamps of the target at time of access, file size, and hostname/MAC address if opened over a network. Evidence persists even after the source file and drive are gone.',
+    ciRelevance: 'One of the most powerful artifacts for proving data access. An LNK for a file on a removable drive proves that specific file on that specific device was opened on that specific machine. Jump List entries for cloud sync clients (OneDrive, Dropbox) prove files were staged for upload. LNK files on a thumb drive prove it was connected to a specific machine even if that machine is never seized.',
+    locations: [
+      { hive: 'Filesystem', key: '%APPDATA%\\Microsoft\\Windows\\Recent\\*.lnk', notes: 'Automatically created by Windows Shell on file open. One LNK per file, updated on re-access.' },
+      { hive: 'Filesystem', key: '%APPDATA%\\Microsoft\\Windows\\Recent\\AutomaticDestinations\\*.automaticDestinations-ms', notes: 'Jump Lists — automatic. Stores up to 20 MRU entries per AppID. OLE compound file format.' },
+      { hive: 'Filesystem', key: '%APPDATA%\\Microsoft\\Windows\\Recent\\CustomDestinations\\*.customDestinations-ms', notes: 'Jump Lists — pinned/custom entries. Application-controlled.' },
+    ],
+    fields: [
+      { field: 'Target path (absolute and relative)', meaning: 'Full path to the accessed file at time of LNK creation/update', ciValue: 'Proves the exact file path. For removable media: includes drive letter at time of connection.' },
+      { field: 'Volume serial number', meaning: '32-bit identifier of the volume containing the target', ciValue: 'Unique to the physical device. Cross-reference with USBSTOR and shellbags to confirm same device. Does not change on reformat of same drive without a new format.' },
+      { field: 'Volume label', meaning: 'Drive label at time of access', ciValue: 'User-assigned label (e.g. "JAMES_PERSONAL") — can be directly incriminating.' },
+      { field: 'Target MAC times', meaning: 'Modified, Accessed, Created timestamps of the target file at time of LNK creation', ciValue: 'Establishes when the file existed and what state it was in. Modified time of target at access time is preserved even if the file is later altered or deleted.' },
+      { field: 'Target file size', meaning: 'Size of the target file at time of LNK creation', ciValue: 'Proves file content existed (non-zero size). Corroborates other evidence of the file.' },
+      { field: 'Machine ID / NetBIOS hostname', meaning: 'Name of machine where LNK was created (embedded in TrackerDataBlock)', ciValue: 'Proves which workstation created the LNK — critical when a thumb drive moves between machines.' },
+      { field: 'MAC address (object ID)', meaning: 'NIC MAC of machine at time of LNK creation (embedded in TrackerDataBlock)', ciValue: 'Links LNK creation to specific network interface. Cross-reference with DHCP logs and SIEM.' },
+      { field: 'Droid volume/file GUID', meaning: 'OLE distributed tracking service GUIDs', ciValue: 'Can track a file even if renamed or moved to a different volume. Allows correlation across multiple LNK files for the same underlying file.' },
+    ],
+    parseWith: ['LECmd.exe (EZ Tools) — most complete LNK parser', 'JLECmd.exe (EZ Tools) — Jump Lists', 'Autopsy Recent Activity module', 'LNK Explorer (EZ Tools GUI)'],
+    queries: [
+      { description: 'Parse all LNK files for a user', command: 'LECmd.exe -d "C:\\Users\\username\\AppData\\Roaming\\Microsoft\\Windows\\Recent" --csv C:\\output' },
+      { description: 'Parse specific LNK file', command: 'LECmd.exe -f document.lnk --csv C:\\output' },
+      { description: 'Parse Jump Lists (automatic)', command: 'JLECmd.exe -d "C:\\Users\\username\\AppData\\Roaming\\Microsoft\\Windows\\Recent\\AutomaticDestinations" --csv C:\\output' },
+      { description: 'Parse all LNK recursively across image', command: 'LECmd.exe -d C:\\ -q --csv C:\\output --all' },
+    ],
+    pitfalls: [
+      'LNK timestamps reflect NTFS timestamps of the LNK file itself (when it was created/modified), NOT the target file timestamps — the target timestamps are embedded inside the LNK binary.',
+      'Jump List AppID is a hash of the application path — use JLECmd to decode the AppID to application name.',
+      'LNK files in Recent are updated on re-access, overwriting the original creation timestamp — earliest access evidence may be in VSS copies.',
+      'Network path LNKs (\\\\server\\share\\file.docx) prove network file access even if the share is no longer accessible.',
+      'LNK files created by applications programmatically may not have all fields (no machine ID, no MAC address).',
+      'Pinned Jump List entries (customDestinations) are manually pinned by the user — high evidentiary value as intentional action.',
+    ],
+    correlate: ['Shellbags (same volume serial = same device)', 'USBSTOR registry (device first/last connection)', 'Prefetch (application that opened the file)', 'Event ID 4663 (file access audit if enabled)', 'MFT ($MFT — confirms file existence and timestamps)'],
+  },
+  {
+    name: 'Prefetch',
+    category: 'Program Execution',
+    whatItProves: 'A program was executed on this system — including the executable name, last run time (up to 8 run times on Win8+), total run count, and the list of files and DLLs loaded during execution. Persists for 128 entries by default.',
+    ciRelevance: 'Proves execution of exfiltration tools (rclone.exe, 7z.exe, WinSCP.exe, robocopy.exe), data staging utilities, encryption tools, or anti-forensics tools even if the executable is deleted. Run count and timestamps establish pattern of use. Files referenced in prefetch prove which data directories the tool accessed.',
+    locations: [
+      { hive: 'Filesystem', key: 'C:\\Windows\\Prefetch\\*.pf', notes: 'Binary format. Filename = <EXECUTABLE>-<HASH>.pf. Hash is based on executable path. Disabled by default on SSDs in some Windows versions — check PrefetchParameters.' },
+      { hive: 'Registry', key: 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\\PrefetchParameters', notes: 'EnablePrefetcher: 0=disabled, 1=app only, 2=boot only, 3=both (default). Value 0 may indicate anti-forensics.' },
+    ],
+    fields: [
+      { field: 'Executable name', meaning: 'Name of the binary that ran', ciValue: 'Presence of rclone.exe, robocopy.exe, 7za.exe, winscp.exe, pscp.exe, or custom tool names is immediately significant.' },
+      { field: 'Path hash', meaning: 'CRC32 of the directory path where the executable ran from', ciValue: 'Different hashes for same executable name = ran from different directories. Multiple hashes for the same tool suggests deliberate path variation (anti-forensics).' },
+      { field: 'Last run time (up to 8, Win8+)', meaning: 'FILETIME of each execution — stored as embedded timestamps', ciValue: 'Establishes when the tool was used. Pattern of late-night execution is significant. Up to 8 timestamps preserved — shows recurring use.' },
+      { field: 'Run count', meaning: 'Total number of executions since prefetch entry was created', ciValue: 'High run count for an exfiltration tool proves habitual, not accidental, use.' },
+      { field: 'Volume serial numbers', meaning: 'All volumes accessed during execution', ciValue: 'Proves which drives the tool interacted with during its run — links to specific removable media.' },
+      { field: 'Files and directories referenced', meaning: 'All files loaded during execution (executables, DLLs, data files accessed in first ~10s)', ciValue: 'For data staging tools: referenced files may include the staged data files, source directories, and configuration files. Critical for reconstructing what was exfiltrated.' },
+    ],
+    parseWith: ['PECmd.exe (EZ Tools) — most complete', 'WinPrefetchView (NirSoft)', 'Autopsy Prefetch Viewer module', 'Volatility prefetchparser plugin (memory)'],
+    queries: [
+      { description: 'Parse all prefetch files', command: 'PECmd.exe -d "C:\\Windows\\Prefetch" --csv C:\\output' },
+      { description: 'Parse single prefetch file', command: 'PECmd.exe -f "C:\\Windows\\Prefetch\\RCLONE.EXE-XXXXXXXX.pf"' },
+      { description: 'Check if prefetch is enabled', command: 'reg query "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\\PrefetchParameters" /v EnablePrefetcher' },
+      { description: 'Search for specific tool', command: 'Get-ChildItem C:\\Windows\\Prefetch | Where-Object {$_.Name -match "rclone|robocopy|7z|winscp"}' },
+    ],
+    pitfalls: [
+      'Prefetch is disabled on Windows Server by default and on some SSD configurations. Absence of prefetch does not mean the program never ran.',
+      'Only the last 128 entries are retained. High-activity systems may overwrite evidence of older executions.',
+      'The path hash distinguishes same-named tools run from different directories — always check for multiple entries for the same executable name.',
+      'Files referenced in prefetch are only those accessed in the first ~10 seconds of execution — may not capture all accessed data for long-running tools.',
+      'Anti-forensics: subject may have deleted individual .pf files. Check for gaps in expected entries. PECmd reports on files that match known tools.',
+      'Win8+ stores up to 8 run times. WinXP/7 store only the last run time. On Win10, times are compressed — always use PECmd, not manual hex inspection.',
+    ],
+    correlate: ['Shimcache (execution corroboration)', 'Amcache (hash of executed binary)', 'UserAssist (GUI execution)', 'Event ID 4688 (process creation — if audit enabled)', 'LNK/Jump Lists (files the tool opened)'],
+  },
+  {
+    name: 'UserAssist',
+    category: 'Program Execution',
+    whatItProves: 'A user launched a program through the Windows GUI (Start menu, desktop shortcut, Windows Explorer double-click). Records the application path, run count, focus time, and last run time. Encoded with ROT13 to obscure from casual observation.',
+    ciRelevance: 'Proves intentional, interactive execution by the logged-in user — not a background service or scheduled task. Focus time proves the user actively engaged with the application (did not just launch and minimize). High run count with focus time for exfiltration tools or data management applications is strong evidence of deliberate use.',
+    locations: [
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{GUID}\\Count', notes: 'Two GUIDs: {CEBFF5CD...} = executables/shortcuts, {F4E57C4B...} = shortcut files. Values ROT13-encoded. Each value name is the ROT13-encoded application path.' },
+    ],
+    fields: [
+      { field: 'Value name (ROT13-decoded path)', meaning: 'Full path to the executed application or shortcut, ROT13-encoded', ciValue: 'Decoded path proves the exact executable location. Shortcut name proves user interacted with a named shortcut (e.g., "Exfil Tool.lnk").' },
+      { field: 'Run count', meaning: 'Number of times the application was launched via GUI', ciValue: 'High count proves habitual use. Count of 1 may indicate a single-use tool or first use discovered.' },
+      { field: 'Focus time', meaning: 'Total time (in milliseconds) the application window had focus', ciValue: 'Non-zero focus time proves active use, not just background execution. An exfiltration tool with hours of focus time proves sustained deliberate operation.' },
+      { field: 'Last run time', meaning: 'FILETIME of most recent GUI launch', ciValue: 'Establishes when the user last interacted with the application through the GUI.' },
+    ],
+    parseWith: ['RECmd.exe with UserAssist batch map (EZ Tools)', 'RegRipper userassist.pl plugin', 'UserAssistView (NirSoft)', 'Autopsy Recent Activity module'],
+    queries: [
+      { description: 'Parse UserAssist with RECmd batch map', command: 'RECmd.exe -f NTUSER.DAT --bn BatchExamples\\UserAssist.reb --csv C:\\output' },
+      { description: 'RegRipper plugin', command: 'rip.pl -r NTUSER.DAT -p userassist' },
+      { description: 'ROT13 decode a specific value name manually', command: "echo 'URYYB.RKR' | tr 'A-Za-z' 'N-ZA-Mn-za-m'" },
+      { description: 'List all UserAssist keys in registry', command: 'reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist" /s' },
+    ],
+    pitfalls: [
+      'UserAssist only records GUI launches — command-line execution (cmd.exe, PowerShell) does not appear here. Use Prefetch and Shimcache for CLI tools.',
+      'ROT13 encoding is trivial to decode — not encryption, just obfuscation. All modern forensic tools decode automatically.',
+      'The GUID changes between Windows versions and can have multiple sub-GUIDs — parse all GUIDs under the UserAssist key.',
+      'Focus time of 0 means the application launched but never received window focus (ran in background or immediately closed).',
+      'Last run time only — no history of prior run times. For time history, cross-correlate with Prefetch.',
+      'Applications launched via programmatic ShellExecute with specific flags may not always create UserAssist entries.',
+    ],
+    correlate: ['Prefetch (run count, timestamps, files accessed)', 'Shimcache (corroborate execution)', 'LNK/Jump Lists (files the application opened)', 'Event ID 4688 (process creation)', 'MRU keys (files opened via this application)'],
+  },
+  {
+    name: 'Shimcache (AppCompatCache)',
+    category: 'Program Execution',
+    whatItProves: 'A file existed on the system and may have been executed — even if the file has since been deleted. Shimcache records every executable the Application Compatibility Engine evaluated, including binaries that were never run on some Windows versions. The key forensic value is reconstruction of deleted tools.',
+    ciRelevance: 'If a subject deleted their exfiltration tool, Shimcache may still contain the entry — including the path, file size, and last modified timestamp of the deleted binary. The entry proves the file existed at that path at that modified timestamp, even if the file is gone. Particularly valuable when combined with Amcache (which provides the hash) to prove what the deleted binary was.',
+    locations: [
+      { hive: 'SYSTEM', key: 'CurrentControlSet\\Control\\Session Manager\\AppCompatCache\\AppCompatCache', notes: 'Binary blob. Written to registry on system shutdown — live system shimcache may not contain the most recent entries. Always acquire from offline hive or via memory if system is live.' },
+    ],
+    fields: [
+      { field: 'File path', meaning: 'Full path to the executable as seen by the compatibility engine', ciValue: 'Proves the executable existed at that specific path. Path to unusual locations (Temp, AppData, removable drive) is immediately significant.' },
+      { field: 'Last modified time ($SI)', meaning: 'Last modified timestamp of the executable file ($STANDARD_INFORMATION)', ciValue: 'Establishes when the binary was last written. Timestamp discrepancy with $FILE_NAME attribute indicates timestamp manipulation (timestomping).' },
+      { field: 'Execution flag (Win7 only)', meaning: 'Boolean indicating whether the file was actually executed (not present on Win8+)', ciValue: 'On Win7: presence in shimcache + execution flag = confirmed execution. On Win8+: presence alone does not confirm execution — could be file system enumeration.' },
+      { field: 'Entry order', meaning: 'Position in the shimcache array (most recent first)', ciValue: 'Lower index numbers = more recently evaluated. Useful for approximate timeline when timestamps are unavailable.' },
+    ],
+    parseWith: ['AppCompatCacheParser.exe (EZ Tools)', 'ShimCacheParser (Mandiant/FireEye)', 'RegRipper appcompatcache.pl', 'Volatility shimcachemem (memory-resident entries)'],
+    queries: [
+      { description: 'Parse shimcache from offline SYSTEM hive', command: 'AppCompatCacheParser.exe -f SYSTEM --csv C:\\output' },
+      { description: 'Parse from live system', command: 'AppCompatCacheParser.exe --csv C:\\output' },
+      { description: 'Memory-resident shimcache (not yet flushed to registry)', command: 'vol.py -f memory.raw --profile=Win10x64 shimcachemem' },
+      { description: 'Search for specific tool', command: 'AppCompatCacheParser.exe -f SYSTEM --csv C:\\output -q && grep -i "rclone" C:\\output\\*.csv' },
+    ],
+    pitfalls: [
+      'CRITICAL: On Windows 8+, shimcache does NOT have an execution flag — presence proves the file was evaluated by the compatibility engine but NOT that it was executed. Use Prefetch and Amcache to confirm execution.',
+      'Shimcache is written to registry on shutdown only. If the system crashed or was hard-powered off, the most recent entries may only be in memory — use Volatility shimcachemem.',
+      'Maximum entries vary by OS: Win7=1024, Win8+=~1024. Older entries are evicted. Absence does not mean the file never ran.',
+      'Path changes: if a tool ran from C:\\Temp but shimcache shows a different path, the tool may have been moved after execution.',
+      'Timestomping: if $SI modified time in shimcache predates file creation according to $MFT, timestamp manipulation occurred.',
+    ],
+    correlate: ['Amcache (SHA-1 of same binary — links path to hash)', 'Prefetch (confirms execution)', '$MFT (confirms file existence and $FN timestamps)', 'Event ID 4688 (process creation)', 'SRUM (network bytes sent by process — if tool exfiltrated data)'],
+  },
+  {
+    name: 'Amcache',
+    category: 'Program Execution',
+    whatItProves: 'A specific binary was installed or executed on the system — records the SHA-1 hash of the executable, the first execution time (InventoryApplication) or first seen time (FileEntry), publisher, and product name. The SHA-1 hash is the primary forensic value: it allows definitive identification of a deleted binary.',
+    ciRelevance: 'If a subject ran a custom exfiltration tool and deleted it, Amcache may contain the SHA-1 hash. Submit the hash to VirusTotal, run against known tool databases, or compare to hashes of suspected tools on the subject\'s other devices. Amcache also records installation of applications — proves a tool was deliberately installed, not accidentally run.',
+    locations: [
+      { hive: 'Filesystem', key: 'C:\\Windows\\appcompat\\Programs\\Amcache.hve', notes: 'ProgramData hive (ESE database format prior to Win8.1, registry hive format Win8.1+). Contains InventoryApplication and InventoryApplicationFile sections.' },
+    ],
+    fields: [
+      { field: 'SHA-1 hash (FileEntry)', meaning: 'SHA-1 of the executable binary', ciValue: 'Hash of a deleted binary. Submit to VT, run against NSRL (known-good), or compare to suspected tool. Even if tool is deleted, hash proves what it was.' },
+      { field: 'First execution time / LinkDate', meaning: 'Timestamp of first execution or PE compile timestamp', ciValue: 'Establishes when the tool was first used. PE compile date in the past may indicate recompiled or timestomped binary.' },
+      { field: 'Full path', meaning: 'Path where binary was seen', ciValue: 'Execution from Temp, AppData, or removable media paths is immediately suspicious. Path cross-references with Shimcache and Prefetch.' },
+      { field: 'Publisher / product name', meaning: 'PE version info fields', ciValue: 'Custom tools often have blank publisher or false product names. Legitimate software with suspicious publisher info may indicate trojanized binary.' },
+      { field: 'InventoryApplication', meaning: 'Installed application records — includes install timestamp', ciValue: 'Proves deliberate installation (not just running from a downloaded file). Install timestamp establishes when the subject set up the tool.' },
+    ],
+    parseWith: ['AmcacheParser.exe (EZ Tools)', 'Autopsy Amcache module', 'RegRipper amcache.pl', 'InventoryApplicationFile SQLite queries (older format)'],
+    queries: [
+      { description: 'Parse Amcache.hve', command: 'AmcacheParser.exe -f "C:\\Windows\\appcompat\\Programs\\Amcache.hve" --csv C:\\output' },
+      { description: 'Include associated file entries', command: 'AmcacheParser.exe -f Amcache.hve --csv C:\\output -i' },
+      { description: 'Search parsed CSV for hashes', command: 'Import-Csv C:\\output\\*_UnassociatedFileEntries.csv | Where-Object { $_.SHA1 -ne "" } | Select Path, SHA1, FileSize' },
+      { description: 'Submit hash to VirusTotal (PowerShell)', command: 'Invoke-RestMethod "https://www.virustotal.com/api/v3/files/<SHA1>" -Headers @{"x-apikey"="$vtKey"}' },
+    ],
+    pitfalls: [
+      'Amcache SHA-1 is of the binary at the time it was evaluated — if the file was modified before Amcache evaluation, the hash reflects the modified version.',
+      'Not all executed binaries appear in Amcache. Coverage depends on Windows version and whether the compatibility engine evaluated the binary.',
+      'InventoryApplication vs InventoryApplicationFile: InventoryApplicationFile has hashes. InventoryApplication records installation events. Parse both.',
+      'Amcache can be deliberately cleared. Absence in a system that should have Amcache entries may indicate anti-forensics.',
+      'The format changed significantly between Windows versions — always use AmcacheParser.exe rather than manual parsing.',
+    ],
+    correlate: ['Shimcache (path cross-reference — same binary)', 'Prefetch (execution timestamps)', 'NSRL (hash known-good identification)', 'VirusTotal (hash reputation)', 'SRUM (network activity attributed to the process)'],
+  },
+  {
+    name: 'NTUSER.DAT MRU Keys',
+    category: 'File & Path Access',
+    whatItProves: 'Files and paths explicitly accessed by the user through Windows Explorer and application Open/Save dialogs. These keys record what the user typed, clicked, and saved — creating a granular record of file access that complements shell artifacts.',
+    ciRelevance: 'RecentDocs proves specific files were opened. TypedPaths proves the user manually typed specific directory paths (not just browsed) — highly intentional. OpenSavePidlMRU proves files were opened or saved through application dialogs — captures exfiltration staging (subject saved document to removable drive via Save As).',
+    locations: [
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RecentDocs', notes: 'Most recently opened files per extension and combined. MRUListEx gives order. Binary ShellLink data per entry.' },
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\TypedPaths', notes: 'Paths manually typed in Explorer address bar. Plain text values. Up to 25 entries (url1–url25).' },
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32\\OpenSavePidlMRU', notes: 'Files opened/saved via common dialog (File → Open, File → Save As). Subkey per extension. Binary PIDL data.' },
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32\\LastVisitedPidlMRU', notes: 'Last directory visited in each application\'s Open/Save dialog. Shows per-app navigation history.' },
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU', notes: 'Commands typed in Windows Run dialog (Win+R). Plain text. Sorted by MRUList.' },
+      { hive: 'NTUSER.DAT', key: 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\WordWheelQuery', notes: 'Search terms typed in Explorer search box. Plain text. Indexed by MRUList.' },
+    ],
+    fields: [
+      { field: 'MRUListEx order', meaning: 'Integer array encoding the order of access (most recent first)', ciValue: 'Establishes temporal sequence of file accesses within a session — most recently accessed file is first.' },
+      { field: 'RecentDocs per extension', meaning: 'Subkey per file extension containing MRU list of files of that type', ciValue: 'Filter by extension: .docx, .xlsx, .pdf, .zip, .7z, .rar — each extension subkey reveals which files of that type were most recently accessed.' },
+      { field: 'TypedPaths values (url1–url25)', meaning: 'Verbatim paths the user typed in Explorer address bar', ciValue: 'Typed paths are intentional — not accidental browser navigation. A typed path to a network share or removable drive letter proves deliberate navigation.' },
+      { field: 'RunMRU entries', meaning: 'Commands typed in Win+R Run box', ciValue: 'Subjects often use Run to launch tools directly. Entries like "cmd", "powershell", "\\\\server\\share" or tool names are significant.' },
+      { field: 'WordWheelQuery terms', meaning: 'Text typed in Explorer search', ciValue: 'Search terms reveal intent. Searching for "classified", "proprietary", "salary", or colleague names before departure is significant.' },
+    ],
+    parseWith: ['RECmd.exe with MRU batch maps (EZ Tools)', 'RegRipper recentdocs.pl, typedpaths.pl, comdlg32.pl', 'MRU-Blaster (legacy)', 'Autopsy Recent Activity module'],
+    queries: [
+      { description: 'Parse all MRU keys with RECmd batch map', command: 'RECmd.exe -f NTUSER.DAT --bn BatchExamples\\RECmd_Batch_MC.reb --csv C:\\output' },
+      { description: 'TypedPaths — plain text, quick regex', command: 'rip.pl -r NTUSER.DAT -p typedpaths' },
+      { description: 'RecentDocs parser', command: 'rip.pl -r NTUSER.DAT -p recentdocs' },
+      { description: 'WordWheelQuery — what user searched for', command: 'rip.pl -r NTUSER.DAT -p wordwheelquery' },
+      { description: 'OpenSavePidlMRU — files opened/saved via dialogs', command: 'rip.pl -r NTUSER.DAT -p comdlg32' },
+    ],
+    pitfalls: [
+      'MRU keys store only the most recent N entries (typically 20–25). Older accesses are overwritten.',
+      'RecentDocs binary values are PIDL shell items — require proper parsing, not plain text reading. Use EZ Tools or RegRipper.',
+      'TypedPaths does NOT record clicks — only paths manually typed. Browsed paths appear in Shellbags, not TypedPaths.',
+      'OpenSavePidlMRU captures file access via dialogs only — files opened programmatically or via command line do not appear here.',
+      'WordWheelQuery is per-user and per-machine — search terms on one machine do not appear in the registry of another.',
+      'Run MRU entries are written immediately on execution — unlike some artifacts that are written on logout/shutdown.',
+    ],
+    correlate: ['Shellbags (folder navigation)', 'LNK files (same files, with timestamps)', 'Prefetch (applications that opened the files)', 'Event ID 4663 (object access if auditing enabled)', 'Jump Lists (application-specific file MRU)'],
+  },
+  {
+    name: 'Browser Artifacts',
+    category: 'Internet & Cloud Activity',
+    whatItProves: 'Websites visited, files downloaded, search terms, stored credentials, and session cookies — establishing a detailed record of a subject\'s online activity including use of cloud storage, webmail, file-sharing services, and external communication channels.',
+    ciRelevance: 'Proves use of personal cloud storage (Google Drive, Dropbox, Box, Mega) that could serve as exfiltration channels. Upload activity in browser network logs or cloud app artifacts. Webmail access (Gmail, ProtonMail) not captured by corporate email monitoring. Search history establishes intent (searching for competitors, classified topics, job listings at competitors before departure).',
+    locations: [
+      { hive: 'Filesystem', key: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History', notes: 'SQLite. Tables: urls (visits, typed_count), visits (transition type), downloads (full path, referrer, bytes). Lock file when Chrome open — copy before parsing.' },
+      { hive: 'Filesystem', key: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Network\\Cookies', notes: 'SQLite. Encrypted with DPAPI (Windows) or Keychain (macOS). Chrome 80+ uses AES-256-GCM. Key in Local State file.' },
+      { hive: 'Filesystem', key: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Login Data', notes: 'SQLite. Stored passwords encrypted with DPAPI. Tools: ChromePass (NirSoft), HackBrowserData.' },
+      { hive: 'Filesystem', key: '%APPDATA%\\Mozilla\\Firefox\\Profiles\\*.default\\places.sqlite', notes: 'SQLite. Tables: moz_places (URL, title, visit_count, last_visit_date), moz_historyvisits (visit_type, from_visit).' },
+      { hive: 'Filesystem', key: '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\History', notes: 'Same format as Chrome (Chromium-based). Use same Chrome tools.' },
+      { hive: 'Filesystem', key: '%LOCALAPPDATA%\\Microsoft\\Windows\\WebCache\\WebCacheV01.dat', notes: 'ESE database. IE/Edge Legacy history, cookies, cache. Parse with ESEDatabaseView or Autopsy.' },
+    ],
+    fields: [
+      { field: 'URL and title', meaning: 'Full URL of visited page and page title', ciValue: 'Distinguishes browsing to cloud storage from other sites. URL parameters may reveal specific file operations (upload=true, shared=, download=).' },
+      { field: 'Visit count', meaning: 'Number of times a URL was visited', ciValue: 'High visit count to a specific cloud service proves regular use, not accidental navigation.' },
+      { field: 'Visit transition type', meaning: 'How the page was reached: typed, link, redirect, form_submit, reload', ciValue: '"Typed" transition = user deliberately navigated to URL (not followed a link). High intentionality. Form_submit = credentials entered or file uploaded.' },
+      { field: 'Download path and referrer', meaning: 'Local save path and source URL for downloaded files', ciValue: 'Proves a specific file was downloaded from a specific source. Referrer URL may show the triggering page.' },
+      { field: 'Last visit date', meaning: 'Timestamp of most recent visit', ciValue: 'Timeline anchor — correlate with other artifacts for the same time window.' },
+      { field: 'Typed count', meaning: 'Number of times URL was manually typed (separate from visits)', ciValue: 'Non-zero typed count = user deliberately and repeatedly navigated to this site.' },
+    ],
+    parseWith: ['hindsight (Chrome/Chromium — most complete)', 'sqlite3 (direct SQL queries)', 'BrowsingHistoryView (NirSoft, all browsers)', 'Autopsy Web Artifacts module', 'Magnet AXIOM (strongest overall browser artifact coverage)'],
+    queries: [
+      { description: 'Chrome history — all URLs with visit count', command: "sqlite3 History \"SELECT url, title, visit_count, datetime(last_visit_time/1000000-11644473600,'unixepoch') as last_visit FROM urls ORDER BY last_visit_time DESC;\"" },
+      { description: 'Chrome downloads', command: "sqlite3 History \"SELECT target_path, referrer, datetime(start_time/1000000-11644473600,'unixepoch') as download_time, received_bytes FROM downloads;\"" },
+      { description: 'Chrome — find cloud storage visits', command: "sqlite3 History \"SELECT url, visit_count, datetime(last_visit_time/1000000-11644473600,'unixepoch') FROM urls WHERE url LIKE '%drive.google%' OR url LIKE '%dropbox%' OR url LIKE '%onedrive%' OR url LIKE '%mega.nz%';\"" },
+      { description: 'Firefox history all visits', command: "sqlite3 places.sqlite \"SELECT url, title, visit_count, datetime(last_visit_date/1000000,'unixepoch') FROM moz_places WHERE visit_count > 0 ORDER BY last_visit_date DESC;\"" },
+      { description: 'hindsight full Chrome analysis', command: 'hindsight.py -i "Chrome/User Data/Default" -o chrome_output -f sqlite' },
+    ],
+    pitfalls: [
+      'Chrome timestamps are stored as microseconds since January 1, 1601 (Windows FILETIME epoch). Subtract 11644473600 after dividing by 1000000 to get Unix time.',
+      'Firefox timestamps are microseconds since Unix epoch — divide by 1000000 directly.',
+      'Chrome profile must not be open during acquisition — the History SQLite file has a WAL (write-ahead log) that must be checkpointed.',
+      'Incognito/private mode does not write to history. Absence of expected sites may indicate incognito use — look for DNS cache, Prefetch of browser, and RAM artifacts instead.',
+      'Cookie and password databases are encrypted with DPAPI on Windows — decryption requires the user\'s Windows password or DPAPI master key. Tools: chrome-decrypt, HackBrowserData.',
+      'Chrome sync may mean browser history exists on Google servers even if local history was cleared — obtain via legal process if warranted.',
+    ],
+    correlate: ['DNS cache (sites visited even if history cleared)', 'Prefetch (browser executable — confirms browser was open)', 'SRUM (network bytes from browser process)', 'Event ID 4688 (browser process creation)', 'Cloud app logs (if corporate-managed cloud storage)'],
+  },
+  {
+    name: 'Volume Shadow Copies',
+    category: 'Historical State Recovery',
+    whatItProves: 'The state of files, registry hives, and the entire volume at a prior point in time — even if those files have since been modified, deleted, or overwritten. VSS snapshots are created automatically by Windows Update, System Restore, and backup software.',
+    ciRelevance: 'If a subject deleted exfiltration tools, modified timestamps, or cleared logs, VSS may contain earlier versions showing the original state. Prior versions of registry hives (Shimcache, Amcache, NTUSER.DAT) may contain entries for deleted tools not present in current hives. Most powerful anti-anti-forensics technique available.',
+    locations: [
+      { hive: 'Filesystem', key: '\\\\?\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy{N}\\', notes: 'Shadow copies accessed via VSS API or by mounting. N = shadow copy number. List with vssadmin list shadows or Get-WmiObject Win32_ShadowCopy.' },
+      { hive: 'Filesystem', key: 'System Volume Information\\_restore{GUID}\\RP*', notes: 'System Restore points (WinXP/7). Registry hives and key files copied per restore point.' },
+    ],
+    fields: [
+      { field: 'Creation time', meaning: 'When the shadow copy was created', ciValue: 'Establishes the point in time the snapshot reflects. Sort shadow copies by creation time to build a timeline.' },
+      { field: 'Shadow copy ID (GUID)', meaning: 'Unique identifier for the shadow copy', ciValue: 'Used to mount and access the specific snapshot.' },
+      { field: 'Originating machine', meaning: 'Machine that created the shadow copy', ciValue: 'Confirms the shadow copy is from the same machine, not a restored image.' },
+      { field: 'Volume', meaning: 'Which volume the shadow copy covers', ciValue: 'Shadow copies are per-volume. C: and D: have separate shadow copy chains.' },
+    ],
+    parseWith: ['X-Ways Forensics (Mount as Drive Letter → volume shadow copy)', 'Velociraptor VSS artifact', 'vshadowmount (libvshadow)', 'ShadowCopyView (NirSoft)', 'Autopsy DataSourceIntegrityModule'],
+    queries: [
+      { description: 'List all shadow copies', command: 'vssadmin list shadows /for=C:' },
+      { description: 'List shadow copies via PowerShell', command: 'Get-WmiObject Win32_ShadowCopy | Select InstallDate, ID, DeviceObject | Sort InstallDate' },
+      { description: 'Mount shadow copy as drive letter (mklink)', command: 'mklink /d C:\\vss_mount \\\\?\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy1\\' },
+      { description: 'Access shadow copy registry hives for Shimcache analysis', command: 'AppCompatCacheParser.exe -f "C:\\vss_mount\\Windows\\System32\\config\\SYSTEM" --csv C:\\output\\vss1_shimcache' },
+      { description: 'Compare current vs VSS shimcache entries (find deleted tool entries)', command: 'Compare-Object (Import-Csv current_shimcache.csv) (Import-Csv vss_shimcache.csv) -Property Path' },
+      { description: 'Extract prior NTUSER.DAT for MRU analysis', command: 'copy "C:\\vss_mount\\Users\\username\\NTUSER.DAT" C:\\output\\vss1_ntuser.dat' },
+    ],
+    pitfalls: [
+      'VSS snapshots are not guaranteed — if disk space is low or System Protection is disabled, no snapshots may exist.',
+      'Ransomware and some anti-forensics tools delete VSS snapshots (vssadmin delete shadows /all /quiet). Absence of expected snapshots may itself be evidence.',
+      'Windows automatically manages VSS storage — older snapshots are deleted as new ones are created and space runs low. Oldest snapshots are lost first.',
+      'VSS mounting via mklink requires admin privileges and may not work on acquired images — use X-Ways or libvshadow for offline mounting.',
+      'Files in VSS reflect the state at snapshot creation, not deletion time. A file deleted before the snapshot was created will not appear.',
+      'VSS on SSDs: some configurations disable VSS or limit its operation. Always check System Protection settings for each volume.',
+    ],
+    correlate: ['Shimcache from VSS (deleted tool entries)', 'Amcache from VSS (hash of deleted binaries)', 'NTUSER.DAT from VSS (MRU entries for deleted files)', 'Prefetch from VSS (prior execution evidence)', 'Event logs from VSS (cleared log reconstruction)'],
+  },
+  {
+    name: 'Event Log Correlation',
+    category: 'Account & System Activity',
+    whatItProves: 'Account logon/logoff activity, process execution, privilege use, service installation, and object access — providing a timestamped audit trail of system activity that can establish presence, lateral movement, privilege escalation, and tool execution.',
+    ciRelevance: 'Event log chains establish who was logged in when suspicious activity occurred, what processes they ran, whether they used elevated privileges, and whether any services or scheduled tasks were installed (persistence). Cleared event logs are themselves evidence of anti-forensics activity (Event ID 1102/104).',
+    locations: [
+      { hive: 'Filesystem', key: 'C:\\Windows\\System32\\winevt\\Logs\\Security.evtx', notes: 'Account logon, object access, privilege use, process creation (if audited). Primary CI log.' },
+      { hive: 'Filesystem', key: 'C:\\Windows\\System32\\winevt\\Logs\\System.evtx', notes: 'Service installation, driver load, system events.' },
+      { hive: 'Filesystem', key: 'C:\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-PowerShell%4Operational.evtx', notes: 'PowerShell script block logging (if enabled) — logs all PS commands executed.' },
+      { hive: 'Filesystem', key: 'C:\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Sysmon%4Operational.evtx', notes: 'Sysmon events — process creation with hashes, network connections, file creation. Requires Sysmon installation.' },
+    ],
+    fields: [
+      { field: '4624 — Successful logon', meaning: 'Account logged on. Logon type: 2=interactive, 3=network, 4=batch, 5=service, 7=unlock, 10=RemoteInteractive (RDP)', ciValue: 'Type 10 (RDP) or Type 3 (network) during off-hours is significant. Source IP for network logons. Subject Account Name + Logon ID links to subsequent events.' },
+      { field: '4625 — Failed logon', meaning: 'Failed authentication attempt. Sub-status code identifies failure reason.', ciValue: 'Pattern of 4625 followed by 4624 = successful brute force. Failure against multiple accounts = credential stuffing or account enumeration.' },
+      { field: '4648 — Explicit credential logon', meaning: 'Logon using explicit credentials (RunAs, net use, WMI, PsExec)', ciValue: 'Proves subject used alternate credentials — key indicator of lateral movement or privilege abuse.' },
+      { field: '4688 — Process creation', meaning: 'A new process was created. Includes: process name, command line (if audited), creator process, subject account', ciValue: 'If command line auditing enabled: captures full CLI args of executed tools. Chain 4688 events to reconstruct execution sequence.' },
+      { field: '4663 — Object access', meaning: 'An attempt was made to access an object (file, registry key). Requires SACL on the object.', ciValue: 'Proves specific file access if SACL auditing is configured on sensitive directories. AccessMask reveals read/write/delete.' },
+      { field: '4698/4702 — Scheduled task created/modified', meaning: 'A scheduled task was created or modified', ciValue: 'Proves persistence mechanism was established. Task XML in the event contains the full task definition including command to execute.' },
+      { field: '7045 — Service installed', meaning: 'A new service was installed', ciValue: 'Tool installation as a service for persistence. Service name, binary path, and account in the event.' },
+      { field: '1102 — Audit log cleared (Security)', meaning: 'Security event log was cleared', ciValue: 'Anti-forensics. The clearing event itself records: who cleared it and when. Correlate with VSS for pre-clear log recovery.' },
+      { field: '4776 — NTLM credential validation', meaning: 'Domain controller attempted to validate NTLM credentials', ciValue: 'On DC: shows all NTLM authentications. Source workstation field identifies origin machine for network logons.' },
+    ],
+    parseWith: ['EvtxECmd.exe (EZ Tools) — bulk EVTX parsing with maps', 'Hayabusa (Yamato Security) — threat hunting in event logs', 'Chainsaw (WithSecure) — EVTX threat hunting', 'Splunk / ELK for large-scale correlation', 'DeepBlueCLI (SANS) — PowerShell-based log analysis'],
+    queries: [
+      { description: 'Parse all EVTX with EZ Tools maps', command: 'EvtxECmd.exe -d "C:\\Windows\\System32\\winevt\\Logs" --csv C:\\output --maps "C:\\EZTools\\Maps"' },
+      { description: 'Hayabusa threat hunting (outputs timeline)', command: 'hayabusa.exe csv-timeline -d "C:\\Windows\\System32\\winevt\\Logs" -o timeline.csv -w' },
+      { description: 'Chainsaw hunt for common attack patterns', command: 'chainsaw.exe hunt "C:\\Windows\\System32\\winevt\\Logs" -s sigma_rules\\ --mapping mappings\\sigma-event-logs-all.yml' },
+      { description: 'Extract 4624 logons with logon type (PowerShell)', command: "Get-WinEvent -Path Security.evtx -FilterXPath \"*[System[(EventID=4624)]]\" | ForEach-Object { $_.Message }" },
+      { description: 'Find log clear events', command: 'Get-WinEvent -Path Security.evtx -FilterXPath "*[System[(EventID=1102)]]" | Select TimeCreated, Message' },
+      { description: 'Build process execution chain from 4688 events', command: "EvtxECmd.exe -f Security.evtx --csv C:\\output --inc 4688" },
+    ],
+    pitfalls: [
+      'Process creation (4688) and command line logging are NOT enabled by default. If not present, absence does not mean processes weren\'t created — check GPO audit policy.',
+      'Event logs have maximum size limits and overwrite old events. Security.evtx default is 20MB — a busy system may only retain a few days of events.',
+      'Event ID 4688 without command line = process name only. Full CLI args require "Include command line in process creation events" GPO setting.',
+      'Log clearing (1102) only proves someone cleared the log — the clearing event does not record what was in the log. Use VSS to recover prior event log state.',
+      'Logon ID is unique per logon session and links 4624 → subsequent 4688 → 4647 (logoff) chains. Always extract and correlate Logon IDs.',
+      'Remote logons (Type 3) to file shares do not necessarily mean interactive access — Windows creates Type 3 logons for many background operations.',
+    ],
+    correlate: ['SRUM (network activity per process per hour)', 'Prefetch (corroborate 4688 process creation)', 'PowerShell Operational log (script execution details)', 'DHCP logs (IP to machine correlation for network logons)', 'Sysmon (if deployed — much richer process and network data)'],
+  },
+]
+
+export interface CIInvestigationChain {
+  scenario: string
+  description: string
+  steps: { artifact: string; query: string; establishes: string }[]
+}
+
+export const ciInvestigationChains: CIInvestigationChain[] = [
+  {
+    scenario: 'Data exfiltration via removable media',
+    description: 'Subject copied sensitive files to a USB drive before departing the organization.',
+    steps: [
+      { artifact: 'USBSTOR registry', query: 'HKLM\\SYSTEM\\CurrentControlSet\\Enum\\USBSTOR', establishes: 'Device VID/PID, serial number, first/last connection times.' },
+      { artifact: 'Shellbags (UsrClass.dat)', query: 'SBECmd.exe -f UsrClass.dat --csv output', establishes: 'Subject browsed to the drive letter and into specific folders on the device.' },
+      { artifact: 'LNK files', query: 'LECmd.exe -d Recent\\ --csv output', establishes: 'Specific files opened from the device — volume serial links to the same device.' },
+      { artifact: 'Prefetch', query: 'PECmd.exe -d Prefetch\\ --csv output', establishes: 'explorer.exe referenced files on the removable drive; any copy tools ran.' },
+      { artifact: 'Event ID 6416 / 2003 (System log)', query: 'EvtxECmd.exe -f System.evtx --inc 6416 --csv output', establishes: 'Device plug event with device instance ID matching USBSTOR entry.' },
+    ],
+  },
+  {
+    scenario: 'Exfiltration via cloud storage',
+    description: 'Subject uploaded sensitive files to personal cloud storage (Google Drive, Dropbox, Mega).',
+    steps: [
+      { artifact: 'Browser history (Chrome/Firefox)', query: "sqlite3 History \"SELECT url, visit_count FROM urls WHERE url LIKE '%drive.google%' OR url LIKE '%dropbox%' OR url LIKE '%mega.nz%'\"", establishes: 'Subject accessed cloud storage services — visit count and typed_count establish regularity.' },
+      { artifact: 'SRUM database', query: 'SrumECmd.exe -f SRUDB.dat --csv output', establishes: 'Network bytes sent by chrome.exe or the cloud sync client process — quantifies data volume uploaded.' },
+      { artifact: 'Prefetch', query: 'PECmd.exe -d Prefetch\\ --csv output | grep -i "dropbox\\|onedrive\\|googledrivesync"', establishes: 'Cloud sync client ran — execution times establish when sync occurred.' },
+      { artifact: 'MRU / OpenSavePidlMRU', query: 'rip.pl -r NTUSER.DAT -p comdlg32', establishes: 'Subject opened specific sensitive files via Open/Save dialog — establishes which files were staged.' },
+      { artifact: 'Shellbags', query: 'SBECmd.exe -f UsrClass.dat --csv output', establishes: 'Subject navigated to cloud sync folder and staged subdirectories.' },
+    ],
+  },
+  {
+    scenario: 'Anti-forensics — tool deletion and log clearing',
+    description: 'Subject ran exfiltration tools, then deleted them and cleared logs before surrender of device.',
+    steps: [
+      { artifact: 'Shimcache (VSS copy)', query: 'AppCompatCacheParser.exe -f vss_SYSTEM --csv vss_shimcache', establishes: 'Tool path and modified timestamp recorded before deletion — proves file existed.' },
+      { artifact: 'Amcache (VSS copy)', query: 'AmcacheParser.exe -f vss_Amcache.hve --csv vss_amcache', establishes: 'SHA-1 hash of deleted binary — allows VirusTotal lookup and known-tool identification.' },
+      { artifact: 'Prefetch (VSS copy)', query: 'PECmd.exe -f vss_TOOLNAME.pf', establishes: 'Run count and timestamps for the deleted tool — proves execution history.' },
+      { artifact: 'Event ID 1102 (Security log)', query: 'Get-WinEvent -Path Security.evtx | Where EventID -eq 1102', establishes: 'Log was cleared — records who cleared it and when. Anti-forensics admission.' },
+      { artifact: 'VSS Prefetch copy', query: 'PECmd.exe -d "vss_Windows\\Prefetch" --csv output', establishes: 'Pre-deletion prefetch state including all tool execution timestamps.' },
+    ],
+  },
+]

@@ -6,6 +6,7 @@ import {
   lnkArtifacts, browserArtifacts, linuxArtifacts, volatilityPlugins,
   memoryTriage, toolSheets,
   macArtifacts, macUnifiedLogQueries, macToolCommands,
+  keyArtifacts, ciInvestigationChains,
 } from '@/lib/forensics/data'
 
 // ─── Shared primitives ───────────────────────────────────────────────────────
@@ -634,6 +635,205 @@ export function MacOSArtifacts() {
                   <code className="text-xs font-mono text-emerald-400 break-all">{t.cmd}</code>
                 </div>
                 <Copy text={t.cmd} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Key Artifacts (CI-focused) ───────────────────────────────────────────────
+
+
+export function KeyArtifactsCI() {
+  const [tab, setTab]     = useState<'artifacts' | 'chains'>('artifacts')
+  const [active, setActive] = useState(keyArtifacts[0].name)
+  const [section, setSection] = useState<'overview' | 'fields' | 'queries' | 'pitfalls' | 'correlate'>('overview')
+
+  const art = keyArtifacts.find(a => a.name === active)!
+
+  const catColor = (cat: string) => {
+    if (cat === 'Program Execution')    return 'bg-blue-950 text-blue-400'
+    if (cat === 'Folder Access')        return 'bg-purple-950 text-purple-400'
+    if (cat === 'File & Path Access')   return 'bg-amber-950 text-amber-400'
+    if (cat === 'Internet & Cloud Activity') return 'bg-teal-950 text-teal-400'
+    if (cat === 'Historical State Recovery') return 'bg-emerald-950 text-emerald-400'
+    if (cat === 'Account & System Activity') return 'bg-red-950 text-red-400'
+    return 'bg-zinc-800 text-zinc-400'
+  }
+
+  return (
+    <div>
+      <SectionHeader
+        title="Key artifacts — CI focus"
+        sub="What each artifact proves, CI relevance, field meanings, parse commands, pitfalls, and correlation chains"
+      />
+
+      {/* Tab toggle */}
+      <div className="flex gap-2 mb-5">
+        {(['artifacts', 'chains'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${
+              tab === t ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+            }`}>
+            {t === 'artifacts' ? 'Artifact deep-dives' : 'Investigation chains'}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Artifact deep-dives ── */}
+      {tab === 'artifacts' && (
+        <div className="flex gap-4 overflow-hidden" style={{ minHeight: '600px' }}>
+
+          {/* Artifact list */}
+          <div className="w-44 flex-shrink-0 space-y-1">
+            {keyArtifacts.map(a => (
+              <button key={a.name} onClick={() => { setActive(a.name); setSection('overview') }}
+                className={`w-full text-left px-3 py-2.5 rounded transition-colors border-l-2 ${
+                  active === a.name
+                    ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
+                    : 'border-transparent text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+                }`}>
+                <div className="text-xs font-mono leading-tight">{a.name}</div>
+                <div className={`text-[10px] font-mono mt-0.5 px-1 py-0.5 rounded inline-block ${catColor(a.category)}`}>{a.category}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* Detail panel */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {/* Header */}
+            <div className="border border-zinc-800 rounded p-4 bg-zinc-900/30">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="text-sm font-mono font-bold text-zinc-100">{art.name}</span>
+                <Badge text={art.category} cls={catColor(art.category)} />
+              </div>
+              <p className="text-xs font-mono text-zinc-400 mb-3">{art.whatItProves}</p>
+              <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3">
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">CI relevance</div>
+                <p className="text-xs font-mono text-amber-400">{art.ciRelevance}</p>
+              </div>
+            </div>
+
+            {/* Sub-section tabs */}
+            <div className="flex flex-wrap gap-1">
+              {(['overview', 'fields', 'queries', 'pitfalls', 'correlate'] as const).map(s => (
+                <button key={s} onClick={() => setSection(s)}
+                  className={`px-2.5 py-1 text-[11px] font-mono rounded transition-colors ${
+                    section === s ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+                  }`}>{s}</button>
+              ))}
+            </div>
+
+            {/* Locations */}
+            {section === 'overview' && (
+              <div className="space-y-2">
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-2">Locations</div>
+                {art.locations.map((loc, i) => (
+                  <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <Badge text={loc.hive} cls="bg-blue-950 text-blue-400" />
+                    </div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <code className="text-xs font-mono text-emerald-400 flex-1 break-all">{loc.key}</code>
+                      <Copy text={loc.key} />
+                    </div>
+                    <p className="text-xs font-mono text-zinc-500">{loc.notes}</p>
+                  </div>
+                ))}
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mt-4 mb-2">Parse with</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {art.parseWith.map(p => <Badge key={p} text={p} cls="bg-zinc-800 text-zinc-400" />)}
+                </div>
+              </div>
+            )}
+
+            {/* Fields */}
+            {section === 'fields' && (
+              <div className="space-y-2">
+                {art.fields.map((f, i) => (
+                  <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
+                    <div className="text-xs font-mono font-semibold text-zinc-100 mb-1">{f.field}</div>
+                    <p className="text-xs font-mono text-zinc-400 mb-2">{f.meaning}</p>
+                    <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+                      <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI value: </span>
+                      <span className="text-xs font-mono text-amber-400">{f.ciValue}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Queries */}
+            {section === 'queries' && (
+              <div className="space-y-2">
+                {art.queries.map((q, i) => (
+                  <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
+                    <p className="text-xs font-mono text-zinc-400 mb-2">{q.description}</p>
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs font-mono text-emerald-400 flex-1 break-all bg-zinc-950 px-2 py-1.5 rounded">{q.command}</code>
+                      <Copy text={q.command} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Pitfalls */}
+            {section === 'pitfalls' && (
+              <div className="space-y-2">
+                {art.pitfalls.map((p, i) => (
+                  <div key={i} className="flex gap-2 border border-red-900/40 bg-red-950/10 rounded p-3">
+                    <span className="text-red-700 flex-shrink-0 text-xs font-mono">⚠</span>
+                    <p className="text-xs font-mono text-zinc-300">{p}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Correlate */}
+            {section === 'correlate' && (
+              <div className="space-y-2">
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-2">Cross-artifact correlation</div>
+                {art.correlate.map((c, i) => (
+                  <div key={i} className="flex gap-2 text-xs font-mono text-zinc-300 border border-zinc-800 rounded px-3 py-2 bg-zinc-900/20">
+                    <span className="text-emerald-700 flex-shrink-0">→</span>{c}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Investigation chains ── */}
+      {tab === 'chains' && (
+        <div className="space-y-4">
+          <div className="bg-blue-950/20 border border-blue-900/30 rounded p-3 text-xs font-mono text-blue-400">
+            Each chain shows how artifacts combine to build a complete evidentiary picture for a specific CI scenario. Follow the steps in order — each artifact corroborates or extends the last.
+          </div>
+          {ciInvestigationChains.map(chain => (
+            <div key={chain.scenario} className="border border-zinc-800 rounded overflow-hidden">
+              <div className="px-4 py-3 bg-zinc-900 border-b border-zinc-800">
+                <div className="text-sm font-mono font-semibold text-zinc-100 mb-1">{chain.scenario}</div>
+                <p className="text-xs font-mono text-zinc-500">{chain.description}</p>
+              </div>
+              <div className="divide-y divide-zinc-800/50">
+                {chain.steps.map((step, i) => (
+                  <div key={i} className="px-4 py-3 flex gap-3 bg-zinc-950/30">
+                    <span className="text-xs font-mono font-bold text-zinc-600 w-5 flex-shrink-0 pt-0.5">{i + 1}</span>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <Badge text={step.artifact} cls="bg-blue-950 text-blue-400" />
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs font-mono text-emerald-400 flex-1 break-all bg-zinc-950 px-2 py-1 rounded">{step.query}</code>
+                        <Copy text={step.query} />
+                      </div>
+                      <p className="text-xs font-mono text-amber-400">{step.establishes}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
