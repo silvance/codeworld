@@ -54,7 +54,7 @@ const platBadge = (p: string) => {
 
 // ─── 1. iOS Unified Log ───────────────────────────────────────────────────────
 
-export function iOSUnifiedLog() {
+export function IOSUnifiedLog() {
   const [catFilter, setCatFilter] = useState('ALL')
   const [open, setOpen] = useState<string | null>(null)
   const cats = ['ALL', ...Array.from(new Set(iosLogQueries.map(q => q.category)))]

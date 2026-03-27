@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { AcquisitionRef, DeviceArtifacts, BackupStructure, SQLiteDatabases, AppArtifactPaths, ADBReference } from './sections'
 import {
-  iOSUnifiedLog, AndroidLogs, CloudExtractionSection, AppDeepDivesSection,
+  IOSUnifiedLog, AndroidLogs, CloudExtractionSection, AppDeepDivesSection,
   LocationForensics, CommCorrelation, MobileMalware, MobileAntiForensicsSection,
   JTAGWorkflow, UFEDReference,
 } from './sectionsAdvanced'
@@ -41,7 +41,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   sqlite:        <SQLiteDatabases />,
   apps:          <AppArtifactPaths />,
   adb:           <ADBReference />,
-  ioslog:        <iOSUnifiedLog />,
+  ioslog:        <IOSUnifiedLog />,
   androidlog:    <AndroidLogs />,
   cloud:         <CloudExtractionSection />,
   appdeep:       <AppDeepDivesSection />,
