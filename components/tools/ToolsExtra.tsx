@@ -1136,13 +1136,16 @@ export function UUIDDecoder() {
     if (version === 1) {
       // v1: time-based
       // Time = 60-bit value, 100ns intervals since 1582-10-15
-      const timeLow   = BigInt('0x' + hex.slice(0, 8))
-      const timeMid   = BigInt('0x' + hex.slice(8, 12))
-      const timeHigh  = BigInt('0x' + hex.slice(13, 16)) // skip version nibble
-      const ts100ns = (timeHigh << 48n) | (timeMid << 32n) | timeLow
-      // Offset from UUID epoch (1582-10-15) to Unix epoch (1970-01-01) in 100ns intervals
-      const epochOffset = 122192928000000000n
-      const unixMs = Number((ts100ns - epochOffset) / 10000n)
+      // Avoid BigInt literals — decompose into float64 arithmetic
+      // ts (100ns) = timeHigh * 2^48 + timeMid * 2^32 + timeLow
+      // Convert to ms: divide each component by 10000 using precomputed factors
+      // 2^48 / 10000 = 28147497671.0656,  2^32 / 10000 = 429496.7296
+      const timeLow   = parseInt(hex.slice(0, 8),  16)
+      const timeMid   = parseInt(hex.slice(8, 12), 16)
+      const timeHigh  = parseInt(hex.slice(13, 16), 16) // skip version nibble
+      const tsMs = timeHigh * 28147497671.0656 + timeMid * 429496.7296 + timeLow / 10000
+      // Offset: ms from 1582-10-15 to 1970-01-01 = 122192928000000000 / 10000
+      const unixMs = tsMs - 12219292800000
       timestamp = new Date(unixMs).toISOString()
 
       clockSeq = parseInt(hex.slice(16, 20), 16).toString()
