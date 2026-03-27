@@ -1441,3 +1441,312 @@ export const surveyReportTemplate: SurveyReportData = {
     },
   ],
 }
+
+// ─── Rogue Base Station Reference ────────────────────────────────────────────
+
+export interface RBSTechnique {
+  name: string
+  generation: '2G' | '3G' | '4G LTE' | '5G NR' | 'All'
+  description: string
+  protocolMechanism: string
+  keyVulnerability: string
+  indicators: string[]
+  difficulty: 'LOW' | 'MED' | 'HIGH' | 'VERY HIGH'
+  notes: string
+}
+
+export const rbsTechniques: RBSTechnique[] = [
+  {
+    name: '2G GSM downgrade + intercept',
+    generation: '2G',
+    description: 'The classic attack. A rogue BTS (Base Transceiver Station) broadcasts with higher RSSI than the legitimate tower. GSM devices automatically connect to the strongest signal. The rogue station then relays to the real network — acting as a man-in-the-middle — or simply drops the connection and captures IMSI/IMEI.',
+    protocolMechanism: 'GSM has no mutual authentication — the network authenticates the handset but the handset cannot verify the network. The rogue BTS sends a Location Update Accept after the device connects. Can instruct the device to use A5/0 (no encryption) or A5/1 (weak — breakable in real time with rainbow tables). Voice and SMS in the clear.',
+    keyVulnerability: 'Unilateral authentication. Handset trusts any BTS broadcasting on a GSM frequency with sufficient RSSI. No mechanism to verify legitimacy of network.',
+    indicators: [
+      'Sudden 4G→2G or 3G→2G downgrade on device',
+      'Strong GSM signal (850/900/1800/1900 MHz) that cannot be correlated to a licensed tower in that location',
+      'Cell ID (LAC/CID) not present in OpenCelliD or Mozilla Location Services database',
+      'A5/0 encryption mode (no encryption) indicated by SnoopSnitch or protocol analyzer',
+      'IMSI being sent in plaintext during Location Update before authentication',
+      'TDMA burst pattern detectable on spectrum analyzer at 217 Hz intervals',
+      'All devices in area simultaneously downgrading to 2G',
+    ],
+    difficulty: 'LOW',
+    notes: 'GSM is fully broken from an authentication standpoint. The required hardware (USRP B200, BladeRF, HackRF) costs $300–$1500. Software (OpenBTS, OsmocomBB, YateBTS, Osmocom) is open source. This attack has been demonstrated publicly at DEF CON since 2010. The 2G downgrade is the defining indicator for IMSI catchers in the field.',
+  },
+  {
+    name: '3G UMTS false base station',
+    generation: '3G',
+    description: '3G introduced mutual authentication via AKA (Authentication and Key Agreement) — the handset can verify the network. However, a rogue BTS can still force a downgrade to 2G by pretending to have no 3G coverage, then attacking via GSM. Pure 3G interception without downgrade is significantly harder but possible with nation-state resources.',
+    protocolMechanism: 'UMTS uses USIM-based AKA — both the device and network authenticate each other using shared secret Ki. A rogue UMTS BTS cannot complete authentication without Ki. However: (1) devices can be forced to fall back to 2G if the rogue station indicates unavailability, (2) some UMTS configurations still allow unencrypted bearers, (3) RNC (Radio Network Controller) spoofing at protocol layer is possible with advanced equipment.',
+    keyVulnerability: 'Downgrade path to 2G remains the primary attack vector. UMTS itself is significantly more resistant to direct impersonation than GSM.',
+    indicators: [
+      'Device showing 3G but RSSI much stronger than expected from nearest licensed 3G tower',
+      'Repeated connection drops followed by 2G connection (forced downgrade)',
+      'Cell ID not in MLS/OpenCelliD for 3G (UMTS) network',
+      'RNC ID not matching any carrier record for that area',
+    ],
+    difficulty: 'HIGH',
+    notes: '3G mutual authentication largely closes the pure impersonation path. Most real-world attacks against 3G-capable devices use the 2G fallback. Passive UMTS protocol analysis requires expensive equipment (R&S TSMW, Keysight) or modified commercial devices. For TSCM purposes, detection focus is on the downgrade attack rather than direct 3G intercept.',
+  },
+  {
+    name: '4G LTE IMSI catcher (passive)',
+    generation: '4G LTE',
+    description: 'LTE has strong mutual authentication (EPS-AKA) making full MitM interception extremely difficult. However, passive IMSI collection remains possible via the Attach Request process — devices transmit IMSI (or GUTI that maps to IMSI) before authentication completes. Combined with a forced fallback, LTE IMSI catchers harvest identity without full session intercept.',
+    protocolMechanism: 'LTE Attach procedure: (1) UE sends Attach Request with IMSI or GUTI to eNodeB, (2) eNodeB forwards to MME, (3) MME triggers Authentication. A rogue eNodeB can capture the Attach Request (containing IMSI/GUTI) before authentication begins. Cannot decrypt content without Kasumi/SNOW 3G keys. Forcing IMSI retransmission: sending Identity Request after receiving GUTI forces the device to send its actual IMSI.',
+    keyVulnerability: 'IMSI transmitted before mutual authentication completes. Identity Request message (MME→UE) in LTE can force IMSI disclosure even when device would prefer to send GUTI.',
+    indicators: [
+      'eNodeB broadcasting LTE parameters (MCC/MNC/TAC/Cell ID) not in carrier database',
+      'Strong LTE signal in area where coverage maps show weak or no signal',
+      'Devices repeatedly cycling Attach/Detach (signature of failed auth or forced reassociation)',
+      'LTE signal present but data connectivity fails (rogue station captures IMSI but cannot complete auth)',
+      'TAC (Tracking Area Code) inconsistent with carrier\'s known TA layout for that geography',
+    ],
+    difficulty: 'HIGH',
+    notes: 'Commercial-grade LTE IMSI catchers exist (Harris StingRay II, DRT Dirtbox, Rohde & Schwarz equipment) and are sold exclusively to law enforcement/government. Commodity SDR hardware cannot replicate full LTE eNodeB capability — this attack requires purpose-built or heavily modified commercial equipment. Detection is significantly harder than GSM because there is no obvious 2G downgrade indicator.',
+  },
+  {
+    name: 'LTE-to-2G forced downgrade (downgrade attack)',
+    generation: '4G LTE',
+    description: 'The most practical LTE attack. An LTE-capable rogue station advertises an LTE network but instructs devices to redirect to 2G using RRC Connection Release with redirect information. The device then connects to a rogue GSM BTS on the redirected frequency where full interception is possible.',
+    protocolMechanism: 'RRC (Radio Resource Control) Connection Release message in LTE includes optional redirectedCarrierInfo — instructs the UE to connect to another frequency, potentially another technology (GERAN = 2G, UTRAN = 3G). No authentication is required on this redirect message in the RRC layer. Device trusts the instruction from what it believes is the LTE network.',
+    keyVulnerability: 'RRC Connection Release redirect is unauthenticated at the air interface layer. Device follows redirect to potentially adversarial 2G network.',
+    indicators: [
+      'Same as 2G downgrade indicators after redirect',
+      'Unexpected LTE→2G drop in an area with confirmed LTE coverage',
+      'Multiple devices dropping to 2G simultaneously in a small geographic area',
+      'LTE signal briefly appears then disappears, followed by 2G connection',
+    ],
+    difficulty: 'MED',
+    notes: 'This is the bridge between LTE capability and GSM interception capability. A sophisticated operator can run both: an LTE rogue eNodeB to capture the redirect, and a GSM rogue BTS to perform the actual intercept. Requires capability at both frequency ranges simultaneously. IMSI Catcher Catchers (Android apps) specifically detect this pattern.',
+  },
+  {
+    name: '5G NR — current state',
+    generation: '5G NR',
+    description: '5G introduces SUPI (Subscriber Permanent Identifier) concealment using SUCI (Subscription Concealed Identifier) — the device encrypts its permanent identity with the home network\'s public key before transmission, preventing passive IMSI harvesting at the air interface. Additionally, 5G SA (Standalone) mode substantially increases authentication security.',
+    protocolMechanism: 'SUCI concealment: IMSI (now called SUPI) is encrypted with the home network\'s ECIES public key before being sent over the air. A rogue gNB receives only an encrypted SUCI — useless without the home network\'s private key. 5G AKA and EAP-AKA\' provide enhanced mutual authentication. However: (1) many "5G" deployments are NSA (Non-Standalone) running on LTE core — all LTE vulnerabilities still apply, (2) downgrade to LTE/3G/2G remains possible in NSA mode, (3) 5G SA with SUCI is the future, not the present.',
+    keyVulnerability: 'Most 5G deployments (NSA mode) still use LTE core — SUCI protection is only fully effective in 5G SA mode. Downgrade attacks to LTE or 2G remain viable. 5G SA coverage is limited (2024–2025 deployment still maturing).',
+    indicators: [
+      '5G NSA indicators are effectively the same as LTE — same vulnerabilities apply',
+      'Check whether device is on SA (Standalone) or NSA (Non-Standalone) 5G — NSA devices are still vulnerable via LTE attacks',
+    ],
+    difficulty: 'VERY HIGH',
+    notes: 'True 5G SA with SUCI effectively closes the passive IMSI harvesting vulnerability at the air interface. This is the first generation that provides genuine air-interface identity protection. However, widespread 5G SA deployment is years away from being the dominant mode in most markets. For current TSCM purposes: if a device shows 5G NSA, treat it as LTE for threat assessment. If 5G SA is confirmed, identity harvesting risk at air interface is substantially reduced — but the device remains vulnerable when moving between cells and during any 4G/3G/2G fallback.',
+  },
+  {
+    name: 'Private LTE / CBRS as cover',
+    generation: '4G LTE',
+    description: 'Citizens Broadband Radio Service (CBRS) in the 3.5 GHz band allows private LTE network deployment without traditional carrier licensing. A sophisticated adversary can deploy a legitimate-appearing private LTE network in or near a target facility, using it as both a cover story for detected cellular signals and as an intelligence collection platform for devices that connect to it.',
+    protocolMechanism: 'CBRS (3550–3700 MHz) is licensed-by-registration through a Spectrum Access System (SAS). An adversary could register a legitimate CBRS small cell, deploy it near or inside a facility, and configure it to collect device associations while appearing as a valid private LTE network. Devices configured to connect to "private 5G" or CBRS networks could be silently enrolled.',
+    keyVulnerability: 'Legitimate spectrum access makes the signal harder to dismiss as unauthorized. Organizations implementing private LTE/5G for facility coverage create an expectation of local cellular infrastructure that adversaries can exploit.',
+    indicators: [
+      'CBRS signals (3.5 GHz) in areas where no private LTE deployment has been authorized',
+      'Unknown eNodeB in CBRS band that cannot be correlated to a registered SAS entry',
+      'Private LTE APN (Access Point Name) appearing on devices that should not be connecting to private networks',
+      'Strong 3.5 GHz signal from within a facility with no documented CBRS deployment',
+    ],
+    difficulty: 'HIGH',
+    notes: 'Verify CBRS deployments against FCC SAS records. Any CBRS eNodeB visible inside a facility should be documented in the facility\'s authorized equipment inventory. This attack vector becomes more relevant as private LTE/5G deployments proliferate in enterprise environments.',
+  },
+]
+
+export interface RBSHardware {
+  name: string
+  type: 'Commercial / LE' | 'Research / SDR' | 'Software'
+  generations: string[]
+  description: string
+  capabilities: string[]
+  limitations: string[]
+  availability: string
+  detectionSignificance: string
+}
+
+export const rbsHardware: RBSHardware[] = [
+  {
+    name: 'Harris StingRay / KingFish / Hailstorm',
+    type: 'Commercial / LE',
+    generations: ['2G', '3G', '4G LTE'],
+    description: 'The canonical law enforcement IMSI catcher family. Briefcase to vehicle-mounted form factors. KingFish is the handheld version, Hailstorm adds LTE capability.',
+    capabilities: ['IMSI/IMEI harvesting across multiple generations', 'Call and SMS intercept on 2G', 'LTE IMSI collection', 'Location tracking via RSSI triangulation', 'Forced downgrade to 2G'],
+    limitations: ['Requires warrant/court order in most US jurisdictions (though widely contested)', 'Sold exclusively to government agencies', 'Known cellular signal signatures', 'Dirtbox (airborne variant) has different characteristics'],
+    availability: 'US government / law enforcement only. Harris Corporation (now L3Harris). Export controlled.',
+    detectionSignificance: 'Presence indicates law enforcement or adversarial government operation. 2G downgrade is primary indicator. SnoopSnitch detection is reliable for GSM mode. LTE mode leaves fewer indicators.',
+  },
+  {
+    name: 'DRT / "Dirtbox" (Digital Receiver Technology)',
+    type: 'Commercial / LE',
+    generations: ['2G', '3G', '4G LTE'],
+    description: 'Boeing subsidiary DRT makes airborne IMSI catchers (hence "Dirtbox"). Deployed from Cessna aircraft — can sweep IMSIs from thousands of devices below. Ground-based versions also exist.',
+    capabilities: ['High-altitude wide-area IMSI collection', 'Multiple generation support', 'High throughput — can process many devices simultaneously'],
+    limitations: ['Airborne deployment is detectable (aircraft presence)', 'Ground mode similar signature to StingRay'],
+    availability: 'DOJ, DEA, US Marshals documented use via FOIA disclosures.',
+    detectionSignificance: 'Airborne IMSI catching creates a different detection profile — devices across a wide area simultaneously show downgrade indicators. No directional single-building source.',
+  },
+  {
+    name: 'USRP + OpenBTS / srsRAN',
+    type: 'Research / SDR',
+    generations: ['2G', '4G LTE'],
+    description: 'Software-defined radio platform (Ettus USRP B200/B210/N210) running open-source cellular stacks. OpenBTS implements GSM/GPRS. srsRAN (formerly srsLTE) implements full LTE eNodeB and EPC core.',
+    capabilities: ['Full GSM BTS with voice/data/SMS', 'LTE eNodeB for IMSI collection and redirect', 'Configurable to any cellular band with appropriate RF frontend', 'Open source — fully auditable and modifiable'],
+    limitations: ['GSM TX requires FCC Part 90 or Part 25 license for any transmission', 'LTE TX on carrier bands is illegal without authorization', 'Limited RF power compared to commercial equipment', 'Requires technical expertise to operate'],
+    availability: 'USRP hardware commercially available ($700–$2000). Software freely downloadable. Combined capability is accessible to technically sophisticated actors.',
+    detectionSignificance: 'Commodity SDR-based rogue BTS has same RF signature as commercial equipment at the protocol level. Power output may be lower — RSSI of rogue station may be weaker than expected for the apparent location. Protocol analysis more reliable than power-level analysis.',
+  },
+  {
+    name: 'BladeRF / LimeSDR + OsmocomBB',
+    type: 'Research / SDR',
+    generations: ['2G'],
+    description: 'Lower-cost SDR platforms capable of GSM BTS operation. OsmocomBB is the open-source GSM protocol stack running on modified Motorola phones or SDR hardware. More limited capability than USRP/srsRAN but very low cost.',
+    capabilities: ['GSM BTS (2G only)', 'IMSI harvesting on GSM', 'SMS interception on A5/0 configured networks'],
+    limitations: ['2G only — no LTE capability', 'Limited RF performance', 'Requires hardware modification for active TX in some configurations'],
+    availability: 'BladeRF ~$400–$700. LimeSDR ~$250–$400. Software open source.',
+    detectionSignificance: 'Lower power, potentially more errors in protocol implementation (detectable by protocol analyzers). Same conceptual threat as USRP-based systems.',
+  },
+  {
+    name: 'Rohde & Schwarz TSMA / TSMU',
+    type: 'Commercial / LE',
+    generations: ['2G', '3G', '4G LTE', '5G NR'],
+    description: 'Professional cellular network monitoring and analysis equipment. Designed for carrier network troubleshooting and regulatory enforcement. Can be repurposed for IMSI collection and network analysis.',
+    capabilities: ['Multi-generation simultaneous monitoring', '5G NR monitoring', 'Protocol-level decode across all generations', 'High-accuracy geolocation', 'Drive test and stationary monitoring modes'],
+    limitations: ['Very expensive (>$100K)', 'Designed for monitoring, not active attack — modifications required for active BTS spoofing'],
+    availability: 'Commercial — network operators, regulators, government agencies. R&S Distributor network.',
+    detectionSignificance: 'Equipment at this level can passively map all cellular activity in an area without transmitting — invisible to standard detection methods. Primary threat: intelligence collection without active transmission.',
+  },
+  {
+    name: 'srsRAN / OpenLTE / LTE-Cell-Scanner',
+    type: 'Software',
+    generations: ['4G LTE'],
+    description: 'Open-source LTE software stacks. srsRAN provides a complete LTE eNodeB, EPC, and UE implementation. LTE-Cell-Scanner is passive monitoring only. OpenLTE implements portions of the LTE stack for analysis.',
+    capabilities: ['Full LTE eNodeB implementation (srsRAN)', 'LTE passive monitoring and cell scanning', 'Protocol-level analysis of live LTE traffic', 'Configurable for IMSI collection scenarios'],
+    limitations: ['Active TX requires LTE-capable SDR (USRP B200+ recommended)', 'Computationally intensive', 'Requires licensed spectrum for any transmission'],
+    availability: 'Open source (GitHub). Requires separate SDR hardware.',
+    detectionSignificance: 'Combined with USRP, srsRAN enables a complete LTE rogue base station from commercially available hardware. The research and security testing use cases create significant dual-use concern.',
+  },
+]
+
+export interface RBSDetectionMethod {
+  method: string
+  category: 'Passive RF' | 'Protocol analysis' | 'Database correlation' | 'App-based' | 'Commercial equipment'
+  description: string
+  capability: string[]
+  limitations: string[]
+  cost: string
+  tools: string[]
+  tscmWorkflow: string
+}
+
+export const rbsDetectionMethods: RBSDetectionMethod[] = [
+  {
+    method: 'RSSI anomaly monitoring',
+    category: 'Passive RF',
+    description: 'Establish baseline cellular RSSI for all observed cell towers in and around the facility. A rogue base station typically has RSSI significantly stronger than would be expected for its apparent location relative to licensed towers. Compare observed RSSI vs carrier coverage maps and tower distance calculations.',
+    capability: [
+      'Detects anomalously strong signals from unexpected directions',
+      'Identifies new signals that appear without corresponding tower construction',
+      'Works for all generations (2G–5G)',
+      'Passive — no transmission required',
+    ],
+    limitations: [
+      'Baseline must be established before the rogue station appears',
+      'Femtocells and small cells from carriers create legitimate strong local signals',
+      'Requires access to carrier coverage maps for comparison',
+      'Indoor propagation makes direction analysis difficult',
+    ],
+    cost: 'Low — SDR or commercial spectrum analyzer already part of TSCM kit',
+    tools: ['SDR + SDR++ or GQRX (passive cellular monitoring)', 'TinySA Ultra with wideband antenna', 'Commercial cellular scanner (R&S, Anritsu)', 'Nemo Handy drive test app'],
+    tscmWorkflow: 'During pre-sweep baseline: scan all cellular bands (700, 850, 900, 1700, 1800, 1900, 2100, 2500 MHz) and record all observed cell IDs with RSSI. Note the direction of strong signals. Cross-reference with carrier maps. Flag any signal stronger than -70 dBm inside the facility without a documented carrier small cell or DAS.',
+  },
+  {
+    method: 'Cell ID / tower database correlation',
+    category: 'Database correlation',
+    description: 'Every legitimate cellular base station has a unique Cell ID (for GSM: LAC + Cell ID; for LTE: PLMN + TAC + Cell ID / EARFCN). Cross-reference observed cell IDs against community databases (OpenCelliD, Mozilla Location Services) and FCC license records. A rogue base station typically uses either a spoofed legitimate cell ID or an unclaimed ID that doesn\'t appear in any database.',
+    capability: [
+      'Definitively identifies base stations not present in community databases',
+      'Cross-references FCC licensee data for transmitter location',
+      'Works across all generations',
+      'Can be run passively from a phone or SDR',
+    ],
+    limitations: [
+      'Community databases (OpenCelliD) are incomplete — especially for rural areas, new towers, and small cells',
+      'Adversary may clone a legitimate cell ID from a real distant tower',
+      'Private LTE (CBRS) may legitimately appear without carrier records',
+      'Real towers added after last database update won\'t be present',
+    ],
+    cost: 'Free (OpenCelliD API is free for limited use, Mozilla Location Services is free)',
+    tools: ['OpenCelliD (opencellid.org)', 'Mozilla Location Services (MLS)', 'FCC CDBS / LMS license database', 'SnoopSnitch (uses MLS internally)', 'CellMapper app (crowdsourced tower mapping)'],
+    tscmWorkflow: 'Enumerate all visible cell IDs using SDR or Android phone (Network Signal Guru app shows full cell parameter list). Query each MCC/MNC/LAC/CID against OpenCelliD API. Flag any that return no result or whose reported location is inconsistent with the observed signal direction/strength. Rogue base stations often use MNC values not licensed to any carrier in the area.',
+  },
+  {
+    method: '2G encryption mode monitoring',
+    category: 'Protocol analysis',
+    description: 'GSM encryption is negotiated during call setup — the BTS instructs the handset to use A5/0 (no encryption), A5/1 (weak 64-bit cipher), or A5/3 (stronger KASUMI cipher). Legitimate carriers universally use A5/1 or A5/3. A rogue BTS performing intercept will typically instruct A5/0 (no encryption) to capture cleartext. Monitoring for A5/0 assignments is one of the most reliable rogue BTS indicators on 2G.',
+    capability: [
+      'Direct indicator of active intercept attempt on 2G',
+      'A5/0 from a legitimate carrier is essentially impossible — strong indicator',
+      'Detectable with protocol-aware SDR tools',
+    ],
+    limitations: [
+      '2G only — no equivalent indicator on 3G/4G (different crypto architecture)',
+      'Some legacy carrier configurations may use A5/0 in areas with encryption off (rare)',
+      'Requires GSM protocol decode capability',
+    ],
+    cost: 'Medium — requires GSM-capable SDR with protocol decode',
+    tools: ['OsmocomBB (modified GSM phone for protocol monitoring)', 'Airprobe + Wireshark (GSM protocol decode from SDR)', 'SnoopSnitch (detects A5/0 mode on Android)', 'AIMSICD (detects encryption mode changes)'],
+    tscmWorkflow: 'If protocol decode is available: monitor GSM channels (850/900/1800/1900 MHz) for Ciphering Mode Command messages. Flag any A5/0 assignments immediately. This requires OsmocomBB or equivalent — not possible with basic spectrum analysis. SnoopSnitch on Android will alert automatically.',
+  },
+  {
+    method: 'Protocol downgrade detection (app-based)',
+    category: 'App-based',
+    description: 'Android apps using the QXDM diagnostic interface or standard TelephonyManager API can monitor network registration events, encryption modes, and base station parameters. SnoopSnitch specifically detects IMSI catcher signatures including: sudden 2G downgrade, A5/0 cipher mode, unexpected Identity Request messages, and suspicious LAC/Cell ID patterns.',
+    capability: [
+      'Continuous passive monitoring on Android device',
+      'Automated alerting for known rogue BTS signatures',
+      'No additional hardware required beyond Android phone',
+      'Detects 2G downgrade, A5/0, Identity Request anomalies',
+    ],
+    limitations: [
+      'Requires Android phone with diagnostic access (varies by device/carrier)',
+      'SnoopSnitch works best on specific Qualcomm chipset devices',
+      'Cannot detect passive 4G/LTE IMSI collection',
+      'High false positive rate in some environments (legitimate tower changes trigger alerts)',
+    ],
+    cost: 'Free (app download)',
+    tools: ['SnoopSnitch (Android — best overall IMSI catcher detection)', 'AIMSICD (Android IMSI Catcher Detector)', 'Network Signal Guru (cell parameter monitoring)', 'Cell Spy Catcher (commercial)'],
+    tscmWorkflow: 'Deploy one or more Android devices running SnoopSnitch as continuous monitors within the facility. Review alerts at sweep time. SnoopSnitch logs all base station changes, downgrade events, and cipher mode changes — export and review the log rather than relying on real-time alerts alone. Place devices in different zones to correlate location of any detected anomaly.',
+  },
+  {
+    method: 'Commercial cellular monitoring / IMSI catcher detection',
+    category: 'Commercial equipment',
+    description: 'Dedicated commercial appliances designed specifically for rogue base station detection. These provide multi-generation monitoring, protocol analysis, and automated alerting without requiring operator expertise in cellular protocol analysis. Typically used for facility perimeter monitoring rather than point-in-time sweeps.',
+    capability: [
+      'Multi-generation simultaneous monitoring (2G–5G)',
+      'Automated cell ID database correlation',
+      'Protocol anomaly detection',
+      'Continuous perimeter monitoring capability',
+      'Geolocation of detected rogue stations',
+    ],
+    limitations: [
+      'Very high cost ($10,000–$100,000+)',
+      'Requires ongoing database subscription for cell ID verification',
+      'Cannot detect purely passive monitoring equipment (no active indicator)',
+    ],
+    cost: 'High — commercial product purchase',
+    tools: ['Pwnie Express Pwn Pulse (now Pepper IoT)', 'Bastille Networks', 'Rohde & Schwarz TSMA-based solutions', 'ESD America GSMK CryptoPhone (built-in detection)', 'Cepia Technologies IMSI Catcher Detector'],
+    tscmWorkflow: 'For high-risk facilities: deploy commercial detection appliance at perimeter with antenna positioned for exterior cellular monitoring. Set alert thresholds for new cell IDs, RSSI anomalies, and downgrade events. Review alerts as part of daily security operations. Supplement with point-in-time sweep protocol.',
+  },
+]
+
+export const rbsLegalFramework = {
+  transmission: [
+    { rule: '47 USC 333', description: 'Prohibits intentional interference with cellular communications — operating a rogue BTS that interferes with carrier signals is a federal crime regardless of purpose' },
+    { rule: '47 CFR Part 25 / Part 90', description: 'Cellular spectrum is licensed — unauthorized transmission on licensed bands is an FCC violation with civil and criminal penalties' },
+    { rule: '18 USC 2511', description: 'Wiretap Act — intercepting wire, oral, or electronic communications without authorization is a federal felony' },
+    { rule: '18 USC 1030', description: 'Computer Fraud and Abuse Act — accessing communications systems without authorization' },
+  ],
+  detection: [
+    { rule: 'Detection is legal', description: 'No US law prohibits passive monitoring of cellular frequencies, detecting anomalous signals, or identifying rogue base stations. The Electronic Communications Privacy Act (ECPA) prohibits intercepting content, not detecting the presence of anomalous transmissions.' },
+    { rule: 'Reporting to FCC', description: 'Suspected unauthorized cellular transmission should be reported to the FCC Enforcement Bureau. Provide frequency, location, signal characteristics, and observed protocol behavior.' },
+    { rule: 'Law enforcement exception', description: 'Law enforcement IMSI catchers operated under court order or legal authority are lawful. Detection of such devices is not illegal, but active countermeasures (jamming) are.' },
+  ],
+  operationalNotes: 'For TSCM purposes at government/military facilities: unauthorized rogue base station activity is a CI threat requiring immediate reporting through appropriate channels. Do not attempt active countermeasures. Document all observables (frequency, cell ID, RSSI, location, time) and report. Carrier current legal framework applies similarly — detection and documentation, not jamming.',
+}

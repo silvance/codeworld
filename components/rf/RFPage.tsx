@@ -12,9 +12,10 @@ import {
   DeviceTaxonomy, ThreatActors, SpectrumBaseline, TempestRef,
   CellularThreats, Countermeasures, TrainingScenarios, SurveyReport,
 } from './tscmAdvanced'
+import { RogueBaseStation } from './RogueBaseStation'
 
 type SectionId =
-  | 'freq' | 'fspl' | 'channels' | 'math' | 'tscm' | 'rogue'
+  | 'freq' | 'fspl' | 'channels' | 'math' | 'tscm' | 'rogue' | 'rbs'
   | 'sdr' | 'sweep' | 'physical' | 'modulation' | 'countersurv' | 'bugfreq' | 'tools' | 'antenna'
   | 'taxonomy' | 'actors' | 'baseline' | 'tempest' | 'cellular' | 'countermeasures' | 'training' | 'report'
 
@@ -38,6 +39,7 @@ const NAV = [
   { id: 'actors'         as SectionId, label: 'Threat actors',         sub: 'Nation-state · insider · criminal', icon: '🎭', group: 'Threat Intel' },
   { id: 'baseline'       as SectionId, label: 'Spectrum baseline',     sub: 'Office · mil · industrial',         icon: '📊', group: 'Threat Intel' },
   { id: 'tempest'        as SectionId, label: 'TEMPEST / emanations',  sub: 'Van Eck · keyboard · powerline',    icon: '⚡', group: 'Threat Intel' },
+  { id: 'rbs'           as SectionId, label: 'Rogue base stations', sub: '2G/LTE attacks · SDR platforms · detection', icon: '📡', group: 'TSCM' },
   { id: 'cellular'       as SectionId, label: 'Cellular threats',      sub: 'IMSI · rogue cell · carrier current',icon: '📶', group: 'Threat Intel' },
   { id: 'countermeasures'as SectionId, label: 'Countermeasures',       sub: 'Shielding · masking · policy',      icon: '🛡', group: 'Threat Intel' },
   // TSCM — Training & Docs
@@ -67,6 +69,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   actors:         <ThreatActors />,
   baseline:       <SpectrumBaseline />,
   tempest:        <TempestRef />,
+  rbs:            <RogueBaseStation />,
   cellular:       <CellularThreats />,
   countermeasures:<Countermeasures />,
   training:       <TrainingScenarios />,
