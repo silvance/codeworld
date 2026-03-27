@@ -539,7 +539,7 @@ export function RegexTester() {
         matches.push({ match: m[0], index: m.index, groups: m.slice(1) })
         if (!flags.includes('g')) break
       }
-      return { matches, valid: true, error: null }
+      return { matches, valid: true }
     } catch (e: unknown) {
       return { matches: [], valid: false, error: e instanceof Error ? e.message : String(e) }
     }
@@ -672,7 +672,7 @@ export function JWTDecoder() {
     const expired = payload.exp ? payload.exp < now : null
     const notYetValid = payload.nbf ? payload.nbf > now : null
 
-    return { header, payload, signature: parts[2], exp, iat, nbf, expired, notYetValid, error: null }
+    return { header, payload, signature: parts[2], exp, iat, nbf, expired, notYetValid }
   }, [input])
 
   const example = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
@@ -1063,7 +1063,6 @@ export function MACLookup() {
       isMulticast, isLocallyAdmin, isUniversal, isUnicast,
       eui64, modEui64,
       firstByteBin: firstByte.toString(2).padStart(8, '0'),
-      error: null,
     }
   }, [input])
 
@@ -1166,7 +1165,6 @@ export function UUIDDecoder() {
       version, versionName: versionNames[version] ?? `v${version} — Unknown`,
       variant, timestamp, clockSeq, node,
       isAppleUDID: false,
-      error: null,
     }
   }, [input])
 
