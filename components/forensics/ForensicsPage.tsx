@@ -7,7 +7,7 @@ import { AxiomArtifactsSection } from './AxiomSection'
 
 type SectionId =
   | 'windows' | 'linux' | 'macos' | 'keyartifacts' | 'memory' | 'tools'
-  | 'srum' | 'cloud' | 'browsersql' | 'antiforensics' | 'triage'
+  | 'srum' | 'cloud' | 'antiforensics' | 'axiom' | 'browsersql' | 'triage'
 
 interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
 
