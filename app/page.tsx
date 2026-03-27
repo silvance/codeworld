@@ -50,6 +50,12 @@ const TOOLS = [
     stat: { label: 'Sections', value: '10' }, color: 'coral',
   },
   {
+    href: '/pentest', label: 'Pentesting', cmd: 'cd /pentest',
+    desc: 'Recon, scanning, service enumeration, Metasploit, web app testing, password attacks, post-exploitation, Active Directory attacks, and reporting workflows — all in one reference.',
+    tags: ['Metasploit', 'BloodHound', 'SQLi', 'PrivEsc', 'AD'],
+    stat: { label: 'Sections', value: '10' }, color: 'rose',
+  },
+  {
     href: '/email', label: 'Email Header Analyzer', cmd: 'cd /email',
     desc: 'Paste raw email headers — instant SPF, DKIM, DMARC analysis, hop-by-hop routing chain, domain alignment check, and phishing flag detection. All local, nothing sent anywhere.',
     tags: ['SPF', 'DKIM', 'DMARC', 'Routing', 'Phishing'],
@@ -58,7 +64,7 @@ const TOOLS = [
 ]
 
 const STATS = [
-  { label: 'Tools',            value: '9'   },
+  { label: 'Tools',            value: '10'  },
   { label: 'Sections',         value: '60+' },
   { label: 'Nmap Commands',    value: '35+' },
   { label: 'Wireshark Filters', value: '55+' },

@@ -14,6 +14,7 @@ const LINKS = [
   { href: '/malware', label: 'Malware' },
   { href: '/osint',   label: 'OSINT' },
   { href: '/email',  label: 'Email' },
+  { href: '/pentest', label: 'Pentest' },
 ]
 
 export default function TopNav() {
