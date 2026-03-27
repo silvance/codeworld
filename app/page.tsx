@@ -49,10 +49,16 @@ const TOOLS = [
     tags: ['Search Ops', 'People Search', 'Sock Puppet', 'Infra', 'Dark Web'],
     stat: { label: 'Sections', value: '10' }, color: 'coral',
   },
+  {
+    href: '/email', label: 'Email Header Analyzer', cmd: 'cd /email',
+    desc: 'Paste raw email headers — instant SPF, DKIM, DMARC analysis, hop-by-hop routing chain, domain alignment check, and phishing flag detection. All local, nothing sent anywhere.',
+    tags: ['SPF', 'DKIM', 'DMARC', 'Routing', 'Phishing'],
+    stat: { label: 'Analysis', value: 'Local' }, color: 'sky',
+  },
 ]
 
 const STATS = [
-  { label: 'Tools',            value: '8'   },
+  { label: 'Tools',            value: '9'   },
   { label: 'Sections',         value: '60+' },
   { label: 'Nmap Commands',    value: '35+' },
   { label: 'Wireshark Filters', value: '55+' },
@@ -67,6 +73,7 @@ const colorMap: Record<string, { border: string; bg: string; text: string; tag: 
   teal:    { border: 'border-teal-900 hover:border-teal-700',         bg: 'hover:bg-teal-950/20',    text: 'text-teal-400',    tag: 'bg-teal-950/60',    tagText: 'text-teal-700'    },
   rose:    { border: 'border-rose-900 hover:border-rose-700',         bg: 'hover:bg-rose-950/20',    text: 'text-rose-400',    tag: 'bg-rose-950/60',    tagText: 'text-rose-700'    },
   coral:   { border: 'border-red-900 hover:border-red-700',           bg: 'hover:bg-red-950/20',     text: 'text-red-400',     tag: 'bg-red-950/60',     tagText: 'text-red-700'     },
+  sky:     { border: 'border-sky-900 hover:border-sky-700',             bg: 'hover:bg-sky-950/20',     text: 'text-sky-400',     tag: 'bg-sky-950/60',     tagText: 'text-sky-700'     },
 }
 
 export default function HomePage() {

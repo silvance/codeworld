@@ -13,6 +13,7 @@ const LINKS = [
   { href: '/network', label: 'Network' },
   { href: '/malware', label: 'Malware' },
   { href: '/osint',   label: 'OSINT' },
+  { href: '/email',  label: 'Email' },
 ]
 
 export default function TopNav() {
