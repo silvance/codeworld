@@ -2,65 +2,53 @@ import Link from 'next/link'
 
 const TOOLS = [
   {
-    href:  '/playground',
-    label: 'Code Playground',
-    cmd:   'cd /playground',
-    desc:  'Live Python, JavaScript, Go, Ruby, and Bash execution. Pre-loaded with cyber-relevant snippets for hash analysis, encoding, subnet math, and more.',
-    tags:  ['Python', 'JavaScript', 'Go', 'Ruby', 'Bash'],
-    stat:  { label: 'Languages', value: '5' },
-    color: 'emerald',
+    href: '/playground', label: 'Code Playground', cmd: 'cd /playground',
+    desc: 'Live Python, JavaScript, Go, Ruby, and Bash execution. Pre-loaded with cyber-relevant snippets for hash analysis, encoding, subnet math, and more.',
+    tags: ['Python', 'JavaScript', 'Go', 'Ruby', 'Bash'],
+    stat: { label: 'Languages', value: '5' }, color: 'emerald',
   },
   {
-    href:  '/rf',
-    label: 'RF / TSCM',
-    cmd:   'cd /rf',
-    desc:  'Frequency reference, path loss calculator, sweep methodology, bug frequencies, physical indicators, counter-surveillance, SDR reference, and TSCM tool guide.',
-    tags:  ['Freq Ref', 'Path Loss', 'Sweep', 'Bug Freq', 'SDR', 'Counter-Surv'],
-    stat:  { label: 'Sections', value: '14' },
-    color: 'blue',
+    href: '/rf', label: 'RF / TSCM', cmd: 'cd /rf',
+    desc: 'Frequency reference, path loss calculator, sweep methodology, bug frequencies, physical indicators, counter-surveillance, SDR reference, and TSCM tool guide.',
+    tags: ['Freq Ref', 'Sweep', 'Bug Freq', 'SDR', 'Counter-Surv'],
+    stat: { label: 'Sections', value: '14' }, color: 'blue',
   },
   {
-    href:  '/forensics',
-    label: 'Digital Forensics',
-    cmd:   'cd /forensics',
-    desc:  'Windows and Linux artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets for X-Ways, KAPE, Autopsy, and Axiom.',
-    tags:  ['Windows', 'Linux', 'Memory', 'X-Ways', 'Axiom', 'KAPE'],
-    stat:  { label: 'Sections', value: '4' },
-    color: 'purple',
+    href: '/forensics', label: 'Digital Forensics', cmd: 'cd /forensics',
+    desc: 'Windows and Linux artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets for X-Ways, KAPE, Autopsy, and Axiom.',
+    tags: ['Windows', 'Linux', 'Memory', 'X-Ways', 'Axiom'],
+    stat: { label: 'Sections', value: '4' }, color: 'purple',
   },
   {
-    href:  '/mobile',
-    label: 'Mobile Forensics',
-    cmd:   'cd /mobile',
-    desc:  'Android and iOS artifact paths, acquisition method reference, key SQLite databases, app artifact locations, and ADB command reference.',
-    tags:  ['Android', 'iOS', 'ADB', 'SQLite', 'FOR585'],
-    stat:  { label: 'Sections', value: '6' },
-    color: 'amber',
+    href: '/mobile', label: 'Mobile Forensics', cmd: 'cd /mobile',
+    desc: 'Android and iOS artifact paths, acquisition methods, key SQLite databases, app artifact locations, and ADB command reference.',
+    tags: ['Android', 'iOS', 'ADB', 'SQLite'],
+    stat: { label: 'Sections', value: '6' }, color: 'amber',
   },
   {
-    href:  '/network',
-    label: 'Network Utilities',
-    cmd:   'cd /network',
-    desc:  'Common ports with security notes, Wireshark display filters, Nmap scan reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), and network attack signatures.',
-    tags:  ['Ports', 'Wireshark', 'Nmap', 'Protocols', 'Attack Sigs'],
-    stat:  { label: 'Sections', value: '5' },
-    color: 'teal',
+    href: '/network', label: 'Network Utilities', cmd: 'cd /network',
+    desc: 'Common ports with security notes, Wireshark display filters, Nmap scan reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), and attack signatures.',
+    tags: ['Ports', 'Wireshark', 'Nmap', 'Protocols', 'Attack Sigs'],
+    stat: { label: 'Sections', value: '5' }, color: 'teal',
   },
   {
-    href:  '/osint',
-    label: 'OSINT Reference',
-    cmd:   'cd /osint',
-    desc:  'Search operators and dorks, people search sources, sock puppet OPSEC, username enumeration, image OSINT, social media, infrastructure, dark web, and corporate intel.',
-    tags:  ['Search Ops', 'People Search', 'Sock Puppet', 'Infra', 'Dark Web'],
-    stat:  { label: 'Sections', value: '10' },
-    color: 'coral',
+    href: '/malware', label: 'Malware Analysis', cmd: 'cd /malware',
+    desc: 'PE structure, static analysis workflow, packer signatures, YARA rule writing, C2 beacon patterns, sandbox evasion, anti-analysis techniques, and malware families quick-ref.',
+    tags: ['PE Structure', 'YARA', 'Packers', 'C2', 'Evasion'],
+    stat: { label: 'Sections', value: '8' }, color: 'rose',
+  },
+  {
+    href: '/osint', label: 'OSINT Reference', cmd: 'cd /osint',
+    desc: 'Search operators, people search sources, sock puppet OPSEC, username enumeration, image OSINT, social media, infrastructure, dark web, and corporate intel.',
+    tags: ['Search Ops', 'People Search', 'Sock Puppet', 'Infra', 'Dark Web'],
+    stat: { label: 'Sections', value: '10' }, color: 'coral',
   },
 ]
 
 const STATS = [
-  { label: 'Tools',        value: '6' },
-  { label: 'Sections',     value: '50+' },
-  { label: 'Nmap Commands', value: '35+' },
+  { label: 'Tools',           value: '7'   },
+  { label: 'Sections',        value: '60+' },
+  { label: 'Nmap Commands',   value: '35+' },
   { label: 'Wireshark Filters', value: '55+' },
 ]
 
@@ -70,6 +58,7 @@ const colorMap: Record<string, { border: string; bg: string; text: string; tag: 
   purple:  { border: 'border-purple-900 hover:border-purple-700',   bg: 'hover:bg-purple-950/20',  text: 'text-purple-400',  tag: 'bg-purple-950/60',  tagText: 'text-purple-700'  },
   amber:   { border: 'border-amber-900 hover:border-amber-700',     bg: 'hover:bg-amber-950/20',   text: 'text-amber-400',   tag: 'bg-amber-950/60',   tagText: 'text-amber-700'   },
   teal:    { border: 'border-teal-900 hover:border-teal-700',       bg: 'hover:bg-teal-950/20',    text: 'text-teal-400',    tag: 'bg-teal-950/60',    tagText: 'text-teal-700'    },
+  rose:    { border: 'border-rose-900 hover:border-rose-700',       bg: 'hover:bg-rose-950/20',    text: 'text-rose-400',    tag: 'bg-rose-950/60',    tagText: 'text-rose-700'    },
   coral:   { border: 'border-red-900 hover:border-red-700',         bg: 'hover:bg-red-950/20',     text: 'text-red-400',     tag: 'bg-red-950/60',     tagText: 'text-red-700'     },
 }
 
@@ -77,7 +66,6 @@ export default function HomePage() {
   return (
     <div className="min-h-full bg-zinc-950 text-zinc-300">
       <div className="max-w-5xl mx-auto px-6 py-12">
-
         <div className="mb-10 pb-8 border-b border-zinc-800">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
@@ -131,10 +119,9 @@ export default function HomePage() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-zinc-800 flex items-center justify-between flex-wrap gap-3">
-          <p className="text-xs text-zinc-700">Cyber · TSCM · Digital Forensics · Network</p>
+          <p className="text-xs text-zinc-700">Cyber · TSCM · Forensics · Network · Malware</p>
           <p className="text-xs text-zinc-700">codeworld.codes</p>
         </div>
-
       </div>
     </div>
   )

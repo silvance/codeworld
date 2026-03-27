@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/forensics',  label: 'Forensics' },
   { href: '/mobile',  label: 'Mobile' },
   { href: '/network', label: 'Network' },
+  { href: '/malware', label: 'Malware' },
   { href: '/osint',   label: 'OSINT' },
 ]
 
