@@ -213,8 +213,9 @@ export function TimestampConverter() {
     if (isNaN(d.getTime())) return null
 
     const unix_s = Math.floor(ms / 1000)
-    const filetime = BigInt(Math.floor(ms + 11644473600000)) * 10000n
-    const chrome = BigInt(Math.floor(ms + 11644473600000)) * 1000n
+    const filetimeBase = Math.floor(ms + 11644473600000)
+    const filetime = String(filetimeBase) + "0000"
+    const chrome = String(filetimeBase) + "000"
     const mac = Math.floor(ms / 1000) - 978307200
 
     return {
@@ -225,8 +226,8 @@ export function TimestampConverter() {
       unix_s: String(unix_s),
       unix_ms: String(ms),
       unix_us: String(ms * 1000),
-      filetime: filetime.toString(),
-      chrome: chrome.toString(),
+      filetime: filetime,
+      chrome: chrome,
       mac: String(mac),
       hfs: String(unix_s + 2082844800),
       dayOfWeek: d.toLocaleDateString('en-US', { weekday: 'long' }),
