@@ -2,6 +2,12 @@ import Link from 'next/link'
 
 const TOOLS = [
   {
+    href: '/tools', label: 'Hash & Encoding', cmd: 'cd /tools',
+    desc: 'MD5, SHA-1, SHA-256, SHA-512, Base64, hex, URL encoding, HTML entities, ROT13, and number base conversion. All local — nothing leaves the browser.',
+    tags: ['MD5', 'SHA-256', 'Base64', 'Hex', 'URL encode', 'ROT13'],
+    stat: { label: 'Functions', value: '11' }, color: 'zinc',
+  },
+  {
     href: '/playground', label: 'Code Playground', cmd: 'cd /playground',
     desc: 'Live Python, JavaScript, Go, Ruby, and Bash execution. Pre-loaded with cyber-relevant snippets for hash analysis, encoding, subnet math, and more.',
     tags: ['Python', 'JavaScript', 'Go', 'Ruby', 'Bash'],
@@ -15,9 +21,9 @@ const TOOLS = [
   },
   {
     href: '/forensics', label: 'Digital Forensics', cmd: 'cd /forensics',
-    desc: 'Windows and Linux artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets for X-Ways, KAPE, Autopsy, and Axiom.',
-    tags: ['Windows', 'Linux', 'Memory', 'X-Ways', 'Axiom'],
-    stat: { label: 'Sections', value: '4' }, color: 'purple',
+    desc: 'Windows, Linux, and macOS artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets.',
+    tags: ['Windows', 'Linux', 'macOS', 'Memory', 'X-Ways'],
+    stat: { label: 'Sections', value: '5' }, color: 'purple',
   },
   {
     href: '/mobile', label: 'Mobile Forensics', cmd: 'cd /mobile',
@@ -33,7 +39,7 @@ const TOOLS = [
   },
   {
     href: '/malware', label: 'Malware Analysis', cmd: 'cd /malware',
-    desc: 'PE structure, static analysis workflow, packer signatures, YARA rule writing, C2 beacon patterns, sandbox evasion, anti-analysis techniques, and malware families quick-ref.',
+    desc: 'PE structure, static analysis workflow, packer signatures, YARA rule writing, C2 beacon patterns, sandbox evasion, anti-analysis techniques, and malware families.',
     tags: ['PE Structure', 'YARA', 'Packers', 'C2', 'Evasion'],
     stat: { label: 'Sections', value: '8' }, color: 'rose',
   },
@@ -46,26 +52,28 @@ const TOOLS = [
 ]
 
 const STATS = [
-  { label: 'Tools',           value: '7'   },
-  { label: 'Sections',        value: '60+' },
-  { label: 'Nmap Commands',   value: '35+' },
+  { label: 'Tools',            value: '8'   },
+  { label: 'Sections',         value: '60+' },
+  { label: 'Nmap Commands',    value: '35+' },
   { label: 'Wireshark Filters', value: '55+' },
 ]
 
 const colorMap: Record<string, { border: string; bg: string; text: string; tag: string; tagText: string }> = {
-  emerald: { border: 'border-emerald-900 hover:border-emerald-700', bg: 'hover:bg-emerald-950/20', text: 'text-emerald-400', tag: 'bg-emerald-950/60', tagText: 'text-emerald-700' },
-  blue:    { border: 'border-blue-900 hover:border-blue-700',       bg: 'hover:bg-blue-950/20',    text: 'text-blue-400',    tag: 'bg-blue-950/60',    tagText: 'text-blue-700'    },
-  purple:  { border: 'border-purple-900 hover:border-purple-700',   bg: 'hover:bg-purple-950/20',  text: 'text-purple-400',  tag: 'bg-purple-950/60',  tagText: 'text-purple-700'  },
-  amber:   { border: 'border-amber-900 hover:border-amber-700',     bg: 'hover:bg-amber-950/20',   text: 'text-amber-400',   tag: 'bg-amber-950/60',   tagText: 'text-amber-700'   },
-  teal:    { border: 'border-teal-900 hover:border-teal-700',       bg: 'hover:bg-teal-950/20',    text: 'text-teal-400',    tag: 'bg-teal-950/60',    tagText: 'text-teal-700'    },
-  rose:    { border: 'border-rose-900 hover:border-rose-700',       bg: 'hover:bg-rose-950/20',    text: 'text-rose-400',    tag: 'bg-rose-950/60',    tagText: 'text-rose-700'    },
-  coral:   { border: 'border-red-900 hover:border-red-700',         bg: 'hover:bg-red-950/20',     text: 'text-red-400',     tag: 'bg-red-950/60',     tagText: 'text-red-700'     },
+  zinc:    { border: 'border-zinc-700 hover:border-zinc-500',         bg: 'hover:bg-zinc-900/60',    text: 'text-zinc-300',    tag: 'bg-zinc-800',       tagText: 'text-zinc-500'    },
+  emerald: { border: 'border-emerald-900 hover:border-emerald-700',   bg: 'hover:bg-emerald-950/20', text: 'text-emerald-400', tag: 'bg-emerald-950/60', tagText: 'text-emerald-700' },
+  blue:    { border: 'border-blue-900 hover:border-blue-700',         bg: 'hover:bg-blue-950/20',    text: 'text-blue-400',    tag: 'bg-blue-950/60',    tagText: 'text-blue-700'    },
+  purple:  { border: 'border-purple-900 hover:border-purple-700',     bg: 'hover:bg-purple-950/20',  text: 'text-purple-400',  tag: 'bg-purple-950/60',  tagText: 'text-purple-700'  },
+  amber:   { border: 'border-amber-900 hover:border-amber-700',       bg: 'hover:bg-amber-950/20',   text: 'text-amber-400',   tag: 'bg-amber-950/60',   tagText: 'text-amber-700'   },
+  teal:    { border: 'border-teal-900 hover:border-teal-700',         bg: 'hover:bg-teal-950/20',    text: 'text-teal-400',    tag: 'bg-teal-950/60',    tagText: 'text-teal-700'    },
+  rose:    { border: 'border-rose-900 hover:border-rose-700',         bg: 'hover:bg-rose-950/20',    text: 'text-rose-400',    tag: 'bg-rose-950/60',    tagText: 'text-rose-700'    },
+  coral:   { border: 'border-red-900 hover:border-red-700',           bg: 'hover:bg-red-950/20',     text: 'text-red-400',     tag: 'bg-red-950/60',     tagText: 'text-red-700'     },
 }
 
 export default function HomePage() {
   return (
     <div className="min-h-full bg-zinc-950 text-zinc-300">
       <div className="max-w-5xl mx-auto px-6 py-12">
+
         <div className="mb-10 pb-8 border-b border-zinc-800">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
@@ -119,9 +127,10 @@ export default function HomePage() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-zinc-800 flex items-center justify-between flex-wrap gap-3">
-          <p className="text-xs text-zinc-700">Cyber · TSCM · Forensics · Network · Malware</p>
+          <p className="text-xs text-zinc-700">Cyber · TSCM · Forensics · Network · Malware · OSINT</p>
           <p className="text-xs text-zinc-700">codeworld.codes</p>
         </div>
+
       </div>
     </div>
   )
