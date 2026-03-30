@@ -3,7 +3,7 @@ import OSINTPage from '@/components/osint/OSINTPage'
 
 export const metadata: Metadata = {
   title: 'OSINT Reference',
-  description: 'Search operators, people search, sock puppet OPSEC, username enumeration, image OSINT, social media, infrastructure, phone, dark web, and corporate intelligence',
+  description: 'Open source intelligence reference including Google and Bing search operators, people search sources, username enumeration, reverse image search, social media OSINT, domain and IP infrastructure analysis, phone OSINT, dark web research, corporate intelligence, and sock puppet OPSEC.',
 }
 
 export default function OSINTRoute() {

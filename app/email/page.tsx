@@ -3,7 +3,7 @@ import EmailAnalyzer from '@/components/email/EmailAnalyzer'
 
 export const metadata: Metadata = {
   title: 'Email Header Analyzer',
-  description: 'Analyze email headers for SPF, DKIM, DMARC authentication, routing chain, domain alignment, and phishing indicators. All analysis runs locally in the browser.',
+  description: 'Free online email header analyzer. Paste raw email headers to analyze SPF, DKIM, and DMARC authentication, inspect hop-by-hop routing chain, detect domain misalignment, Reply-To phishing indicators, and Message-ID anomalies. All analysis runs locally — nothing is sent to any server.',
 }
 
 export default function EmailPage() {

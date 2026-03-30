@@ -3,7 +3,7 @@ import CodePlayground from '@/components/playground/CodePlayground'
 
 export const metadata: Metadata = {
   title: 'Code Playground',
-  description: 'Interactive Python, JavaScript, and Bash playground for cyber and TSCM tasks',
+  description: 'Interactive code playground supporting Python (Pyodide), JavaScript, Bash, Go, and Ruby. Pre-loaded with security-relevant snippets for hash analysis, encoding, subnet math, and forensic tasks.',
 }
 
 export default function PlaygroundPage() {
