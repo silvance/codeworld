@@ -15,7 +15,6 @@ const LINKS = [
   { href: '/osint',   label: 'OSINT' },
   { href: '/email',  label: 'Email' },
   { href: '/pentest', label: 'Pentest' },
-  { href: '/research', label: 'Research' },
   { href: '/papers',  label: 'Research' },
 ]
 
