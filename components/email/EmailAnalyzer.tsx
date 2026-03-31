@@ -315,6 +315,153 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Gmail`
 
+// ─── How to use instructions ──────────────────────────────────────────────────
+
+const clients = [
+  {
+    name: 'Gmail (web)',
+    icon: '📧',
+    steps: [
+      'Open the email in Gmail',
+      'Click the three-dot menu (⋮) at the top-right of the message',
+      'Select "Show original"',
+      'A new tab opens showing the full raw message',
+      'Click "Copy to clipboard" at the top of that page',
+      'Paste into the analyzer below',
+    ],
+    note: 'The "Copy to clipboard" button in Gmail copies only the headers — perfect for this tool.',
+  },
+  {
+    name: 'Outlook (web)',
+    icon: '📬',
+    steps: [
+      'Open the email in Outlook on the web (outlook.com or Microsoft 365)',
+      'Click the three-dot menu (…) at the top of the message',
+      'Select "View" → "View message source" (or "View email source")',
+      'A dialog appears with the full raw source',
+      'Select all text (Ctrl+A / Cmd+A) and copy',
+      'Paste into the analyzer — it will find and parse the headers automatically',
+    ],
+    note: 'If you only need headers (not the body), paste the full source anyway — the analyzer extracts just the headers.',
+  },
+  {
+    name: 'Outlook (desktop)',
+    icon: '🖥',
+    steps: [
+      'Open the email in Outlook desktop',
+      'Go to File → Properties (or press Alt+Enter)',
+      'The "Internet headers" box at the bottom shows the raw headers',
+      'Click inside the box, select all (Ctrl+A), and copy',
+      'Paste into the analyzer below',
+    ],
+    note: 'Windows only. On Mac, open the message in a separate window, then go to View → Message → All Headers.',
+  },
+  {
+    name: 'Apple Mail (Mac)',
+    icon: '🍎',
+    steps: [
+      'Open the email in Apple Mail',
+      'From the menu bar: View → Message → All Headers (or press Shift+Cmd+H)',
+      'The headers appear above the message body',
+      'Go to View → Message → Raw Source to see the full raw text',
+      'Select all, copy, and paste into the analyzer',
+    ],
+    note: 'Alternatively: with the message selected, hold Option and click View menu to reveal "Raw Source".',
+  },
+  {
+    name: 'Thunderbird',
+    icon: '🦅',
+    steps: [
+      'Open the email in Thunderbird',
+      'From the menu: View → Message Source (or Ctrl+U / Cmd+U)',
+      'A new window opens with the full raw message',
+      'Select all (Ctrl+A) and copy',
+      'Paste into the analyzer — headers are at the top before the blank line',
+    ],
+  },
+  {
+    name: 'Python script (offline)',
+    icon: '🐍',
+    steps: [
+      'Download the Python script using the button in the header above',
+      'Requires Python 3.6+ — check with: python3 --version (Mac/Linux) or python --version (Windows)',
+      'Save the raw email headers to a .txt file (use the steps above to copy them first)',
+      'Run: python3 email_header_analyzer.py headers.txt',
+      'On Windows: open Command Prompt or PowerShell, navigate to the folder, run: python email_header_analyzer.py headers.txt',
+      'Results print to the terminal — add > output.txt to save to a file',
+    ],
+    note: 'The Python script is useful for batch analysis or when you cannot use a browser. No internet connection required — fully offline.',
+    windowsNote: 'Windows users: if "python" is not recognized, try "python3" or "py". If Python is not installed, download it from python.org — check "Add Python to PATH" during install.',
+  },
+]
+
+function HowToUse() {
+  const [open, setOpen] = useState(false)
+  const [activeClient, setActiveClient] = useState(clients[0].name)
+  const client = clients.find(c => c.name === activeClient)!
+
+  return (
+    <div className="mb-6 border border-zinc-800 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900/40 hover:bg-zinc-900 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm">💡</span>
+          <span className="text-xs font-mono font-semibold text-zinc-300">How to get email headers</span>
+          <span className="text-[10px] font-mono text-zinc-600">Gmail · Outlook · Apple Mail · Thunderbird · Python script</span>
+        </div>
+        <span className="text-zinc-600 text-xs">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-zinc-800 p-4">
+          {/* Client tabs */}
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {clients.map(c => (
+              <button
+                key={c.name}
+                onClick={() => setActiveClient(c.name)}
+                className={`px-3 py-1.5 text-xs font-mono rounded transition-colors flex items-center gap-1.5 ${
+                  activeClient === c.name ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <span>{c.icon}</span>{c.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Steps */}
+          <div className="space-y-2">
+            {client.steps.map((step, i) => (
+              <div key={i} className="flex gap-3 text-xs font-mono">
+                <span className="text-zinc-700 flex-shrink-0 w-4 text-right">{i + 1}.</span>
+                <span className="text-zinc-400">{step}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Notes */}
+          {client.note && (
+            <div className="mt-3 bg-blue-950/20 border border-blue-900/30 rounded p-3 text-xs font-mono text-blue-400">
+              {client.note}
+            </div>
+          )}
+          {client.windowsNote && (
+            <div className="mt-2 bg-amber-950/20 border border-amber-900/30 rounded p-3 text-xs font-mono text-amber-400">
+              <span className="font-bold">Windows note: </span>{client.windowsNote}
+            </div>
+          )}
+
+          <p className="mt-4 text-[10px] font-mono text-zinc-700">
+            Once you have the headers copied, paste them into the box below. The analyzer will detect and parse them automatically.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EmailAnalyzer() {
   const [input, setInput] = useState('')
   const [tab, setTab] = useState<'summary' | 'auth' | 'routing' | 'flags' | 'raw'>('summary')
@@ -354,6 +501,9 @@ export default function EmailAnalyzer() {
             </a>
           </div>
         </div>
+
+        {/* How to use */}
+        <HowToUse />
 
         {/* Input */}
         <div className="mb-4 space-y-2">
