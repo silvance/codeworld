@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
-import ResearchPage from '@/components/research/ResearchPage'
+import PapersPage from '@/components/papers/PapersPagePlaceholder'
 
 export const metadata: Metadata = {
-  title: 'Research & Whitepapers',
-  description: 'Original security research and technical whitepapers covering TSCM findings, wireless security, digital forensics, and responsible disclosure. Includes the Eero mesh network RF neighbor persistence finding.',
+  title: 'Research & White Papers',
+  description: 'Original security research and technical findings. Currently undergoing responsible disclosure prior to publication.',
+  robots: { index: false, follow: false },
 }
 
-export default function ResearchRoute() {
-  return <ResearchPage />
+export default function PapersRoute() {
+  return <PapersPage />
 }
