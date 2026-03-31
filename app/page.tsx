@@ -57,14 +57,8 @@ const TOOLS = [
   },
   {
     href: '/papers', label: 'Research & White Papers', cmd: 'cd /papers',
-    desc: 'Original technical findings, TSCM observations, and security research. Includes the Eero mesh network RF neighbor persistence finding and future publications.',
-    tags: ['TSCM', 'WiFi', 'Findings', 'Research'],
-    stat: { label: 'Papers', value: '1' }, color: 'violet',
-  },
-  {
-    href: '/research', label: 'Research & Whitepapers', cmd: 'cd /research',
-    desc: 'Original security research and technical whitepapers. Current: Eero mesh network RF neighbor persistence finding — WiFi Pineapple BSSID detected 12+ hours after device removal, appearing from multiple separate mesh nodes.',
-    tags: ['TSCM', 'WiFi', 'Mesh', 'Disclosure', 'RF'],
+    desc: 'Original technical findings and security research. Includes the Eero mesh network RF neighbor persistence finding — a rogue BSSID persisting 12+ hours post-removal via mesh propagation.',
+    tags: ['TSCM', 'WiFi', 'Mesh', 'RF', 'Disclosure'],
     stat: { label: 'Papers', value: '1' }, color: 'violet',
   },
   {
@@ -93,7 +87,6 @@ const colorMap: Record<string, { border: string; bg: string; text: string; tag: 
   coral:   { border: 'border-red-900 hover:border-red-700',           bg: 'hover:bg-red-950/20',     text: 'text-red-400',     tag: 'bg-red-950/60',     tagText: 'text-red-700'     },
   violet:  { border: 'border-violet-900 hover:border-violet-700',           bg: 'hover:bg-violet-950/20',  text: 'text-violet-400',  tag: 'bg-violet-950/60',  tagText: 'text-violet-700'  },
   sky:     { border: 'border-sky-900 hover:border-sky-700',             bg: 'hover:bg-sky-950/20',     text: 'text-sky-400',     tag: 'bg-sky-950/60',     tagText: 'text-sky-700'     },
-  violet:  { border: 'border-violet-900 hover:border-violet-700',         bg: 'hover:bg-violet-950/20',  text: 'text-violet-400',  tag: 'bg-violet-950/60',  tagText: 'text-violet-700'  },
 }
 
 export default function HomePage() {
