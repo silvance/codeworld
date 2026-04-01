@@ -7,6 +7,8 @@ import {
   EntropyCalc, MACLookup, UUIDDecoder, CharInspector,
 } from './ToolsExtra'
 import { CodeOptimizer } from './CodeOptimizer'
+import { CodeExplainer } from './CodeExplainer'
+import { JSONYAMLConverter, URLParser, CronVisualizer } from './MicroTools'
 
 // ─── Hash tool (inlined here for the sidebar layout) ─────────────────────────
 
@@ -211,7 +213,7 @@ function HashTool() {
 
 // ─── Main layout ──────────────────────────────────────────────────────────────
 
-type ToolId = 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'entropy' | 'mac' | 'uuid' | 'chars' | 'codeopt'
+type ToolId = 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'entropy' | 'mac' | 'uuid' | 'chars' | 'codeopt' | 'explain' | 'jsonyaml' | 'urlparser' | 'cron'
 
 const NAV: { id: ToolId; label: string; sub: string; icon: string }[] = [
   { id: 'hash',      label: 'Hash & encoding',     sub: 'MD5 · SHA · Base64 · hex · URL', icon: '#️⃣' },
@@ -226,6 +228,10 @@ const NAV: { id: ToolId; label: string; sub: string; icon: string }[] = [
   { id: 'uuid',      label: 'UUID / GUID decoder',  sub: 'Version · v1 timestamp · MAC',   icon: '🆔' },
   { id: 'chars',     label: 'Char inspector',       sub: 'Codepoint · UTF-8 · non-print',  icon: '🔎' },
   { id: 'codeopt',   label: 'Code optimizer',       sub: 'Bug detection · security · AI',   icon: '🤖' },
+  { id: 'explain',   label: 'Code explainer',       sub: 'Plain English · technical · security lens', icon: '💡' },
+  { id: 'jsonyaml',  label: 'JSON ↔ YAML',           sub: 'Convert between formats — local', icon: '⇄'  },
+  { id: 'urlparser', label: 'URL parser',             sub: 'Scheme · host · params · fragment', icon: '🔗' },
+  { id: 'cron',      label: 'Cron visualizer',        sub: 'Schedule → plain English + next runs', icon: '🕒' },
 ]
 
 const TOOLS: Record<ToolId, React.ReactNode> = {
@@ -241,6 +247,10 @@ const TOOLS: Record<ToolId, React.ReactNode> = {
   uuid:      <UUIDDecoder />,
   chars:     <CharInspector />,
   codeopt:   <CodeOptimizer />,
+  explain:   <CodeExplainer />,
+  jsonyaml:  <JSONYAMLConverter />,
+  urlparser: <URLParser />,
+  cron:      <CronVisualizer />,
 }
 
 export default function ToolsPage() {
