@@ -6,6 +6,7 @@ import {
   RegexTester, JWTDecoder, CertDecoder,
   EntropyCalc, MACLookup, UUIDDecoder, CharInspector,
 } from './ToolsExtra'
+import { CodeOptimizer } from './CodeOptimizer'
 
 // ─── Hash tool (inlined here for the sidebar layout) ─────────────────────────
 
@@ -210,7 +211,7 @@ function HashTool() {
 
 // ─── Main layout ──────────────────────────────────────────────────────────────
 
-type ToolId = 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'entropy' | 'mac' | 'uuid' | 'chars'
+type ToolId = 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'entropy' | 'mac' | 'uuid' | 'chars' | 'codeopt'
 
 const NAV: { id: ToolId; label: string; sub: string; icon: string }[] = [
   { id: 'hash',      label: 'Hash & encoding',     sub: 'MD5 · SHA · Base64 · hex · URL', icon: '#️⃣' },
@@ -224,6 +225,7 @@ const NAV: { id: ToolId; label: string; sub: string; icon: string }[] = [
   { id: 'mac',       label: 'MAC address lookup',   sub: 'OUI vendor · UAA/LAA · EUI-64',  icon: '🔌' },
   { id: 'uuid',      label: 'UUID / GUID decoder',  sub: 'Version · v1 timestamp · MAC',   icon: '🆔' },
   { id: 'chars',     label: 'Char inspector',       sub: 'Codepoint · UTF-8 · non-print',  icon: '🔎' },
+  { id: 'codeopt',   label: 'Code optimizer',       sub: 'Bug detection · security · AI',   icon: '🤖' },
 ]
 
 const TOOLS: Record<ToolId, React.ReactNode> = {
@@ -238,6 +240,7 @@ const TOOLS: Record<ToolId, React.ReactNode> = {
   mac:       <MACLookup />,
   uuid:      <UUIDDecoder />,
   chars:     <CharInspector />,
+  codeopt:   <CodeOptimizer />,
 }
 
 export default function ToolsPage() {
