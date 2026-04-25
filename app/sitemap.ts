@@ -14,9 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/malware',    priority: 0.8, changeFreq: 'monthly' },
     { path: '/osint',      priority: 0.8, changeFreq: 'monthly' },
     { path: '/email',      priority: 0.8, changeFreq: 'monthly' },
-    { path: '/papers',     priority: 0.9, changeFreq: 'weekly'  },
-    { path: '/research',   priority: 0.9, changeFreq: 'monthly' },
-    { path: '/papers',     priority: 0.9, changeFreq: 'weekly'  },
     { path: '/playground', priority: 0.7, changeFreq: 'monthly' },
   ]
 
