@@ -25,6 +25,7 @@ const PAGES: SearchEntry[] = [
   { kind: 'page', title: 'Network Utilities',  subtitle: 'Ports · Wireshark · Nmap · protocols · attack signatures',           href: '/network',    page: 'Network',         color: 'teal'    },
   { kind: 'page', title: 'Digital Forensics',  subtitle: 'Windows · Linux · macOS artifacts · memory · triage',                href: '/forensics',  page: 'Forensics',       color: 'purple'  },
   { kind: 'page', title: 'Mobile Forensics',   subtitle: 'Android · iOS · ADB · SQLite · cloud extraction',                    href: '/mobile',     page: 'Mobile',          color: 'sky'     },
+  { kind: 'page', title: 'Cloud Security',     subtitle: 'AWS · Azure · GCP · IAM · containers · cloud IR',                    href: '/cloud',      page: 'Cloud',           color: 'violet'  },
   { kind: 'page', title: 'RF / TSCM',          subtitle: 'Frequency · path loss · sweep · bug frequencies · SDR · TEMPEST',    href: '/rf',         page: 'RF / TSCM',       color: 'blue'    },
 ]
 
@@ -153,6 +154,17 @@ const RF_SECTIONS: SectionDef[] = [
   { id: 'tools',          label: 'TSCM tool reference',   sub: 'OSCOR · TALAN · NLJD · TinySA' },
 ]
 
+const CLOUD_SECTIONS: SectionDef[] = [
+  { id: 'aws',       label: 'AWS reference',       sub: 'Services · CloudTrail · IAM gotchas' },
+  { id: 'azure',     label: 'Azure reference',     sub: 'Services · Activity Log · Entra ID' },
+  { id: 'gcp',       label: 'GCP reference',       sub: 'Services · Audit Logs · IAM' },
+  { id: 'iam',       label: 'IAM attacks',         sub: 'Privesc paths across all three clouds' },
+  { id: 'k8s',       label: 'Containers & Kubernetes', sub: 'RBAC · pod escape · runtime' },
+  { id: 'storage',   label: 'Storage attacks',     sub: 'S3 · Blob · GCS misconfigs + audit events' },
+  { id: 'forensics', label: 'Cloud forensics & IR', sub: 'Runbook · evidence · containment' },
+  { id: 'tools',     label: 'Cloud security tools', sub: 'Prowler · CloudFox · Pacu · kube-bench' },
+]
+
 const TOOLS_SECTIONS: SectionDef[] = [
   { id: 'hash',      label: 'Hash & encoding',     sub: 'MD5 · SHA · Base64 · hex · URL' },
   { id: 'subnet',    label: 'Subnet calculator',   sub: 'CIDR · hosts · mask · binary' },
@@ -192,6 +204,7 @@ export const SEARCH_INDEX: SearchEntry[] = [
   ...expand(MALWARE_SECTIONS,   'Malware',   '/malware',   'amber'),
   ...expand(NETWORK_SECTIONS,   'Network',   '/network',   'teal'),
   ...expand(FORENSICS_SECTIONS, 'Forensics', '/forensics', 'purple'),
+  ...expand(CLOUD_SECTIONS,     'Cloud',     '/cloud',     'violet'),
   ...expand(MOBILE_SECTIONS,    'Mobile',    '/mobile',    'sky'),
   ...expand(RF_SECTIONS,        'RF / TSCM', '/rf',        'blue'),
 ]
