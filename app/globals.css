@@ -87,6 +87,50 @@ body::after {
   will-change: transform, opacity;
 }
 
+@keyframes cursor-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.cursor-blink {
+  animation: cursor-blink 1.1s steps(1, end) infinite;
+}
+
+@keyframes scanner-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.scanner-sweep {
+  animation: scanner-sweep 2.4s linear infinite;
+  will-change: transform;
+}
+
+.card-scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0px,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.card-scanlines:hover::after {
+  opacity: 1;
+}
+
 :focus-visible {
   outline: 2px solid #10b981;
   outline-offset: 2px;
