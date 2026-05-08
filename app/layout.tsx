@@ -72,7 +72,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <TopNav />
-        <main id="main-content" tabIndex={-1} className="h-screen pt-10 flex flex-col focus:outline-none">
+        <main id="main-content" tabIndex={-1} className="h-screen pt-10 flex flex-col fade-up focus:outline-none">
           {children}
         </main>
         <Analytics />

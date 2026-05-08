@@ -23,6 +23,68 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  position: relative;
+  isolation: isolate;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10%;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(16, 185, 129, 0.10), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 80%, rgba(99, 102, 241, 0.08), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(244, 63, 94, 0.04), transparent 70%);
+  animation: ambient-drift 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 75%);
+          mask-image: radial-gradient(ellipse at center, black 0%, transparent 75%);
+}
+
+@keyframes ambient-drift {
+  0%,  100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%       { transform: translate3d(-2%, 1%, 0) scale(1.04); }
+  66%       { transform: translate3d(2%, -1%, 0) scale(0.98); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-rise {
+  animation: card-rise 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes hero-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.05); }
+}
+
+.hero-pulse {
+  animation: hero-pulse 7s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 :focus-visible {
@@ -33,4 +95,12 @@ body {
 
 main:focus-visible {
   outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
