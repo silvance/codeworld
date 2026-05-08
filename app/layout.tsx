@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import TopNav from '@/components/nav/TopNav'
 
@@ -64,10 +65,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-zinc-950`}>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-emerald-500 focus:text-zinc-950 focus:px-3 focus:py-1.5 focus:rounded focus:text-sm focus:font-medium"
+        >
+          Skip to main content
+        </a>
         <TopNav />
-        <div className="h-screen pt-10 flex flex-col">
+        <main id="main-content" tabIndex={-1} className="h-screen pt-10 flex flex-col focus:outline-none">
           {children}
-        </div>
+        </main>
+        <Analytics />
       </body>
     </html>
   )
