@@ -1,0 +1,106 @@
+'use client'
+
+import { useState } from 'react'
+import { useSectionParam } from '@/lib/useSectionParam'
+import {
+  AWSReference, AzureReference, GCPReference,
+  IAMAttacks, ContainersK8s, StorageAttacks,
+  CloudForensicsIR, CloudToolsRef,
+} from './sections'
+
+type SectionId =
+  | 'aws' | 'azure' | 'gcp'
+  | 'iam' | 'k8s' | 'storage'
+  | 'forensics' | 'tools'
+
+interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
+
+const NAV: NavItem[] = [
+  { id: 'aws',       label: 'AWS reference',       sub: 'Services · CloudTrail · IAM gotchas',   icon: '🟧', group: 'Provider Reference' },
+  { id: 'azure',     label: 'Azure reference',     sub: 'Services · Activity Log · Entra ID',    icon: '🟦', group: 'Provider Reference' },
+  { id: 'gcp',       label: 'GCP reference',       sub: 'Services · Audit Logs · IAM',           icon: '🟪', group: 'Provider Reference' },
+  { id: 'iam',       label: 'IAM attacks',         sub: 'Privesc paths across all three clouds', icon: '🔑', group: 'Attack Surface' },
+  { id: 'k8s',       label: 'Containers & K8s',    sub: 'RBAC · pod escape · runtime',           icon: '🐳', group: 'Attack Surface' },
+  { id: 'storage',   label: 'Storage attacks',     sub: 'S3 · Blob · GCS misconfigs + audit',    icon: '🪣', group: 'Attack Surface' },
+  { id: 'forensics', label: 'Cloud forensics & IR', sub: 'Runbook · evidence · containment',     icon: '🚑', group: 'Investigation' },
+  { id: 'tools',     label: 'Cloud security tools', sub: 'Prowler · CloudFox · Pacu · kube-bench', icon: '🛠', group: 'Investigation' },
+]
+
+const SECTIONS: Record<SectionId, React.ReactNode> = {
+  aws:       <AWSReference />,
+  azure:     <AzureReference />,
+  gcp:       <GCPReference />,
+  iam:       <IAMAttacks />,
+  k8s:       <ContainersK8s />,
+  storage:   <StorageAttacks />,
+  forensics: <CloudForensicsIR />,
+  tools:     <CloudToolsRef />,
+}
+
+const groups = ['Provider Reference', 'Attack Surface', 'Investigation']
+
+export default function CloudPage() {
+  const [active, setActive]               = useSectionParam<SectionId>('aws', NAV.map(n => n.id))
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const current = NAV.find(n => n.id === active)!
+
+  return (
+    <div className="flex h-full bg-zinc-950 text-zinc-100 overflow-hidden">
+      <aside className={`
+        flex-shrink-0 w-56 bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden
+        ${mobileNavOpen ? 'fixed inset-y-0 left-0 z-50 top-10' : 'hidden md:flex'}
+      `}>
+        <div className="px-4 py-3 border-b border-zinc-800">
+          <div className="text-xs font-mono font-semibold text-zinc-300 tracking-tight">Cloud security</div>
+          <div className="text-[10px] font-mono text-zinc-600 mt-0.5">AWS · Azure · GCP · K8s · forensics</div>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto py-2">
+          {groups.map(group => (
+            <div key={group}>
+              <div className="px-4 pt-3 pb-1 text-[9px] font-mono font-semibold text-zinc-700 uppercase tracking-widest">
+                {group}
+              </div>
+              {NAV.filter(n => n.group === group).map(item => (
+                <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
+                  className={`w-full text-left px-4 py-2 transition-colors border-l-2 ${
+                    active === item.id
+                      ? 'border-violet-500 bg-zinc-800 text-zinc-100'
+                      : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm leading-none">{item.icon}</span>
+                    <div>
+                      <div className="text-xs font-mono leading-tight">{item.label}</div>
+                      <div className="text-[9px] text-zinc-600 mt-0.5 leading-tight">{item.sub}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className="px-4 py-3 border-t border-zinc-800">
+          <div className="text-[9px] font-mono text-zinc-700">Reference, not posture management.</div>
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="md:hidden flex items-center gap-3 px-4 py-2.5 border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
+          <button onClick={() => setMobileNavOpen(o => !o)} className="text-zinc-400 text-xs font-mono">☰</button>
+          <span className="text-xs font-mono text-zinc-300">{current.label}</span>
+        </div>
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-6 py-8">
+            {SECTIONS[active]}
+          </div>
+        </main>
+      </div>
+
+      {mobileNavOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileNavOpen(false)} />
+      )}
+    </div>
+  )
+}

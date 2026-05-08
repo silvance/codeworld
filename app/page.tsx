@@ -45,6 +45,12 @@ const TOOLS = [
     stat: { label: 'Sections', value: '5' }, color: 'purple',
   },
   {
+    href: '/cloud', label: 'Cloud Security', cmd: 'cd /cloud',
+    desc: 'AWS, Azure, and GCP reference. Critical services, audit log events, IAM attack paths, container & Kubernetes chains, storage misconfigs, and a cloud IR runbook.',
+    tags: ['AWS', 'Azure', 'GCP', 'IAM', 'K8s', 'IR'],
+    stat: { label: 'Sections', value: '8' }, color: 'violet',
+  },
+  {
     href: '/mobile', label: 'Mobile Forensics', cmd: 'cd /mobile',
     desc: 'Android and iOS artifact paths, acquisition methods, key SQLite databases, app artifact locations, and ADB command reference.',
     tags: ['Android', 'iOS', 'ADB', 'SQLite'],
@@ -59,7 +65,7 @@ const TOOLS = [
 ]
 
 const STATS = [
-  { label: 'Tools',            value: '9'   },
+  { label: 'Tools',            value: '10'  },
   { label: 'Sections',         value: '60+' },
   { label: 'Nmap Commands',    value: '35+' },
   { label: 'Wireshark Filters', value: '55+' },
@@ -109,6 +115,7 @@ export default function HomePage() {
                   'cd /pentest && enum4linux',
                   'cd /malware && yara -r rules.yar .',
                   'cd /forensics && volatility -f mem.raw',
+                  'cd /cloud && aws cloudtrail lookup-events',
                   'cd /rf && rtl_power -f 88M:108M:25k',
                 ]}
               />

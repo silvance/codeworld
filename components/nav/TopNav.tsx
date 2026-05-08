@@ -13,6 +13,7 @@ const LINKS = [
   { href: '/malware',    label: 'Malware' },
   { href: '/network',    label: 'Network' },
   { href: '/forensics',  label: 'Forensics' },
+  { href: '/cloud',      label: 'Cloud' },
   { href: '/mobile',     label: 'Mobile' },
   { href: '/rf',         label: 'RF / TSCM' },
 ]
