@@ -15,7 +15,7 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-full bg-zinc-950 text-zinc-300 flex items-center justify-center px-6">
+    <div className="min-h-full text-zinc-300 flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
         <p className="text-xs font-mono text-zinc-600 mb-3">HTTP 500</p>
         <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight mb-3">

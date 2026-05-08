@@ -15,7 +15,6 @@ const LINKS = [
   { href: '/osint',   label: 'OSINT' },
   { href: '/email',  label: 'Email' },
   { href: '/pentest', label: 'Pentest' },
-  { href: '/papers',  label: 'Research' },
 ]
 
 export default function TopNav() {
@@ -24,8 +23,8 @@ export default function TopNav() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center gap-4 px-4 py-0 h-10 bg-zinc-950 border-b border-zinc-800">
-        <Link href="/" className="text-sm font-semibold text-zinc-100 tracking-tight hover:text-white transition-colors flex-shrink-0">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center gap-4 px-4 py-0 h-10 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80">
+        <Link href="/" className="text-sm font-semibold tracking-tight transition-colors flex-shrink-0 bg-gradient-to-r from-emerald-300 via-zinc-100 to-zinc-100 bg-clip-text text-transparent hover:from-emerald-200 hover:to-white">
           codeworld
         </Link>
 
