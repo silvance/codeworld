@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSectionParam } from '@/lib/useSectionParam'
 import {
   SearchOperators, PeopleSearch, SockPuppet, UsernameEnum,
   ImageOSINT, SocialMedia, InfraOSINT, PhoneOSINT, DarkWebOSINT, CorpIntel,
@@ -35,7 +36,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
 }
 
 export default function OSINTPage() {
-  const [active, setActive]           = useState<SectionId>('search')
+  const [active, setActive]           = useSectionParam<SectionId>('search', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
@@ -53,7 +54,7 @@ export default function OSINTPage() {
             <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
               className={`w-full text-left px-4 py-2.5 transition-colors border-l-2 ${
                 active === item.id
-                  ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
+                  ? 'border-red-500 bg-zinc-800 text-zinc-100'
                   : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
               }`}>
               <div className="flex items-center gap-2">

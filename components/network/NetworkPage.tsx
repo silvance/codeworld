@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSectionParam } from '@/lib/useSectionParam'
 import { PortsReference, WiresharkFilters, NmapReference, ProtocolRef, AttackSigs } from './sections'
 import {
   SubnetRef, TcpdumpRef, NetcatRef, FirewallRef,
@@ -53,7 +54,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
 const groups = ['Reference', 'Tools', 'Advanced']
 
 export default function NetworkPage() {
-  const [active, setActive] = useState<SectionId>('ports')
+  const [active, setActive] = useSectionParam<SectionId>('ports', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
@@ -74,7 +75,7 @@ export default function NetworkPage() {
                 <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
                   className={`w-full text-left px-4 py-2 transition-colors border-l-2 ${
                     active === item.id
-                      ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
+                      ? 'border-teal-500 bg-zinc-800 text-zinc-100'
                       : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
                   }`}>
                   <div className="flex items-center gap-2">

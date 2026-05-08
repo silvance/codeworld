@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSectionParam } from '@/lib/useSectionParam'
 import {
   FreqReference, PathLossCalc, ChannelMaps, SignalMath, TSCMFreqs, RogueAP,
 } from './sections'
@@ -79,7 +80,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
 const groups = ['RF Tools', 'TSCM', 'Threat Intel', 'Training & Docs', 'Equipment']
 
 export default function RFPage() {
-  const [active, setActive] = useState<SectionId>('freq')
+  const [active, setActive] = useSectionParam<SectionId>('freq', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
@@ -103,7 +104,7 @@ export default function RFPage() {
                 <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
                   className={`w-full text-left px-4 py-2 transition-colors border-l-2 ${
                     active === item.id
-                      ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
+                      ? 'border-blue-500 bg-zinc-800 text-zinc-100'
                       : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
                   }`}>
                   <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSectionParam } from '@/lib/useSectionParam'
 import { AcquisitionRef, DeviceArtifacts, BackupStructure, SQLiteDatabases, AppArtifactPaths, ADBReference } from './sections'
 import {
   IOSUnifiedLog, AndroidLogs, CloudExtractionSection, AppDeepDivesSection,
@@ -59,7 +60,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
 const groups = ['Foundations', 'Advanced', 'Hardware']
 
 export default function MobilePage() {
-  const [active, setActive] = useState<SectionId>('acquisition')
+  const [active, setActive] = useSectionParam<SectionId>('acquisition', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
@@ -80,7 +81,7 @@ export default function MobilePage() {
                 <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
                   className={`w-full text-left px-4 py-2 transition-colors border-l-2 ${
                     active === item.id
-                      ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
+                      ? 'border-sky-500 bg-zinc-800 text-zinc-100'
                       : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
                   }`}>
                   <div className="flex items-center gap-2">
