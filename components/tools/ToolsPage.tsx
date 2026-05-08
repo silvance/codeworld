@@ -9,6 +9,7 @@ import {
 import { CodeOptimizer } from './CodeOptimizer'
 import { CodeExplainer } from './CodeExplainer'
 import { JSONYAMLConverter, URLParser, CronVisualizer } from './MicroTools'
+import EmailAnalyzer from '../email/EmailAnalyzer'
 
 // ─── Hash tool (inlined here for the sidebar layout) ─────────────────────────
 
@@ -213,7 +214,7 @@ function HashTool() {
 
 // ─── Main layout ──────────────────────────────────────────────────────────────
 
-type ToolId = 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'entropy' | 'mac' | 'uuid' | 'chars' | 'codeopt' | 'explain' | 'jsonyaml' | 'urlparser' | 'cron'
+type ToolId = 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'email' | 'entropy' | 'mac' | 'uuid' | 'chars' | 'codeopt' | 'explain' | 'jsonyaml' | 'urlparser' | 'cron'
 
 const NAV: { id: ToolId; label: string; sub: string; icon: string }[] = [
   { id: 'hash',      label: 'Hash & encoding',     sub: 'MD5 · SHA · Base64 · hex · URL', icon: '#️⃣' },
@@ -223,6 +224,7 @@ const NAV: { id: ToolId; label: string; sub: string; icon: string }[] = [
   { id: 'regex',     label: 'Regex tester',         sub: 'Live match · groups · highlight', icon: '🔍' },
   { id: 'jwt',       label: 'JWT decoder',          sub: 'Header · payload · expiry check', icon: '🔑' },
   { id: 'cert',      label: 'Certificate decoder',  sub: 'PEM · fields · SHA-256 fingerprint', icon: '📜' },
+  { id: 'email',     label: 'Email headers',        sub: 'SPF · DKIM · DMARC · routing · phishing', icon: '✉️' },
   { id: 'entropy',   label: 'Entropy calculator',   sub: 'Shannon · classification · histogram', icon: '📊' },
   { id: 'mac',       label: 'MAC address lookup',   sub: 'OUI vendor · UAA/LAA · EUI-64',  icon: '🔌' },
   { id: 'uuid',      label: 'UUID / GUID decoder',  sub: 'Version · v1 timestamp · MAC',   icon: '🆔' },
@@ -242,6 +244,7 @@ const TOOLS: Record<ToolId, React.ReactNode> = {
   regex:     <RegexTester />,
   jwt:       <JWTDecoder />,
   cert:      <CertDecoder />,
+  email:     <EmailAnalyzer />,
   entropy:   <EntropyCalc />,
   mac:       <MACLookup />,
   uuid:      <UUIDDecoder />,
@@ -253,10 +256,19 @@ const TOOLS: Record<ToolId, React.ReactNode> = {
   cron:      <CronVisualizer />,
 }
 
+const VALID_TOOL_IDS: ToolId[] = ['hash','subnet','timestamp','packet','regex','jwt','cert','email','entropy','mac','uuid','chars','codeopt','explain','jsonyaml','urlparser','cron']
+
 export default function ToolsPage() {
   const [active, setActive] = useState<ToolId>('hash')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const current = NAV.find(n => n.id === active)!
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('tool') as ToolId | null
+    // Read once on mount to honor the ?tool=email deep-link from the /email redirect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (requested && VALID_TOOL_IDS.includes(requested)) setActive(requested)
+  }, [])
 
   return (
     <div className="flex h-full bg-zinc-950 text-zinc-100 overflow-hidden">
@@ -297,13 +309,17 @@ export default function ToolsPage() {
           <span className="text-xs font-mono text-zinc-300">{current.label}</span>
         </div>
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8">
-            <div className="mb-5 pb-4 border-b border-zinc-800">
-              <h1 className="text-sm font-mono font-semibold text-zinc-100 mb-0.5">{current.label}</h1>
-              <p className="text-[11px] font-mono text-zinc-600">{current.sub}</p>
+          {active === 'email' ? (
+            TOOLS[active]
+          ) : (
+            <div className="max-w-4xl mx-auto px-6 py-8">
+              <div className="mb-5 pb-4 border-b border-zinc-800">
+                <h1 className="text-sm font-mono font-semibold text-zinc-100 mb-0.5">{current.label}</h1>
+                <p className="text-[11px] font-mono text-zinc-600">{current.sub}</p>
+              </div>
+              {TOOLS[active]}
             </div>
-            {TOOLS[active]}
-          </div>
+          )}
         </main>
       </div>
 

@@ -1,47 +1,18 @@
 import Link from 'next/link'
+import TypewriterCycle from '@/components/TypewriterCycle'
 
 const TOOLS = [
   {
-    href: '/tools', label: 'Hash & Encoding', cmd: 'cd /tools',
-    desc: 'MD5, SHA-1, SHA-256, SHA-512, Base64, hex, URL encoding, HTML entities, ROT13, and number base conversion. All local — nothing leaves the browser.',
-    tags: ['MD5', 'SHA-256', 'Base64', 'Hex', 'URL encode', 'ROT13'],
-    stat: { label: 'Functions', value: '11' }, color: 'zinc',
+    href: '/tools', label: 'Tools', cmd: 'cd /tools',
+    desc: 'Hashing, encoding, subnet math, timestamps, JWT, certificate decoder, email header analyzer, regex tester, packet decoder, and more. All local — nothing leaves the browser.',
+    tags: ['Hash', 'Subnet', 'JWT', 'Email Headers', 'Regex', 'Cert'],
+    stat: { label: 'Tools', value: '17' }, color: 'zinc',
   },
   {
     href: '/playground', label: 'Code Playground', cmd: 'cd /playground',
     desc: 'Live Python, JavaScript, Go, Ruby, and Bash execution. Pre-loaded with cyber-relevant snippets for hash analysis, encoding, subnet math, and more.',
     tags: ['Python', 'JavaScript', 'Go', 'Ruby', 'Bash'],
     stat: { label: 'Languages', value: '5' }, color: 'emerald',
-  },
-  {
-    href: '/rf', label: 'RF / TSCM', cmd: 'cd /rf',
-    desc: 'Frequency reference, path loss calculator, sweep methodology, bug frequencies, physical indicators, counter-surveillance, SDR reference, and TSCM tool guide.',
-    tags: ['Freq Ref', 'Sweep', 'Bug Freq', 'SDR', 'Counter-Surv'],
-    stat: { label: 'Sections', value: '14' }, color: 'blue',
-  },
-  {
-    href: '/forensics', label: 'Digital Forensics', cmd: 'cd /forensics',
-    desc: 'Windows, Linux, and macOS artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets.',
-    tags: ['Windows', 'Linux', 'macOS', 'Memory', 'X-Ways'],
-    stat: { label: 'Sections', value: '5' }, color: 'purple',
-  },
-  {
-    href: '/mobile', label: 'Mobile Forensics', cmd: 'cd /mobile',
-    desc: 'Android and iOS artifact paths, acquisition methods, key SQLite databases, app artifact locations, and ADB command reference.',
-    tags: ['Android', 'iOS', 'ADB', 'SQLite'],
-    stat: { label: 'Sections', value: '6' }, color: 'amber',
-  },
-  {
-    href: '/network', label: 'Network Utilities', cmd: 'cd /network',
-    desc: 'Common ports with security notes, Wireshark display filters, Nmap scan reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), and attack signatures.',
-    tags: ['Ports', 'Wireshark', 'Nmap', 'Protocols', 'Attack Sigs'],
-    stat: { label: 'Sections', value: '5' }, color: 'teal',
-  },
-  {
-    href: '/malware', label: 'Malware Analysis', cmd: 'cd /malware',
-    desc: 'PE structure, static analysis workflow, packer signatures, YARA rule writing, C2 beacon patterns, sandbox evasion, anti-analysis techniques, and malware families.',
-    tags: ['PE Structure', 'YARA', 'Packers', 'C2', 'Evasion'],
-    stat: { label: 'Sections', value: '8' }, color: 'rose',
   },
   {
     href: '/osint', label: 'OSINT Reference', cmd: 'cd /osint',
@@ -56,15 +27,39 @@ const TOOLS = [
     stat: { label: 'Sections', value: '10' }, color: 'rose',
   },
   {
-    href: '/email', label: 'Email Header Analyzer', cmd: 'cd /email',
-    desc: 'Paste raw email headers — instant SPF, DKIM, DMARC analysis, hop-by-hop routing chain, domain alignment check, and phishing flag detection. All local, nothing sent anywhere.',
-    tags: ['SPF', 'DKIM', 'DMARC', 'Routing', 'Phishing'],
-    stat: { label: 'Analysis', value: 'Local' }, color: 'sky',
+    href: '/malware', label: 'Malware Analysis', cmd: 'cd /malware',
+    desc: 'PE structure, static analysis workflow, packer signatures, YARA rule writing, C2 beacon patterns, sandbox evasion, anti-analysis techniques, and malware families.',
+    tags: ['PE Structure', 'YARA', 'Packers', 'C2', 'Evasion'],
+    stat: { label: 'Sections', value: '8' }, color: 'amber',
+  },
+  {
+    href: '/network', label: 'Network Utilities', cmd: 'cd /network',
+    desc: 'Common ports with security notes, Wireshark display filters, Nmap scan reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), and attack signatures.',
+    tags: ['Ports', 'Wireshark', 'Nmap', 'Protocols', 'Attack Sigs'],
+    stat: { label: 'Sections', value: '5' }, color: 'teal',
+  },
+  {
+    href: '/forensics', label: 'Digital Forensics', cmd: 'cd /forensics',
+    desc: 'Windows, Linux, and macOS artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets.',
+    tags: ['Windows', 'Linux', 'macOS', 'Memory', 'X-Ways'],
+    stat: { label: 'Sections', value: '5' }, color: 'purple',
+  },
+  {
+    href: '/mobile', label: 'Mobile Forensics', cmd: 'cd /mobile',
+    desc: 'Android and iOS artifact paths, acquisition methods, key SQLite databases, app artifact locations, and ADB command reference.',
+    tags: ['Android', 'iOS', 'ADB', 'SQLite'],
+    stat: { label: 'Sections', value: '6' }, color: 'sky',
+  },
+  {
+    href: '/rf', label: 'RF / TSCM', cmd: 'cd /rf',
+    desc: 'Frequency reference, path loss calculator, sweep methodology, bug frequencies, physical indicators, counter-surveillance, SDR reference, and TSCM tool guide.',
+    tags: ['Freq Ref', 'Sweep', 'Bug Freq', 'SDR', 'Counter-Surv'],
+    stat: { label: 'Sections', value: '14' }, color: 'blue',
   },
 ]
 
 const STATS = [
-  { label: 'Tools',            value: '10'  },
+  { label: 'Tools',            value: '9'   },
   { label: 'Sections',         value: '60+' },
   { label: 'Nmap Commands',    value: '35+' },
   { label: 'Wireshark Filters', value: '55+' },
@@ -98,12 +93,25 @@ export default function HomePage() {
 
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 bg-gradient-to-br from-zinc-50 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-                codeworld
+              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 flex items-baseline">
+                <span className="bg-gradient-to-br from-zinc-50 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+                  codeworld
+                </span>
+                <span aria-hidden="true" className="text-emerald-400 cursor-blink ml-0.5">_</span>
               </h1>
-              <p className="text-sm text-zinc-400 max-w-xl leading-relaxed">
+              <p className="text-sm text-zinc-400 max-w-xl leading-relaxed mb-3">
                 A collection of reference tools and interactive utilities for cyber operations, TSCM, and digital forensics. Built for practitioners, not demos.
               </p>
+              <TypewriterCycle
+                items={[
+                  'cd /tools',
+                  'cd /osint && grep -r username',
+                  'cd /pentest && enum4linux',
+                  'cd /malware && yara -r rules.yar .',
+                  'cd /forensics && volatility -f mem.raw',
+                  'cd /rf && rtl_power -f 88M:108M:25k',
+                ]}
+              />
             </div>
             <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded px-3 py-1.5 backdrop-blur-sm">
               <span className="relative flex h-1.5 w-1.5">
@@ -133,7 +141,7 @@ export default function HomePage() {
                 className="group block card-rise"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className={`h-full border rounded-lg p-5 bg-zinc-950/40 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${c.border} ${c.bg} ${c.glow}`}>
+                <div className={`card-scanlines h-full border rounded-lg p-5 bg-zinc-950/40 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${c.border} ${c.bg} ${c.glow}`}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />

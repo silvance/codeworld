@@ -118,6 +118,14 @@ const nextConfig = {
     ]
   },
 
+  // ── Redirects ──────────────────────────────────────────────────────────────
+  async redirects() {
+    return [
+      // /email merged into the Tools page; preserve old links
+      { source: '/email', destination: '/tools?tool=email', permanent: true },
+    ]
+  },
+
   // ── Other Next.js config ───────────────────────────────────────────────────
 
   // Disable powered-by header — minor but removes fingerprinting vector
