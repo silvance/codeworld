@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { readInitialQueryParam } from "@/lib/queryParam"
 import {
   cidrTable, specialRanges,
   tcpdumpCommands,
@@ -55,7 +56,7 @@ const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs
 
 export function SubnetRef() {
   const [view, setView] = useState<'table' | 'special'>('table')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
 
   const filtered = useMemo(() => cidrTable.filter(e =>
     !search || String(e.prefix).includes(search) || e.subnetMask.includes(search)
@@ -135,7 +136,7 @@ export function SubnetRef() {
 
 export function TcpdumpRef() {
   const [catFilter, setCatFilter] = useState('ALL')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const cats = ['ALL', ...Array.from(new Set(tcpdumpCommands.map(c => c.category)))]
   const filtered = useMemo(() => tcpdumpCommands.filter(c => {
     if (catFilter !== 'ALL' && c.category !== catFilter) return false
@@ -274,7 +275,7 @@ export function FirewallRef() {
 export function DNSDeepDive() {
   const [toolFilter, setToolFilter] = useState('ALL')
   const [catFilter, setCatFilter] = useState('ALL')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const tools = ['ALL', ...Array.from(new Set(dnsCommands.map(c => c.tool)))]
   const cats = ['ALL', ...Array.from(new Set(dnsCommands.map(c => c.category)))]
   const filtered = useMemo(() => dnsCommands.filter(c => {
@@ -324,7 +325,7 @@ export function DNSDeepDive() {
 
 export function TLSRef() {
   const [catFilter, setCatFilter] = useState('ALL')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const cats = ['ALL', ...Array.from(new Set(tlsCommands.map(c => c.category)))]
   const filtered = useMemo(() => tlsCommands.filter(c => {
     if (catFilter !== 'ALL' && c.category !== catFilter) return false

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { readInitialQueryParam } from "@/lib/queryParam"
 import {
   searchOperators, peopleSources, personaSteps, usernameSources,
   imageTools, socialPlatforms, infraTools, phoneTools,
@@ -29,7 +30,7 @@ const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs
 // ─── 1. Search Operators ─────────────────────────────────────────────────────
 
 export function SearchOperators() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [engineFilter, setEngineFilter] = useState('ALL')
 
   const filtered = useMemo(() => searchOperators.filter(op => {
@@ -312,7 +313,7 @@ export function SocialMedia() {
 // ─── 7. Domain / IP / Infrastructure ─────────────────────────────────────────
 
 export function InfraOSINT() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [catFilter, setCatFilter] = useState('ALL')
 
   const catMap: Record<string, string> = {
@@ -382,7 +383,7 @@ export function PhoneOSINT() {
         <div>1. NumLookup → carrier + line type (mobile/landline/VoIP)</div>
         <div>2. Truecaller + CallerSmart → crowdsourced identity</div>
         <div>3. Whitepages reverse → name/address (best for landlines)</div>
-        <div>4. Google/Bing all format variants: "555-867-5309" "5558675309" "+15558675309"</div>
+        <div>4. Google/Bing all format variants: &quot;555-867-5309&quot; &quot;5558675309&quot; &quot;+15558675309&quot;</div>
         <div>5. Social media: Facebook search, WhatsApp contact check</div>
         <div>6. Phoneinfoga → aggregates multiple sources in one run</div>
         <div>7. Dehashed → if number appears in breach data</div>
@@ -458,7 +459,7 @@ export function DarkWebOSINT() {
 // ─── 10. Corporate / Business Intelligence ────────────────────────────────────
 
 export function CorpIntel() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
 
   const filtered = useMemo(() => corpSources.filter(s => {
     if (!search) return true

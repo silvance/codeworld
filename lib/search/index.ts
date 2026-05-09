@@ -3,9 +3,8 @@
 // ?section=<id> (or ?tool=<id> for /tools). Each subpage reads that param on
 // mount and selects the matching section.
 //
-// Keep in sync with each page's NAV array. There's no shared module to import
-// from yet; the cost of the duplication is one entry per new section, but it
-// keeps subpages simple.
+// Sections are derived from each page's NAV array, imported from
+// lib/<area>/nav.ts. Concrete entries come from lib/<area>/data.ts.
 
 import { networkSearchEntries }     from '@/lib/network/data'
 import { forensicsSearchEntries }   from '@/lib/forensics/data'
@@ -16,7 +15,18 @@ import { pentestAdvancedSearchEntries } from '@/lib/pentest/dataAdvanced'
 import { mobileSearchEntries }      from '@/lib/mobile/data'
 import { rfSearchEntries }          from '@/lib/rf/data'
 import { cloudSearchEntries }       from '@/lib/cloud/data'
-import type { RawSearchEntry }      from './types'
+
+import { NAV as forensicsNav } from '@/lib/forensics/nav'
+import { NAV as networkNav }   from '@/lib/network/nav'
+import { NAV as malwareNav }   from '@/lib/malware/nav'
+import { NAV as osintNav }     from '@/lib/osint/nav'
+import { NAV as pentestNav }   from '@/lib/pentest/nav'
+import { NAV as mobileNav }    from '@/lib/mobile/nav'
+import { NAV as rfNav }        from '@/lib/rf/nav'
+import { NAV as cloudNav }     from '@/lib/cloud/nav'
+import { NAV as toolsNav }     from '@/lib/tools/nav'
+
+import type { RawSearchEntry } from './types'
 
 export type SearchEntry = {
   kind: 'page' | 'section' | 'tool' | 'entry'
@@ -40,163 +50,9 @@ const PAGES: SearchEntry[] = [
   { kind: 'page', title: 'RF / TSCM',          subtitle: 'Frequency · path loss · sweep · bug frequencies · SDR · TEMPEST',    href: '/rf',         page: 'RF / TSCM',       color: 'blue'    },
 ]
 
-type SectionDef = { id: string; label: string; sub: string }
+type SectionLike = { id: string; label: string; sub: string }
 
-const FORENSICS_SECTIONS: SectionDef[] = [
-  { id: 'windows',       label: 'Windows artifacts',     sub: 'Event IDs · registry · execution · USB' },
-  { id: 'linux',         label: 'Linux artifacts',       sub: 'Auth · history · persistence' },
-  { id: 'macos',         label: 'macOS artifacts',       sub: 'Unified Log · LaunchAgents · KnowledgeC' },
-  { id: 'keyartifacts',  label: 'Key artifacts (CI)',    sub: 'Shellbags · LNK · Prefetch · VSS' },
-  { id: 'srum',          label: 'SRUM',                  sub: 'Network bytes per process · exfil volume' },
-  { id: 'cloud',         label: 'Cloud storage',         sub: 'OneDrive · Dropbox · Google Drive · Box' },
-  { id: 'antiforensics', label: 'Anti-forensics',        sub: 'Timestomping · wiping · log clearing' },
-  { id: 'axiom',         label: 'AXIOM artifacts',       sub: 'MRU · USN · PS history · tasks · creds' },
-  { id: 'browsersql',    label: 'Browser SQL',           sub: 'Chrome · Firefox · Edge · Safari queries' },
-  { id: 'memory',        label: 'Memory forensics',      sub: 'Volatility 3 · triage · plugins' },
-  { id: 'triage',        label: 'Triage & acquisition',  sub: 'KAPE · Velociraptor · imaging · memory' },
-  { id: 'tools',         label: 'Tool cheat sheets',     sub: 'EZ Tools · KAPE · X-Ways · Axiom' },
-]
-
-const NETWORK_SECTIONS: SectionDef[] = [
-  { id: 'ports',     label: 'Common ports',       sub: '60+ ports with security notes' },
-  { id: 'wireshark', label: 'Wireshark filters',  sub: 'Display filters by category' },
-  { id: 'nmap',      label: 'Nmap reference',     sub: 'Scans · scripts · combos' },
-  { id: 'protocols', label: 'Protocol quick-ref', sub: 'DNS · HTTP · TLS · ICMP · ARP' },
-  { id: 'subnet',    label: 'Subnet / CIDR',      sub: 'Masks · host counts · ranges' },
-  { id: 'attacks',   label: 'Attack signatures',  sub: 'Indicators · filters · mitigations' },
-  { id: 'tcpdump',   label: 'tcpdump',            sub: 'Capture · filters · ring buffer' },
-  { id: 'netcat',    label: 'Netcat / Ncat',      sub: 'Listeners · shells · file transfer' },
-  { id: 'firewall',  label: 'Firewall rules',     sub: 'iptables · nftables · WinFW' },
-  { id: 'dns',       label: 'DNS deep dive',      sub: 'dig · zone transfer · DoH · DoT' },
-  { id: 'tls',       label: 'TLS/SSL testing',    sub: 'openssl · testssl.sh · nmap' },
-  { id: 'scapy',     label: 'Scapy / crafting',   sub: 'Build · send · sniff · fuzz' },
-  { id: 'pivot',     label: 'Pivoting / tunnels', sub: 'SSH · chisel · ligolo · proxychains' },
-  { id: 'wireless',  label: 'Wireless',           sub: 'Monitor · WPA2 · PMKID · kismet' },
-  { id: 'ipv6',      label: 'IPv6 reference',     sub: 'Addressing · NDP · attack vectors' },
-]
-
-const MALWARE_SECTIONS: SectionDef[] = [
-  { id: 'workflow',     label: 'Static analysis workflow', sub: 'Triage → strings → PE → YARA' },
-  { id: 'pe',           label: 'PE file structure',        sub: 'Headers · sections · imports' },
-  { id: 'packers',      label: 'Packer signatures',        sub: 'UPX · Themida · VMProtect · CS' },
-  { id: 'yara',         label: 'YARA rule writing',        sub: 'Syntax · modifiers · patterns' },
-  { id: 'c2',           label: 'C2 beacon patterns',       sub: 'Cobalt Strike · Sliver · Meterpreter' },
-  { id: 'evasion',      label: 'Sandbox evasion',          sub: 'Time · env · VM detection' },
-  { id: 'antianalysis', label: 'Anti-analysis',            sub: 'Anti-debug · anti-EDR/AV' },
-  { id: 'families',     label: 'Malware families',         sub: 'RATs · stealers · loaders · ransomware' },
-]
-
-const OSINT_SECTIONS: SectionDef[] = [
-  { id: 'search',   label: 'Search operators',    sub: 'Google · Bing · dorks' },
-  { id: 'people',   label: 'People search',       sub: 'Spokeo · Pipl · PACER' },
-  { id: 'username', label: 'Username enum',       sub: 'Sherlock · Maigret · breaches' },
-  { id: 'image',    label: 'Image OSINT',         sub: 'Reverse · EXIF · geolocation' },
-  { id: 'social',   label: 'Social media',        sub: 'LinkedIn · Twitter · Facebook' },
-  { id: 'infra',    label: 'Domain / IP / infra', sub: 'Shodan · crt.sh · DNS history' },
-  { id: 'phone',    label: 'Phone OSINT',         sub: 'Truecaller · Phoneinfoga' },
-  { id: 'darkweb',  label: 'Dark web OSINT',      sub: 'Breaches · Tor · ransomware leak sites' },
-  { id: 'corp',     label: 'Corporate intel',     sub: 'SEC · SAM.gov · patents' },
-  { id: 'persona',  label: 'Sock puppet OPSEC',   sub: 'Infrastructure · identity · ops' },
-]
-
-const PENTEST_SECTIONS: SectionDef[] = [
-  { id: 'recon',        label: 'Recon & enum',         sub: 'whois · Shodan · dorks · LDAP' },
-  { id: 'scan',         label: 'Discovery & scanning', sub: 'Nmap · masscan · NSE scripts' },
-  { id: 'service',      label: 'Service enumeration',  sub: 'SMB · SSH · RDP · HTTP · SNMP' },
-  { id: 'vulnscan',     label: 'Vuln scanning',        sub: 'Nessus · Nikto · Nuclei' },
-  { id: 'metasploit',   label: 'Metasploit',           sub: 'search · sessions · Meterpreter' },
-  { id: 'webapp',       label: 'Web app testing',      sub: 'SQLi · XSS · LFI · upload bypass' },
-  { id: 'passwords',    label: 'Password attacks',     sub: 'Hydra · hashcat · CME · John' },
-  { id: 'postexploit',  label: 'Post-exploitation',    sub: 'PrivEsc · enum · creds · loot' },
-  { id: 'ad',           label: 'Active Directory',     sub: 'BloodHound · Kerberoast · DCSync' },
-  { id: 'cves',         label: 'Common CVEs',          sub: 'EternalBlue · Log4Shell · Zerologon' },
-  { id: 'lateral',      label: 'Lateral movement',     sub: 'PsExec · WMI · Chisel · Ligolo-ng' },
-  { id: 'linprivesc',   label: 'Linux PrivEsc',        sub: 'sudo · SUID · cron · capabilities' },
-  { id: 'winprivesc',   label: 'Windows PrivEsc',      sub: 'Potato · services · UAC · DLL' },
-  { id: 'shells',       label: 'Shells & payloads',    sub: 'Reverse shells · TTY · msfvenom' },
-  { id: 'filetransfer', label: 'File transfer',        sub: 'wget · certutil · SMB · base64' },
-  { id: 'bof',          label: 'Buffer overflow',      sub: 'Stack BOF · Immunity · Mona · JMP' },
-  { id: 'reporting',    label: 'Reporting & evidence', sub: 'CVSS · findings · checklist' },
-]
-
-const MOBILE_SECTIONS: SectionDef[] = [
-  { id: 'acquisition',  label: 'Acquisition methods',   sub: 'Logical · FS · physical · JTAG' },
-  { id: 'artifacts',    label: 'Device artifacts',      sub: 'Android + iOS paths and value' },
-  { id: 'backups',      label: 'iOS backup structure',  sub: 'iTunes · iCloud · GrayKey' },
-  { id: 'sqlite',       label: 'SQLite databases',      sub: 'Key tables, columns, epoch notes' },
-  { id: 'apps',         label: 'App artifact paths',    sub: 'WhatsApp · Signal · Telegram' },
-  { id: 'adb',          label: 'ADB reference',         sub: 'Device info · extraction · forensics' },
-  { id: 'ioslog',       label: 'iOS Unified Log',       sub: 'sysdiagnose · execution · network' },
-  { id: 'androidlog',   label: 'Android logs',          sub: 'Logcat · tombstones · Dropbox · netstats' },
-  { id: 'cloud',        label: 'Cloud extraction',      sub: 'iCloud · Google · WhatsApp backup' },
-  { id: 'appdeep',      label: 'App deep dives',        sub: 'WhatsApp · Signal · Telegram · Snap' },
-  { id: 'location',     label: 'Location forensics',    sub: 'Significant Locations · Timeline · towers' },
-  { id: 'comms',        label: 'Comms correlation',     sub: 'SMS · calls · iMessage identity' },
-  { id: 'malware',      label: 'Malware indicators',    sub: 'Jailbreak · stalkerware · root' },
-  { id: 'antiforensics',label: 'Anti-forensics',        sub: 'Factory reset · wipe · encryption' },
-  { id: 'smartwatch',   label: 'Smartwatch forensics',  sub: 'Apple Watch · Samsung · Fitbit · Garmin' },
-  { id: 'jtag',         label: 'JTAG / chip-off',       sub: 'Hardware extraction workflow' },
-  { id: 'ufed',         label: 'Cellebrite / UFED',     sub: 'Extraction types · PA workflow' },
-]
-
-const RF_SECTIONS: SectionDef[] = [
-  { id: 'freq',           label: 'Frequency reference',   sub: 'ISM · cellular · gov · ham' },
-  { id: 'fspl',           label: 'Path loss calc',        sub: 'FSPL · EIRP · link budget' },
-  { id: 'channels',       label: 'Channel maps',          sub: '2.4 GHz · 5 GHz · BLE' },
-  { id: 'math',           label: 'Signal math',           sub: 'dBm ↔ mW · EIRP · ref table' },
-  { id: 'antenna',        label: 'Antenna & link budget', sub: 'Gain · patterns · formulas' },
-  { id: 'modulation',     label: 'Modulation reference',  sub: 'AM · FM · FHSS · OFDM · OOK' },
-  { id: 'sweep',          label: 'Sweep methodology',     sub: 'Pre-sweep · RF · physical · docs' },
-  { id: 'tscm',           label: 'TSCM devices',          sub: 'Threat freqs · detection' },
-  { id: 'bugfreq',        label: 'Bug frequencies',       sub: 'Audio · video · GSM · cellular' },
-  { id: 'physical',       label: 'Physical indicators',   sub: 'Screws · paint · wiring · weight' },
-  { id: 'countersurv',    label: 'Counter-surv',          sub: 'Foot · vehicle · technical' },
-  { id: 'rogue',          label: 'Rogue AP reference',    sub: 'Evil twin · indicators · tools' },
-  { id: 'taxonomy',       label: 'Device taxonomy',       sub: 'Acoustic · optical · RF · IoT' },
-  { id: 'actors',         label: 'Threat actors',         sub: 'Nation-state · insider · criminal' },
-  { id: 'baseline',       label: 'Spectrum baseline',     sub: 'Office · mil · industrial' },
-  { id: 'tempest',        label: 'TEMPEST / emanations',  sub: 'Van Eck · keyboard · powerline' },
-  { id: 'rbs',            label: 'Rogue base stations',   sub: '2G/LTE attacks · SDR · detection' },
-  { id: 'cellular',       label: 'Cellular threats',      sub: 'IMSI · rogue cell · carrier current' },
-  { id: 'countermeasures',label: 'Countermeasures',       sub: 'Shielding · masking · policy' },
-  { id: 'training',       label: 'Training scenarios',    sub: 'Beginner → expert · 5 scenarios' },
-  { id: 'report',         label: 'Survey report',         sub: 'Sweep documentation · export' },
-  { id: 'sdr',            label: 'SDR quick reference',   sub: 'HackRF · RTL · TinySA · Flipper' },
-  { id: 'tools',          label: 'TSCM tool reference',   sub: 'OSCOR · TALAN · NLJD · TinySA' },
-]
-
-const CLOUD_SECTIONS: SectionDef[] = [
-  { id: 'aws',       label: 'AWS reference',       sub: 'Services · CloudTrail · IAM gotchas' },
-  { id: 'azure',     label: 'Azure reference',     sub: 'Services · Activity Log · Entra ID' },
-  { id: 'gcp',       label: 'GCP reference',       sub: 'Services · Audit Logs · IAM' },
-  { id: 'iam',       label: 'IAM attacks',         sub: 'Privesc paths across all three clouds' },
-  { id: 'k8s',       label: 'Containers & Kubernetes', sub: 'RBAC · pod escape · runtime' },
-  { id: 'storage',   label: 'Storage attacks',     sub: 'S3 · Blob · GCS misconfigs + audit events' },
-  { id: 'forensics', label: 'Cloud forensics & IR', sub: 'Runbook · evidence · containment' },
-  { id: 'tools',     label: 'Cloud security tools', sub: 'Prowler · CloudFox · Pacu · kube-bench' },
-]
-
-const TOOLS_SECTIONS: SectionDef[] = [
-  { id: 'hash',      label: 'Hash & encoding',     sub: 'MD5 · SHA · Base64 · hex · URL' },
-  { id: 'subnet',    label: 'Subnet calculator',   sub: 'CIDR · hosts · mask · binary' },
-  { id: 'timestamp', label: 'Timestamp converter', sub: 'Unix · FILETIME · Chrome · Mac' },
-  { id: 'packet',    label: 'Packet decoder',      sub: 'Ethernet · IP · TCP · UDP · DNS' },
-  { id: 'regex',     label: 'Regex tester',        sub: 'Live match · groups · highlight' },
-  { id: 'jwt',       label: 'JWT decoder',         sub: 'Header · payload · expiry check' },
-  { id: 'cert',      label: 'Certificate decoder', sub: 'PEM · fields · SHA-256 fingerprint' },
-  { id: 'email',     label: 'Email headers',       sub: 'SPF · DKIM · DMARC · routing · phishing' },
-  { id: 'entropy',   label: 'Entropy calculator',  sub: 'Shannon · classification · histogram' },
-  { id: 'mac',       label: 'MAC address lookup',  sub: 'OUI vendor · UAA/LAA · EUI-64' },
-  { id: 'uuid',      label: 'UUID / GUID decoder', sub: 'Version · v1 timestamp · MAC' },
-  { id: 'chars',     label: 'Char inspector',      sub: 'Codepoint · UTF-8 · non-print' },
-  { id: 'codeopt',   label: 'Code optimizer',      sub: 'Bug detection · security · AI' },
-  { id: 'explain',   label: 'Code explainer',      sub: 'Plain English · technical · security lens' },
-  { id: 'jsonyaml',  label: 'JSON ↔ YAML',         sub: 'Convert between formats' },
-  { id: 'urlparser', label: 'URL parser',          sub: 'Scheme · host · params · fragment' },
-  { id: 'cron',      label: 'Cron visualizer',     sub: 'Schedule → plain English + next runs' },
-]
-
-function expand(sections: SectionDef[], page: string, route: string, color: string, paramName = 'section'): SearchEntry[] {
+function expand(sections: readonly SectionLike[], page: string, route: string, color: string, paramName = 'section'): SearchEntry[] {
   return sections.map(s => ({
     kind: paramName === 'tool' ? 'tool' : 'section',
     title: s.label,
@@ -220,15 +76,15 @@ function flatten(raw: RawSearchEntry[], page: string, route: string, color: stri
 
 export const SEARCH_INDEX: SearchEntry[] = [
   ...PAGES,
-  ...expand(TOOLS_SECTIONS,     'Tools',     '/tools',     'zinc',    'tool'),
-  ...expand(OSINT_SECTIONS,     'OSINT',     '/osint',     'coral'),
-  ...expand(PENTEST_SECTIONS,   'Pentest',   '/pentest',   'rose'),
-  ...expand(MALWARE_SECTIONS,   'Malware',   '/malware',   'amber'),
-  ...expand(NETWORK_SECTIONS,   'Network',   '/network',   'teal'),
-  ...expand(FORENSICS_SECTIONS, 'Forensics', '/forensics', 'purple'),
-  ...expand(CLOUD_SECTIONS,     'Cloud',     '/cloud',     'violet'),
-  ...expand(MOBILE_SECTIONS,    'Mobile',    '/mobile',    'sky'),
-  ...expand(RF_SECTIONS,        'RF / TSCM', '/rf',        'blue'),
+  ...expand(toolsNav,     'Tools',     '/tools',     'zinc',    'tool'),
+  ...expand(osintNav,     'OSINT',     '/osint',     'coral'),
+  ...expand(pentestNav,   'Pentest',   '/pentest',   'rose'),
+  ...expand(malwareNav,   'Malware',   '/malware',   'amber'),
+  ...expand(networkNav,   'Network',   '/network',   'teal'),
+  ...expand(forensicsNav, 'Forensics', '/forensics', 'purple'),
+  ...expand(cloudNav,     'Cloud',     '/cloud',     'violet'),
+  ...expand(mobileNav,    'Mobile',    '/mobile',    'sky'),
+  ...expand(rfNav,        'RF / TSCM', '/rf',        'blue'),
   // Entry-level: every concrete data row across the lib/* files.
   ...flatten(networkSearchEntries,        'Network',   '/network',   'teal'),
   ...flatten(forensicsSearchEntries,      'Forensics', '/forensics', 'purple'),

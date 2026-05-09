@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { readInitialQueryParam } from "@/lib/queryParam"
 import {
   windowsEventIDs, registryHives, execArtifacts, usbArtifacts,
   lnkArtifacts, browserArtifacts, linuxArtifacts, volatilityPlugins,
@@ -377,7 +378,7 @@ export function MemoryForensics() {
   const [tab, setTab]       = useState<'triage' | 'plugins'>('triage')
   const [osFilter, setOsFilter] = useState<'All' | 'Windows' | 'Linux'>('All')
   const [triageOnly, setTriageOnly] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
 
   const filteredPlugins = useMemo(() => volatilityPlugins.filter(p => {
     if (osFilter !== 'All' && p.os !== osFilter) return false
@@ -473,7 +474,7 @@ export function MemoryForensics() {
 export function ToolCheatSheets() {
   const [activeTool, setActiveTool] = useState(toolSheets[0].tool)
   const tool = toolSheets.find(t => t.tool === activeTool)!
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
 
   const filteredCmds = useMemo(() =>
     tool.commands.filter(c =>
@@ -530,7 +531,7 @@ export function ToolCheatSheets() {
 
 export function MacOSArtifacts() {
   const [tab, setTab] = useState<'artifacts' | 'unifiedlog' | 'tools'>('artifacts')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [catFilter, setCatFilter] = useState('ALL')
 
   const cats = ['ALL', ...Array.from(new Set(macArtifacts.map(a => a.category)))]

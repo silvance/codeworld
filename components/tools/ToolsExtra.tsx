@@ -231,6 +231,8 @@ export function TimestampConverter() {
       mac: String(mac),
       hfs: String(unix_s + 2082844800),
       dayOfWeek: d.toLocaleDateString('en-US', { weekday: 'long' }),
+      // Snapshot of "today minus the input time" — not trying to stay live.
+      // eslint-disable-next-line react-hooks/purity
       daysAgo: Math.floor((Date.now() - ms) / 86400000),
     }
   }, [input, mode])
@@ -665,6 +667,8 @@ export function JWTDecoder() {
     const payload = decode(parts[1])
     if (!header || !payload) return { error: 'Invalid base64url encoding in header or payload' }
 
+    // Snapshot of "now" for expiry display — not trying to stay live.
+    // eslint-disable-next-line react-hooks/purity
     const now = Math.floor(Date.now() / 1000)
     const exp = payload.exp ? new Date(payload.exp * 1000).toISOString() : null
     const iat = payload.iat ? new Date(payload.iat * 1000).toISOString() : null

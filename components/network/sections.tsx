@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { readInitialQueryParam } from "@/lib/queryParam"
 import { ports, wiresharkFilters, nmapCommands, protocols, attackSignatures } from '@/lib/network/data'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ const protoBadge = (p: string) => {
 // ─── 1. Common Ports ─────────────────────────────────────────────────────────
 
 export function PortsReference() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [cat, setCat] = useState('ALL')
   const [proto, setProto] = useState('ALL')
 
@@ -110,7 +111,7 @@ export function PortsReference() {
 // ─── 2. Wireshark Filters ─────────────────────────────────────────────────────
 
 export function WiresharkFilters() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [cat, setCat] = useState('ALL')
 
   const cats = ['ALL', ...Array.from(new Set(wiresharkFilters.map(f => f.category)))]
@@ -160,7 +161,7 @@ export function WiresharkFilters() {
 // ─── 3. Nmap Reference ───────────────────────────────────────────────────────
 
 export function NmapReference() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [cat, setCat] = useState('ALL')
 
   const cats = ['ALL', ...Array.from(new Set(nmapCommands.map(c => c.category)))]
