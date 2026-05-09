@@ -1841,3 +1841,27 @@ export const smartwatchCIConsiderations = [
     notes: 'Wearable data provides the most continuous biometric timeline available in consumer forensics. Combine with phone location data, browser history, and SRUM for complete picture.',
   },
 ]
+
+// ─── Search index entries ────────────────────────────────────────────────────
+
+import type { RawSearchEntry } from '@/lib/search/types'
+
+export const mobileSearchEntries: RawSearchEntry[] = [
+  ...acquisitionMethods.map<RawSearchEntry>(m => ({ title: m.name, aka: `${m.level} · ${m.platforms.join('/')}`, subtitle: m.dataAccess.join(' · '), section: 'acquisition' })),
+  ...androidArtifacts.map<RawSearchEntry>(a => ({ title: a.name, aka: `Android · ${a.category}`, subtitle: a.provides, section: 'artifacts' })),
+  ...iosArtifacts.map<RawSearchEntry>(a => ({ title: a.name, aka: `iOS · ${a.category}`, subtitle: a.provides, section: 'artifacts' })),
+  ...iosBackupTypes.map<RawSearchEntry>(b => ({ title: b.name, aka: 'iOS backup', subtitle: b.contents.join(' · '), section: 'backups' })),
+  ...sqliteDatabases.map<RawSearchEntry>(d => ({ title: d.name, aka: `${d.platform} · SQLite`, subtitle: d.forensicValue, section: 'sqlite' })),
+  ...appArtifacts.map<RawSearchEntry>(a => ({ title: a.app, aka: `${a.platform} · ${a.bundleId}`, subtitle: a.notes, section: 'apps' })),
+  ...adbCommands.map<RawSearchEntry>(c => ({ title: c.cmd, aka: `ADB · ${c.category}`, subtitle: c.description, section: 'adb' })),
+  ...androidLogEntries.map<RawSearchEntry>(e => ({ title: e.command.split('\n')[0], aka: `Android · ${e.category}`, subtitle: e.description, section: 'androidlog' })),
+  ...cloudExtractions.map<RawSearchEntry>(c => ({ title: `${c.provider} ${c.service}`, aka: 'Cloud extraction', subtitle: c.whatYouGet.join(' · '), section: 'cloud' })),
+  ...appDeepDives.map<RawSearchEntry>(a => ({ title: a.app, aka: `${a.platform} deep dive`, subtitle: a.forensicValue, section: 'appdeep' })),
+  ...locationArtifacts.map<RawSearchEntry>(l => ({ title: l.name, aka: `${l.platform} · location`, subtitle: l.description, section: 'location' })),
+  ...commArtifacts.map<RawSearchEntry>(c => ({ title: c.type, aka: c.platform, subtitle: c.path, section: 'comms' })),
+  ...mobileIOCs.map<RawSearchEntry>(i => ({ title: i.name, aka: `${i.platform} · ${i.category}`, subtitle: i.indicators.join(' · '), section: 'malware' })),
+  ...mobileAntiForensics.map<RawSearchEntry>(a => ({ title: a.technique, aka: `${a.platform} · anti-forensics`, subtitle: a.description, section: 'antiforensics' })),
+  ...jtagWorkflow.map<RawSearchEntry>(j => ({ title: j.step, aka: `JTAG · ${j.phase}`, subtitle: j.detail, section: 'jtag' })),
+  ...ufedExtractionTypes.map<RawSearchEntry>(u => ({ title: u.type, aka: 'UFED / Cellebrite', subtitle: u.description, section: 'ufed' })),
+  ...smartwatchPlatforms.map<RawSearchEntry>(s => ({ title: s.name, aka: `Smartwatch · ${s.os}`, subtitle: s.devices, section: 'smartwatch' })),
+]

@@ -7,8 +7,19 @@
 // from yet; the cost of the duplication is one entry per new section, but it
 // keeps subpages simple.
 
+import { networkSearchEntries }     from '@/lib/network/data'
+import { forensicsSearchEntries }   from '@/lib/forensics/data'
+import { malwareSearchEntries }     from '@/lib/malware/data'
+import { osintSearchEntries }       from '@/lib/osint/data'
+import { pentestSearchEntries }     from '@/lib/pentest/data'
+import { pentestAdvancedSearchEntries } from '@/lib/pentest/dataAdvanced'
+import { mobileSearchEntries }      from '@/lib/mobile/data'
+import { rfSearchEntries }          from '@/lib/rf/data'
+import { cloudSearchEntries }       from '@/lib/cloud/data'
+import type { RawSearchEntry }      from './types'
+
 export type SearchEntry = {
-  kind: 'page' | 'section' | 'tool'
+  kind: 'page' | 'section' | 'tool' | 'entry'
   title: string
   subtitle: string
   href: string
@@ -196,6 +207,17 @@ function expand(sections: SectionDef[], page: string, route: string, color: stri
   }))
 }
 
+function flatten(raw: RawSearchEntry[], page: string, route: string, color: string): SearchEntry[] {
+  return raw.map(r => ({
+    kind: 'entry' as const,
+    title: r.title,
+    subtitle: r.aka ? `${r.aka} · ${r.subtitle}` : r.subtitle,
+    href: `${route}?section=${r.section}`,
+    page,
+    color,
+  }))
+}
+
 export const SEARCH_INDEX: SearchEntry[] = [
   ...PAGES,
   ...expand(TOOLS_SECTIONS,     'Tools',     '/tools',     'zinc',    'tool'),
@@ -207,12 +229,23 @@ export const SEARCH_INDEX: SearchEntry[] = [
   ...expand(CLOUD_SECTIONS,     'Cloud',     '/cloud',     'violet'),
   ...expand(MOBILE_SECTIONS,    'Mobile',    '/mobile',    'sky'),
   ...expand(RF_SECTIONS,        'RF / TSCM', '/rf',        'blue'),
+  // Entry-level: every concrete data row across the lib/* files.
+  ...flatten(networkSearchEntries,        'Network',   '/network',   'teal'),
+  ...flatten(forensicsSearchEntries,      'Forensics', '/forensics', 'purple'),
+  ...flatten(malwareSearchEntries,        'Malware',   '/malware',   'amber'),
+  ...flatten(osintSearchEntries,          'OSINT',     '/osint',     'coral'),
+  ...flatten(pentestSearchEntries,        'Pentest',   '/pentest',   'rose'),
+  ...flatten(pentestAdvancedSearchEntries,'Pentest',   '/pentest',   'rose'),
+  ...flatten(mobileSearchEntries,         'Mobile',    '/mobile',    'sky'),
+  ...flatten(rfSearchEntries,             'RF / TSCM', '/rf',        'blue'),
+  ...flatten(cloudSearchEntries,          'Cloud',     '/cloud',     'violet'),
 ]
 
-const KIND_RANK: Record<SearchEntry['kind'], number> = { page: 0, section: 1, tool: 1 }
+// Pages float to the top, sections next, then concrete entries.
+const KIND_RANK: Record<SearchEntry['kind'], number> = { page: 0, section: 1, tool: 1, entry: 2 }
 
 // Substring + acronym scoring. Higher = better match.
-export function searchEntries(query: string, limit = 8): SearchEntry[] {
+export function searchEntries(query: string, limit = 12): SearchEntry[] {
   const q = query.trim().toLowerCase()
   if (!q) return []
 

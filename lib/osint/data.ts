@@ -512,3 +512,19 @@ export const corpSources: CorpSource[] = [
   { name: 'Patent/trademark databases', url: 'patents.google.com / tmsearch.uspto.gov', what: 'Patents reveal technology development, inventor names, R&D focus areas', cost: 'Free', notes: 'Inventor names on patents are individuals — searchable people OSINT. Patent citations map technology relationships. Trademark filings show brand/product plans. Foreign patents: espacenet.epo.org' },
   { name: 'Federal Acquisition Regulation (SAM + FPDS)', url: 'fpds.gov', what: 'Detailed federal contract award data: amounts, dates, description, socioeconomic status', cost: 'Free', notes: 'More detailed than USASpending. Contract descriptions sometimes reveal program names. Modification history shows contract growth/changes. PSC codes classify the type of work.' },
 ]
+
+// ─── Search index entries ────────────────────────────────────────────────────
+
+import type { RawSearchEntry } from '@/lib/search/types'
+
+export const osintSearchEntries: RawSearchEntry[] = [
+  ...searchOperators.map<RawSearchEntry>(o => ({ title: o.operator, aka: o.engine.join('/'), subtitle: o.description, section: 'search' })),
+  ...peopleSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.cost, subtitle: s.dataTypes.join(' · '), section: 'people' })),
+  ...usernameSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.method, subtitle: s.coverage, section: 'username' })),
+  ...imageTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.method, subtitle: t.bestFor, section: 'image' })),
+  ...socialPlatforms.map<RawSearchEntry>(p => ({ title: p.platform, aka: 'Social media', subtitle: p.keyTechniques[0] ?? '', section: 'social' })),
+  ...infraTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.url, subtitle: t.what, section: 'infra' })),
+  ...phoneTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.cost, subtitle: t.what, section: 'phone' })),
+  ...darkWebSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.type, subtitle: s.what, section: 'darkweb' })),
+  ...corpSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.cost, subtitle: s.what, section: 'corp' })),
+]

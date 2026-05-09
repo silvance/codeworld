@@ -1750,3 +1750,30 @@ export const rbsLegalFramework = {
   ],
   operationalNotes: 'For TSCM purposes at government/military facilities: unauthorized rogue base station activity is a CI threat requiring immediate reporting through appropriate channels. Do not attempt active countermeasures. Document all observables (frequency, cell ID, RSSI, location, time) and report. Carrier current legal framework applies similarly — detection and documentation, not jamming.',
 }
+
+// ─── Search index entries ────────────────────────────────────────────────────
+
+import type { RawSearchEntry } from '@/lib/search/types'
+
+export const rfSearchEntries: RawSearchEntry[] = [
+  ...freqReference.flatMap(c => c.bands.map<RawSearchEntry>(b => ({ title: b.name, aka: `${c.category} · ${b.start}–${b.end}`, subtitle: b.notes, section: 'freq' }))),
+  ...tscmDevices.map<RawSearchEntry>(d => ({ title: d.name, aka: `${d.freqRange} · ${d.modulation}`, subtitle: d.notes, section: 'tscm' })),
+  ...rogueAPIndicators.map<RawSearchEntry>(i => ({ title: i.indicator, aka: 'Rogue AP', subtitle: i.detail, section: 'rogue' })),
+  ...sdrDevices.map<RawSearchEntry>(s => ({ title: s.name, aka: `${s.type} · ${s.freqRange}`, subtitle: s.primaryUse.join(' · '), section: 'sdr' })),
+  ...sweepMethodology.map<RawSearchEntry>(s => ({ title: s.step, aka: `Sweep · ${s.phase}`, subtitle: s.actions[0] ?? '', section: 'sweep' })),
+  ...physicalIndicators.map<RawSearchEntry>(p => ({ title: p.indicator, aka: p.category, subtitle: p.detail, section: 'physical' })),
+  ...modulations.map<RawSearchEntry>(m => ({ title: m.name, aka: m.fullName, subtitle: m.commonUses.join(' · '), section: 'modulation' })),
+  ...counterSurvIndicators.map<RawSearchEntry>(i => ({ title: i.indicator, aka: i.category, subtitle: i.detail, section: 'countersurv' })),
+  ...bugFrequencies.map<RawSearchEntry>(b => ({ title: b.category, aka: `${b.freqRange} · ${b.modulation}`, subtitle: b.notes, section: 'bugfreq' })),
+  ...tscmTools.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.manufacturer} · ${t.category}`, subtitle: t.primaryFunction, section: 'tools' })),
+  ...antennaTypes.map<RawSearchEntry>(a => ({ title: a.name, aka: `${a.gainTypical} · ${a.pattern}`, subtitle: a.bestFor, section: 'antenna' })),
+  ...threatDevices.map<RawSearchEntry>(d => ({ title: d.name, aka: `${d.category} · ${d.subcategory}`, subtitle: d.indicators.join(' · '), section: 'taxonomy' })),
+  ...threatActors.map<RawSearchEntry>(a => ({ title: a.actor, aka: a.category, subtitle: a.motivation, section: 'actors' })),
+  ...spectrumBaselines.map<RawSearchEntry>(b => ({ title: b.environment, aka: `${b.band} · ${b.freqRange}`, subtitle: b.expectedSignals.join(' · '), section: 'baseline' })),
+  ...tempestEntries.map<RawSearchEntry>(t => ({ title: t.threat, aka: `TEMPEST · ${t.category}`, subtitle: t.mechanism, section: 'tempest' })),
+  ...countermeasures.map<RawSearchEntry>(c => ({ title: c.name, aka: c.category, subtitle: c.implementation, section: 'countermeasures' })),
+  ...cellularThreats.map<RawSearchEntry>(c => ({ title: c.name, aka: `Cellular · ${c.category}`, subtitle: c.mechanism, section: 'cellular' })),
+  ...rbsTechniques.map<RawSearchEntry>(t => ({ title: t.name, aka: `Rogue BS · ${t.generation}`, subtitle: t.description, section: 'rbs' })),
+  ...rbsHardware.map<RawSearchEntry>(h => ({ title: h.name, aka: `RBS hardware · ${h.type}`, subtitle: h.capabilities.join(' · '), section: 'rbs' })),
+  ...rbsDetectionMethods.map<RawSearchEntry>(d => ({ title: d.method, aka: `RBS detection · ${d.category}`, subtitle: d.description, section: 'rbs' })),
+]

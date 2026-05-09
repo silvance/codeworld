@@ -148,3 +148,81 @@ main:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Print styles ─────────────────────────────────────────────────────────
+   Practitioners print these as cheat sheets. Strip chrome, force black-on-white,
+   keep content readable, avoid breaking inside cards.
+   ────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Strip all of the brand chrome */
+  nav,
+  aside,
+  [data-no-print],
+  body::before,
+  body::after {
+    display: none !important;
+  }
+
+  /* Force light surface, kill animations and shadows */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  body * {
+    background: transparent !important;
+    color: inherit !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Re-establish readable colors for headings, code, muted text */
+  h1, h2, h3, h4 { color: #000000 !important; font-weight: 700 !important; }
+  p, li, span, div { color: #000000 !important; }
+  code, pre {
+    background: #f4f4f5 !important;
+    color: #18181b !important;
+    border: 1px solid #d4d4d8 !important;
+    page-break-inside: avoid;
+  }
+  a { color: #18181b !important; text-decoration: underline; }
+  /* Show URL after external links */
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 90%; color: #52525b !important; }
+
+  /* Soft borders so cards stay visually separated on paper */
+  .border, [class*="border-"] {
+    border-color: #d4d4d8 !important;
+  }
+
+  /* Keep the main content visible and let it flow naturally */
+  main {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  main *, [class*="overflow-"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  [class*="max-w-"] {
+    max-width: none !important;
+  }
+
+  /* Prevent breaking inside cards / table rows */
+  .border, .rounded, .rounded-lg, .rounded-md,
+  table, tr, .grid > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Sensible page margins */
+  @page {
+    margin: 1.5cm 1.2cm;
+  }
+}
