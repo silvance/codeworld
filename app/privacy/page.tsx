@@ -69,10 +69,28 @@ export default function PrivacyPage() {
               Third-party assets
             </h2>
             <p>
-              Fonts are loaded from Google Fonts. The Python runtime in the
-              code playground (Pyodide) is fetched from the jsDelivr CDN on
-              demand. These third parties may receive your IP and user-agent
-              when their assets are requested.
+              Fonts are self-hosted: although they originate from Google Fonts,
+              Next.js downloads the files at build time and serves them from
+              this domain, so your browser never makes a request to Google
+              when rendering pages.
+            </p>
+            <p className="mt-3">
+              The Python runtime in the code playground (Pyodide) is fetched
+              from the jsDelivr CDN the first time you open the playground.
+              jsDelivr will receive your IP and user-agent on that fetch.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100 mb-2">
+              Offline mode
+            </h2>
+            <p>
+              The site registers a service worker that caches pages and assets
+              locally, so it can keep working when you&apos;re offline. The
+              cache is stored in your browser only — nothing is synced or
+              uploaded. You can clear it from your browser&apos;s site
+              settings.
             </p>
           </div>
 

@@ -168,7 +168,7 @@ export function CloudExtractionSection() {
                     <ul className="space-y-1">{c.whatYouGet.map((w, i) => <li key={i} className="text-xs font-mono text-emerald-400 flex gap-2"><span className="text-zinc-700">✓</span>{w}</li>)}</ul>
                   </div>
                   <div>
-                    <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">What you don't get</div>
+                    <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">What you don&apos;t get</div>
                     <ul className="space-y-1">{c.whatYouDontGet.map((w, i) => <li key={i} className="text-xs font-mono text-red-400 flex gap-2"><span className="text-zinc-700">✗</span>{w}</li>)}</ul>
                   </div>
                 </div>

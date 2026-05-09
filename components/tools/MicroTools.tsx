@@ -309,6 +309,17 @@ export function JSONYAMLConverter() {
 // 2. URL PARSER
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function URLRow({ label, value, mono = true, highlight = false }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
+  if (!value) return null
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-zinc-800/50 last:border-0">
+      <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider w-28 flex-shrink-0 pt-0.5">{label}</span>
+      <span className={`flex-1 text-xs break-all ${mono ? 'font-mono' : ''} ${highlight ? 'text-amber-400' : 'text-zinc-300'}`}>{value}</span>
+      <Copy text={value} />
+    </div>
+  )
+}
+
 export function URLParser() {
   const [input, setInput] = useState('')
 
@@ -366,16 +377,6 @@ export function URLParser() {
     'http://192.168.1.100:8080/cgi-bin/shell.cgi?cmd=whoami',
   ]
 
-  function Row({ label, value, mono = true, highlight = false }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
-    if (!value) return null
-    return (
-      <div className="flex items-start gap-3 py-2.5 border-b border-zinc-800/50 last:border-0">
-        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider w-28 flex-shrink-0 pt-0.5">{label}</span>
-        <span className={`flex-1 text-xs break-all ${mono ? 'font-mono' : ''} ${highlight ? 'text-amber-400' : 'text-zinc-300'}`}>{value}</span>
-        <Copy text={value} />
-      </div>
-    )
-  }
 
   return (
     <div>
@@ -408,15 +409,15 @@ export function URLParser() {
                 <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Components</span>
               </div>
               <div className="px-4">
-                <Row label="Scheme"   value={result.scheme} />
-                <Row label="Host"     value={result.host} />
-                <Row label="Port"     value={result.portExplicit ? result.portExplicit : `${result.port} (default)`} highlight={!!result.portExplicit} />
-                <Row label="Origin"   value={result.origin} />
-                <Row label="Path"     value={result.path} />
-                <Row label="Query"    value={result.query} />
-                <Row label="Fragment" value={result.fragment} />
-                {result.username && <Row label="Username" value={result.username} highlight />}
-                {result.password && <Row label="Password" value={result.password} highlight />}
+                <URLRow label="Scheme"   value={result.scheme} />
+                <URLRow label="Host"     value={result.host} />
+                <URLRow label="Port"     value={result.portExplicit ? result.portExplicit : `${result.port} (default)`} highlight={!!result.portExplicit} />
+                <URLRow label="Origin"   value={result.origin} />
+                <URLRow label="Path"     value={result.path} />
+                <URLRow label="Query"    value={result.query} />
+                <URLRow label="Fragment" value={result.fragment} />
+                {result.username && <URLRow label="Username" value={result.username} highlight />}
+                {result.password && <URLRow label="Password" value={result.password} highlight />}
               </div>
             </div>
 

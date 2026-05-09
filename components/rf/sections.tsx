@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { readInitialQueryParam } from "@/lib/queryParam"
 import {
   freqReference, tscmDevices, wifi24Channels, wifi5Channels, bleChannels,
   rogueAPIndicators, rogueAPTools,
@@ -34,7 +35,7 @@ const SectionHeader = ({ title, sub }: { title: string; sub: string }) => (
 // ─── 1. Frequency Reference ──────────────────────────────────────────────────
 
 export function FreqReference() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [showThreat, setShowThreat] = useState(false)
 
   const filtered = useMemo(() => {
@@ -539,7 +540,7 @@ export function SignalMath() {
 // ─── 5. TSCM Device Frequencies ─────────────────────────────────────────────
 
 export function TSCMFreqs() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
   const [riskFilter, setRiskFilter] = useState<'ALL' | 'HIGH' | 'MED' | 'LOW'>('ALL')
 
   const filtered = useMemo(() => tscmDevices.filter(d => {

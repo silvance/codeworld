@@ -2,29 +2,12 @@
 
 import { useState } from 'react'
 import { useSectionParam } from '@/lib/useSectionParam'
+import { NAV, GROUPS, type SectionId } from '@/lib/cloud/nav'
 import {
   AWSReference, AzureReference, GCPReference,
   IAMAttacks, ContainersK8s, StorageAttacks,
   CloudForensicsIR, CloudToolsRef,
 } from './sections'
-
-type SectionId =
-  | 'aws' | 'azure' | 'gcp'
-  | 'iam' | 'k8s' | 'storage'
-  | 'forensics' | 'tools'
-
-interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
-
-const NAV: NavItem[] = [
-  { id: 'aws',       label: 'AWS reference',       sub: 'Services · CloudTrail · IAM gotchas',   icon: '🟧', group: 'Provider Reference' },
-  { id: 'azure',     label: 'Azure reference',     sub: 'Services · Activity Log · Entra ID',    icon: '🟦', group: 'Provider Reference' },
-  { id: 'gcp',       label: 'GCP reference',       sub: 'Services · Audit Logs · IAM',           icon: '🟪', group: 'Provider Reference' },
-  { id: 'iam',       label: 'IAM attacks',         sub: 'Privesc paths across all three clouds', icon: '🔑', group: 'Attack Surface' },
-  { id: 'k8s',       label: 'Containers & K8s',    sub: 'RBAC · pod escape · runtime',           icon: '🐳', group: 'Attack Surface' },
-  { id: 'storage',   label: 'Storage attacks',     sub: 'S3 · Blob · GCS misconfigs + audit',    icon: '🪣', group: 'Attack Surface' },
-  { id: 'forensics', label: 'Cloud forensics & IR', sub: 'Runbook · evidence · containment',     icon: '🚑', group: 'Investigation' },
-  { id: 'tools',     label: 'Cloud security tools', sub: 'Prowler · CloudFox · Pacu · kube-bench', icon: '🛠', group: 'Investigation' },
-]
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {
   aws:       <AWSReference />,
@@ -37,7 +20,6 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   tools:     <CloudToolsRef />,
 }
 
-const groups = ['Provider Reference', 'Attack Surface', 'Investigation']
 
 export default function CloudPage() {
   const [active, setActive]               = useSectionParam<SectionId>('aws', NAV.map(n => n.id))
@@ -56,7 +38,7 @@ export default function CloudPage() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2">
-          {groups.map(group => (
+          {GROUPS.map(group => (
             <div key={group}>
               <div className="px-4 pt-3 pb-1 text-[9px] font-mono font-semibold text-zinc-700 uppercase tracking-widest">
                 {group}

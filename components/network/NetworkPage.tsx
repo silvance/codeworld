@@ -2,36 +2,12 @@
 
 import { useState } from 'react'
 import { useSectionParam } from '@/lib/useSectionParam'
+import { NAV, GROUPS, type SectionId } from '@/lib/network/nav'
 import { PortsReference, WiresharkFilters, NmapReference, ProtocolRef, AttackSigs } from './sections'
 import {
   SubnetRef, TcpdumpRef, NetcatRef, FirewallRef,
   DNSDeepDive, TLSRef, PivotRef, WirelessRef, IPv6Ref, ScapyRef,
 } from './sectionsExtra'
-
-type SectionId =
-  | 'ports' | 'wireshark' | 'nmap' | 'protocols' | 'attacks'
-  | 'subnet' | 'tcpdump' | 'netcat' | 'firewall' | 'dns' | 'tls' | 'pivot' | 'wireless' | 'ipv6' | 'scapy'
-
-const NAV = [
-  // Reference
-  { id: 'ports'    as SectionId, label: 'Common ports',      sub: '60+ ports with security notes',    icon: '🔌', group: 'Reference' },
-  { id: 'wireshark'as SectionId, label: 'Wireshark filters', sub: 'Display filters by category',      icon: '🦈', group: 'Reference' },
-  { id: 'nmap'     as SectionId, label: 'Nmap reference',    sub: 'Scans · scripts · combos',         icon: '🗺', group: 'Reference' },
-  { id: 'protocols'as SectionId, label: 'Protocol quick-ref',sub: 'DNS · HTTP · TLS · ICMP · ARP',   icon: '📡', group: 'Reference' },
-  { id: 'subnet'   as SectionId, label: 'Subnet / CIDR',     sub: 'Masks · host counts · ranges',     icon: '🌐', group: 'Reference' },
-  { id: 'attacks'  as SectionId, label: 'Attack signatures', sub: 'Indicators · filters · mitigations',icon: '⚔', group: 'Reference' },
-  // Tools
-  { id: 'tcpdump'  as SectionId, label: 'tcpdump',           sub: 'Capture · filters · ring buffer',  icon: '📦', group: 'Tools' },
-  { id: 'netcat'   as SectionId, label: 'Netcat / Ncat',     sub: 'Listeners · shells · file transfer',icon: '🐱', group: 'Tools' },
-  { id: 'firewall' as SectionId, label: 'Firewall rules',    sub: 'iptables · nftables · WinFW',      icon: '🛡', group: 'Tools' },
-  { id: 'dns'      as SectionId, label: 'DNS deep dive',     sub: 'dig · zone transfer · DoH · DoT',  icon: '🔍', group: 'Tools' },
-  { id: 'tls'      as SectionId, label: 'TLS/SSL testing',   sub: 'openssl · testssl.sh · nmap',      icon: '🔒', group: 'Tools' },
-  { id: 'scapy'    as SectionId, label: 'Scapy / crafting',  sub: 'Build · send · sniff · fuzz',      icon: '🐍', group: 'Tools' },
-  // Advanced
-  { id: 'pivot'    as SectionId, label: 'Pivoting / tunnels',sub: 'SSH · chisel · ligolo · proxychains',icon: '🕳', group: 'Advanced' },
-  { id: 'wireless' as SectionId, label: 'Wireless',          sub: 'Monitor · WPA2 · PMKID · kismet',  icon: '📶', group: 'Advanced' },
-  { id: 'ipv6'     as SectionId, label: 'IPv6 reference',    sub: 'Addressing · NDP · attack vectors', icon: '6️⃣', group: 'Advanced' },
-]
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {
   ports:    <PortsReference />,
@@ -51,8 +27,6 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   scapy:    <ScapyRef />,
 }
 
-const groups = ['Reference', 'Tools', 'Advanced']
-
 export default function NetworkPage() {
   const [active, setActive] = useSectionParam<SectionId>('ports', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -68,7 +42,7 @@ export default function NetworkPage() {
           <div className="text-[10px] font-mono text-zinc-600 mt-0.5">ports · tools · pivoting · wireless</div>
         </div>
         <nav className="flex-1 overflow-y-auto py-2">
-          {groups.map(group => (
+          {GROUPS.map(group => (
             <div key={group}>
               <div className="px-4 pt-3 pb-1 text-[9px] font-mono font-semibold text-zinc-700 uppercase tracking-widest">{group}</div>
               {NAV.filter(n => n.group === group).map(item => (

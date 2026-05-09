@@ -2,25 +2,11 @@
 
 import { useState } from 'react'
 import { useSectionParam } from '@/lib/useSectionParam'
+import { NAV, type SectionId } from '@/lib/osint/nav'
 import {
   SearchOperators, PeopleSearch, SockPuppet, UsernameEnum,
   ImageOSINT, SocialMedia, InfraOSINT, PhoneOSINT, DarkWebOSINT, CorpIntel,
 } from './sections'
-
-type SectionId = 'search' | 'people' | 'persona' | 'username' | 'image' | 'social' | 'infra' | 'phone' | 'darkweb' | 'corp'
-
-const NAV = [
-  { id: 'search'   as SectionId, label: 'Search operators',    sub: 'Google · Bing · dorks',          icon: '🔎' },
-  { id: 'people'   as SectionId, label: 'People search',       sub: 'Spokeo · Pipl · PACER',          icon: '👤' },
-  { id: 'username' as SectionId, label: 'Username enum',       sub: 'Sherlock · Maigret · breaches',  icon: '🏷' },
-  { id: 'image'    as SectionId, label: 'Image OSINT',         sub: 'Reverse · EXIF · geolocation',   icon: '🖼' },
-  { id: 'social'   as SectionId, label: 'Social media',        sub: 'LinkedIn · Twitter · Facebook',  icon: '📱' },
-  { id: 'infra'    as SectionId, label: 'Domain / IP / infra', sub: 'Shodan · crt.sh · DNS history',  icon: '🌐' },
-  { id: 'phone'    as SectionId, label: 'Phone OSINT',         sub: 'Truecaller · Phoneinfoga',       icon: '📞' },
-  { id: 'darkweb'  as SectionId, label: 'Dark web OSINT',      sub: 'Breaches · Tor · ransomware',    icon: '🕸' },
-  { id: 'corp'     as SectionId, label: 'Corporate intel',     sub: 'SEC · SAM.gov · patents',        icon: '🏢' },
-  { id: 'persona'  as SectionId, label: 'Sock puppet OPSEC',   sub: 'Infrastructure · identity · ops',icon: '🎭' },
-]
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {
   search:   <SearchOperators />,

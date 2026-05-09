@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { readInitialQueryParam } from "@/lib/queryParam"
 import {
   srumTables, srumWorkflow,
   cloudArtifacts,
@@ -242,7 +243,7 @@ export function CloudForensics() {
 export function BrowserSQLSection() {
   const [browserFilter, setBrowserFilter] = useState('ALL')
   const [catFilter, setCatFilter] = useState('ALL')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
 
   const browsers = ['ALL', ...Array.from(new Set(browserQueries.map(q => q.browser)))]
   const cats = ['ALL', ...Array.from(new Set(browserQueries.map(q => q.category)))]
