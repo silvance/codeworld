@@ -2364,3 +2364,26 @@ export const axiomWorkflowNotes = [
     ],
   },
 ]
+
+// ─── Search index entries ────────────────────────────────────────────────────
+
+import type { RawSearchEntry } from '@/lib/search/types'
+
+export const forensicsSearchEntries: RawSearchEntry[] = [
+  ...windowsEventIDs.map<RawSearchEntry>(e => ({ title: `Event ${e.id}`, aka: `${e.log} · ${e.category}`, subtitle: e.description, section: 'windows' })),
+  ...registryHives.map<RawSearchEntry>(h => ({ title: h.hive, aka: 'Registry hive', subtitle: h.forensicValue, section: 'windows' })),
+  ...execArtifacts.map<RawSearchEntry>(a => ({ title: a.name, aka: `${a.os} execution`, subtitle: a.provides.join(' · '), section: 'windows' })),
+  ...usbArtifacts.map<RawSearchEntry>(a => ({ title: a.source, aka: 'USB artifact', subtitle: a.provides, section: 'windows' })),
+  ...lnkArtifacts.map<RawSearchEntry>(a => ({ title: a.name, aka: 'LNK artifact', subtitle: a.provides.join(' · '), section: 'keyartifacts' })),
+  ...browserArtifacts.map<RawSearchEntry>(a => ({ title: `${a.browser} ${a.artifact}`, aka: a.format, subtitle: a.provides, section: 'browsersql' })),
+  ...linuxArtifacts.map<RawSearchEntry>(a => ({ title: a.path, aka: `Linux · ${a.category}`, subtitle: a.provides, section: 'linux' })),
+  ...volatilityPlugins.map<RawSearchEntry>(p => ({ title: p.plugin, aka: `${p.os} · Volatility`, subtitle: p.purpose, section: 'memory' })),
+  ...toolSheets.map<RawSearchEntry>(t => ({ title: t.tool, aka: 'Tool', subtitle: t.purpose, section: 'tools' })),
+  ...macArtifacts.map<RawSearchEntry>(a => ({ title: a.title, aka: `macOS · ${a.category}`, subtitle: a.description, section: 'macos' })),
+  ...keyArtifacts.map<RawSearchEntry>(a => ({ title: a.name, aka: a.category, subtitle: a.whatItProves, section: 'keyartifacts' })),
+  ...srumTables.map<RawSearchEntry>(t => ({ title: t.table, aka: 'SRUM', subtitle: t.description, section: 'srum' })),
+  ...cloudArtifacts.map<RawSearchEntry>(a => ({ title: `${a.provider} ${a.artifactType}`, aka: `${a.platform} cloud`, subtitle: a.description, section: 'cloud' })),
+  ...browserQueries.map<RawSearchEntry>(q => ({ title: `${q.browser}: ${q.description}`, aka: q.category, subtitle: q.sql, section: 'browsersql' })),
+  ...antiForensicIndicators.map<RawSearchEntry>(i => ({ title: i.technique, aka: i.category, subtitle: i.description, section: 'antiforensics' })),
+  ...axiomArtifacts.map<RawSearchEntry>(a => ({ title: a.name, aka: `AXIOM · ${a.category}`, subtitle: a.description, section: 'axiom' })),
+]

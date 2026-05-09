@@ -110,7 +110,7 @@ export default function SearchBar() {
                   <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${COLOR_DOT[r.color] ?? 'bg-zinc-500'}`} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-zinc-100 truncate">{r.title}</span>
+                      <span className={`text-xs text-zinc-100 truncate ${r.kind === 'entry' || r.kind === 'tool' ? 'font-mono' : 'font-medium'}`}>{r.title}</span>
                       <span className="text-[10px] font-mono text-zinc-600 flex-shrink-0">{r.kind === 'page' ? 'page' : r.page}</span>
                     </span>
                     <span className="block text-[11px] text-zinc-500 truncate">{r.subtitle}</span>

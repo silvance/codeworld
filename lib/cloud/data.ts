@@ -328,3 +328,20 @@ export const cloudTools: CloudTool[] = [
   { name: 'Cartography',        url: 'https://github.com/lyft/cartography',       category: 'Detection', description: 'Asset graph in Neo4j across cloud providers',             notes: 'Build queries that span AWS+GCP+GitHub+Okta in one Cypher query.' },
   { name: 'Falco',              url: 'https://falco.org/',                        category: 'Detection', description: 'Runtime security for containers and hosts',               notes: 'Default rules cover most pod escape patterns. Custom rules cheap to write.' },
 ]
+
+// ─── Search index entries ────────────────────────────────────────────────────
+
+import type { RawSearchEntry } from '@/lib/search/types'
+
+export const cloudSearchEntries: RawSearchEntry[] = [
+  ...awsServices.map<RawSearchEntry>(s => ({ title: `AWS ${s.name}`, aka: s.category, subtitle: s.description, section: 'aws' })),
+  ...azureServices.map<RawSearchEntry>(s => ({ title: `Azure ${s.name}`, aka: s.category, subtitle: s.description, section: 'azure' })),
+  ...gcpServices.map<RawSearchEntry>(s => ({ title: `GCP ${s.name}`, aka: s.category, subtitle: s.description, section: 'gcp' })),
+  ...auditEvents.map<RawSearchEntry>(e => ({ title: e.event, aka: `${e.cloud} · audit event`, subtitle: e.description, section: e.cloud === 'AWS' ? 'aws' : e.cloud === 'Azure' ? 'azure' : 'gcp' })),
+  ...misconfigs.map<RawSearchEntry>(m => ({ title: m.pattern, aka: `${m.cloud} · ${m.area}`, subtitle: m.impact, section: 'storage' })),
+  ...iamPaths.map<RawSearchEntry>(p => ({ title: p.name, aka: `${p.cloud} · IAM privesc`, subtitle: p.trigger, section: 'iam' })),
+  ...storageAttacks.map<RawSearchEntry>(a => ({ title: a.pattern, aka: `${a.cloud} · storage`, subtitle: a.description, section: 'storage' })),
+  ...k8sChain.map<RawSearchEntry>(s => ({ title: s.technique, aka: `K8s · ${s.stage}`, subtitle: s.command, section: 'k8s' })),
+  ...irRunbook.map<RawSearchEntry>(r => ({ title: r.step, aka: `IR · ${r.phase}`, subtitle: r.notes, section: 'forensics' })),
+  ...cloudTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.category, subtitle: t.description, section: 'tools' })),
+]
