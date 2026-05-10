@@ -402,6 +402,121 @@ export const socialPlatforms: SocialPlatform[] = [
       'Posting time patterns across timezones can narrow geographic location',
     ],
   },
+  {
+    platform: 'TikTok',
+    keyTechniques: [
+      'tiktok.com/@username — direct profile lookup; TikTok exposes follower / following lists publicly',
+      'Sound history reveals trends and locations — same audio used by clusters of regional accounts',
+      'Likes are now private by default but can leak through old / re-shared posts',
+      'TikTok\'s "Friends" feed surfaces accounts that interact with the target',
+    ],
+    tools: [
+      { name: 'urlebird',         url: 'urlebird.com',         notes: 'Mirror of public TikTok profiles and videos — viewable without TikTok account or app.' },
+      { name: 'tikbuddy',         url: 'tikbuddy.com',         notes: 'TikTok analytics — engagement rates, audience demographics, posting cadence.' },
+      { name: 'TikTok Analytics', url: 'analytics.tiktok.com', notes: 'Native analytics for verified accounts; some signals (engagement, growth rate) leak via creator-marketplace listings.' },
+    ],
+    opsecNotes: [
+      'TikTok aggressively profiles users — investigators should use a sandbox device / dedicated browser',
+      'Watching a profile may surface you in their suggested content if you\'re logged in',
+      'TikTok Live streams are ephemeral by default; record with yt-dlp during the stream',
+    ],
+  },
+  {
+    platform: 'YouTube',
+    keyTechniques: [
+      'site:youtube.com "Name" "Company" — Google dorking is more reliable than YouTube\'s native search',
+      'About tab → channel creation date, total views, country of registration (when set)',
+      'Comment history is searchable per-channel via filterforyoutube.com / commentpicker',
+      'Community tab posts often leak more personal context than uploaded videos',
+    ],
+    tools: [
+      { name: 'YouTube DataViewer (Amnesty)', url: 'amnestyusa.org/citizenevidence', notes: 'Extract exact upload timestamp + thumbnails for reverse image search. Verifies original-upload claims.' },
+      { name: 'yt-dlp',                       url: 'github.com/yt-dlp/yt-dlp',       notes: 'CLI: archive videos and metadata before deletion. Standard tool for evidence preservation.' },
+      { name: 'SocialBlade YouTube',          url: 'socialblade.com',                notes: 'Channel statistics — historical subscriber and view trajectory, ranking trends.' },
+      { name: 'CommentPicker',                url: 'commentpicker.com',              notes: 'Search comments across a channel. Useful for finding all interactions a target had with a creator.' },
+    ],
+    opsecNotes: [
+      'YouTube treats logged-in viewing as engagement signal — use logged-out / sandbox session for investigations',
+      'Liking a video while logged in can publish to your "Liked videos" list if not made private',
+    ],
+  },
+  {
+    platform: 'Discord',
+    keyTechniques: [
+      'discord.com/users/<id> — direct profile lookup if you have the snowflake ID',
+      'Server invites are often shared on Reddit, Twitter, Telegram — pivot from those to find target communities',
+      'User IDs are permanent and survive username changes — capture them early',
+      'Many "private" servers admit anyone with the invite link; lurk-only investigations are common',
+    ],
+    tools: [
+      { name: 'DiscordLookup',     url: 'discordlookup.com',                          notes: 'Resolve user IDs to current display name + avatar without joining a server. Limited by Discord API throttling.' },
+      { name: 'Discord.id',        url: 'discord.id',                                 notes: 'Convert Discord IDs (snowflakes) to creation timestamps. Useful for account-age verification.' },
+      { name: 'DiscordHistory.io', url: 'discordhistorytracker.com',                  notes: 'Self-hosted scraper that archives server messages you have read access to. For evidence preservation only.' },
+    ],
+    opsecNotes: [
+      'Joining a server reveals your username and avatar to all members and admins',
+      'Use a dedicated investigation account with separate identity / phone',
+      'Discord stores all messages server-side — assume anything sent is recoverable via subpoena',
+    ],
+  },
+  {
+    platform: 'Telegram',
+    keyTechniques: [
+      't.me/<username> — direct profile / channel preview without logging in',
+      'Public channel forwarders reveal cross-channel networks ("forwarded from") — map ecosystems via shared content',
+      'Telegram exposes "last seen" status in some configurations — narrowing activity windows',
+      'Bots index public channels: search keywords across many channels at once via aggregator bots',
+    ],
+    tools: [
+      { name: 'Telemetr.io',         url: 'telemetr.io',                  notes: 'Telegram channel analytics — subscriber growth, engagement, top channels. Free and paid tiers.' },
+      { name: 'TGStat',              url: 'tgstat.com',                   notes: 'Russian-language but global coverage. Strongest catalog of Telegram channels and groups.' },
+      { name: 'Lyzem',               url: 'lyzem.com',                    notes: 'Public Telegram channel search engine — full-text search across indexed channels.' },
+      { name: 'telegram-nearby-map', url: 'github.com/tejado/telegram-nearby-map', notes: 'Triangulates "people nearby" feature for approximate-location of Telegram users (older technique; effectiveness varies).' },
+    ],
+    opsecNotes: [
+      'Joining a channel reveals your username to admins',
+      'Telegram\'s "secret chat" is end-to-end encrypted but cloud chats are not — assume all content is recoverable',
+      'Many investigation-relevant communities (extremism, fraud, leaks) live on Telegram; use sandbox device + non-attributable phone',
+    ],
+  },
+  {
+    platform: 'Mastodon / Bluesky',
+    keyTechniques: [
+      'Federated identity — same handle on different instances is different people; verify with profile bio cross-references',
+      'AT Protocol (Bluesky) and ActivityPub (Mastodon) expose profile + post history via public APIs without authentication',
+      'Bluesky\'s starter packs and feeds reveal interest clusters and ideological neighborhoods',
+      'Mastodon instance admin is often visible — instance choice signals community alignment',
+    ],
+    tools: [
+      { name: 'Bluesky public API',   url: 'docs.bsky.app',                                notes: 'Free, no-auth public endpoints. Retrieve all posts, follows, followers programmatically.' },
+      { name: 'Mostr / Mastodon API', url: 'docs.joinmastodon.org/api',                    notes: 'Each instance exposes a standard API. Public timeline + user info is fetchable without auth.' },
+      { name: 'Skywatch',             url: 'github.com/aliceisjustplaying/skywatch',       notes: 'Bluesky-specific monitoring tools. Track posts containing keywords across the network.' },
+      { name: 'Fediverse Observer',   url: 'fediverse.observer',                           notes: 'Discover Mastodon and Fediverse instances. Useful when looking for niche communities or instance patterns.' },
+    ],
+    opsecNotes: [
+      'Federated networks make it harder to scale takedowns but also harder to centrally search — distributed by design',
+      'Instance admins can read direct messages by default (not E2E encrypted)',
+      'Public posts on either network are crawlable forever — assume permanent record',
+    ],
+  },
+  {
+    platform: 'GitHub (as social)',
+    keyTechniques: [
+      'github.com/<user>?tab=stars — interest profile from starred repos',
+      'github.com/<user>?tab=followers and following — professional network',
+      'Commits on public repos contain the user\'s git email by default — often a real address',
+      'Activity heatmap reveals timezone and weekday vs. weekend posting patterns',
+    ],
+    tools: [
+      { name: 'GitHub commit email lookup', url: 'github.com/<user>.patch',  notes: 'Append .patch to any user\'s recent commit URL: returns the patch with the committer\'s email. Standard pattern for finding emails behind GH accounts.' },
+      { name: 'GitHub user search dorks',   url: 'github.com/search?type=users', notes: 'Filter by language, location, followers. location:"San Francisco" language:python — narrows by self-declared location.' },
+      { name: 'OctoSuite',                  url: 'github.com/bellingcat/octosuite',          notes: 'Bellingcat\'s GitHub OSINT framework. CLI: enumerate repos, gists, organizations, followers for a target user.' },
+    ],
+    opsecNotes: [
+      'Investigators should use a non-attributable GitHub account — your own profile is visible to anyone you interact with',
+      'Starring repos can be made private but is public by default — interaction history is visible',
+    ],
+  },
 ]
 
 // ─── Domain / IP / Infrastructure OSINT ──────────────────────────────────────
@@ -513,7 +628,211 @@ export const corpSources: CorpSource[] = [
   { name: 'Federal Acquisition Regulation (SAM + FPDS)', url: 'fpds.gov', what: 'Detailed federal contract award data: amounts, dates, description, socioeconomic status', cost: 'Free', notes: 'More detailed than USASpending. Contract descriptions sometimes reveal program names. Modification history shows contract growth/changes. PSC codes classify the type of work.' },
 ]
 
-// ─── Search index entries ────────────────────────────────────────────────────
+// ─── Email OSINT ──────────────────────────────────────────────────────────────
+
+export interface EmailOSINTTool {
+  name: string
+  url: string
+  category: string
+  cost: string
+  what: string
+  notes: string
+}
+
+export const emailOSINT: EmailOSINTTool[] = [
+  { name: 'Hunter.io',                    url: 'hunter.io',                                      category: 'Email enumeration',  cost: 'Free (25/mo) / paid', what: 'Find work emails by domain — pattern detection (firstname.lastname@) + verification',                                       notes: 'Reveals corporate email format. Verifier checks deliverability without sending. Largest free dataset for "what does the email format at acme.com look like?".' },
+  { name: 'EpieOS',                       url: 'epieos.com',                                     category: 'Email lookup',       cost: 'Free / paid Pro',     what: 'Free email lookup — Google account name/photo, registered services, social profiles',                                      notes: 'Quietly the strongest free email tool. Shows the Google profile name and photo behind a Gmail address; flags accounts on Twitter, LinkedIn, etc.' },
+  { name: 'EmailRep.io',                  url: 'emailrep.io',                                    category: 'Reputation',         cost: 'Free (limited)',      what: 'Email reputation scoring — risk, age, social profiles, suspiciousness',                                                    notes: 'API-friendly. Aggregates many signals into a single risk score. Good for quickly classifying inbound contact attempts.' },
+  { name: 'Holehe',                       url: 'github.com/megadose/holehe',                     category: 'Account enum',       cost: 'Free (open source)',  what: 'CLI: check ~120 services for whether an email is registered',                                                              notes: 'pip install holehe — uses signup-flow side-channels (silent password reset etc.) to detect account presence without logging the user.' },
+  { name: 'h8mail',                       url: 'github.com/khast3x/h8mail',                      category: 'Breach hunting',     cost: 'Free + paid sources', what: 'CLI: query email across breach databases (HIBP, Dehashed, Snusbase, IntelX)',                                              notes: 'Plug in API keys for premium databases. Output plaintext passwords from older breaches when the source allows.' },
+  { name: 'Have I Been Pwned',            url: 'haveibeenpwned.com',                             category: 'Breach hunting',     cost: 'Free (web)',          what: 'Check email against ~12B breached records',                                                                                  notes: 'API requires paid key for automation. Web UI is free for one-off lookups. Cross-reference all known emails for a target.' },
+  { name: 'IntelX (email search)',        url: 'intelx.io',                                      category: 'Breach hunting',     cost: 'Limited free / paid', what: 'Search email across leaked databases, paste sites, dark-web markets',                                                       notes: 'Aggregates more sources than HIBP. Snippets visible without buying. Strong for IR / forensic email triage.' },
+  { name: 'Skymem',                       url: 'skymem.info',                                    category: 'Email pattern',      cost: 'Free',                what: 'Email format lookup by company domain',                                                                                      notes: 'Less complete than Hunter but free and instant. Cross-reference for pattern confirmation.' },
+  { name: 'Phonebook.cz',                 url: 'phonebook.cz',                                   category: 'Email + subdomain',  cost: 'Limited free / paid', what: 'Email + subdomain enumeration by domain',                                                                                    notes: 'Operated by IntelX. Quick way to confirm email format and find associated subdomains in one query.' },
+  { name: 'Mailinator (defensive lookup)',url: 'mailinator.com',                                 category: 'Disposable mailbox', cost: 'Free',                what: 'Public disposable mailboxes — search if a target signs up to services with disposables',                                    notes: 'Pattern: targets register on services with mailinator addresses. Try {username}@mailinator.com to see if anyone\'s used it. Same for tempmail.com, 10minutemail, etc.' },
+]
+
+// ─── Geospatial / Map OSINT ───────────────────────────────────────────────────
+
+export interface GeoTool {
+  name: string
+  url: string
+  category: string
+  what: string
+  notes: string
+}
+
+export const geoTools: GeoTool[] = [
+  // Aviation
+  { name: 'FlightRadar24',          url: 'flightradar24.com',                       category: 'Aviation',       what: 'Live and historical flight tracking via crowd-sourced ADS-B + radar',                                  notes: 'Free tier shows current flights with 7-day history. Premium for years of history. Filter by aircraft type, airline, callsign, registration.' },
+  { name: 'ADS-B Exchange',         url: 'adsbexchange.com',                        category: 'Aviation',       what: 'Unfiltered ADS-B aggregator — military, blocked, and gov flights others hide',                          notes: 'Best source for tracking sensitive aircraft. No filtering of military, surveillance, or VIP flights. Historical replay via paid tier.' },
+  { name: 'OpenSky Network',        url: 'opensky-network.org',                     category: 'Aviation',       what: 'Academic ADS-B aggregator with free historical API',                                                    notes: 'Used by researchers and journalists. Free API with 30+ days history. Heavier integration burden than FR24/ADS-B Exchange.' },
+  { name: 'FAA Aircraft Registry',  url: 'registry.faa.gov',                        category: 'Aviation',       what: 'US aircraft registration: tail number → owner, model, year, base airport',                              notes: 'Free public records. N-number search. Entity-name search reveals corporate/private ownership patterns and shell-company aircraft fleets.' },
+  // Maritime
+  { name: 'MarineTraffic',          url: 'marinetraffic.com',                       category: 'Maritime',       what: 'Real-time and historical vessel tracking via AIS',                                                       notes: 'Vessels >300 GT are required to broadcast AIS. Free tier limited; paid for full history and dark-vessel detection.' },
+  { name: 'VesselFinder',           url: 'vesselfinder.com',                        category: 'Maritime',       what: 'Alternative AIS tracker with port traffic and vessel particulars',                                       notes: 'Cross-check against MarineTraffic — receiver coverage differs, so some vessels show only on one platform.' },
+  { name: 'Equasis',                url: 'equasis.org',                             category: 'Maritime',       what: 'IMO-backed vessel database — ownership, classification, port-state inspections',                         notes: 'Free with registration. Reveals beneficial-owner trails often hidden behind shell companies. Standard sanctions-analyst tool.' },
+  // Satellite
+  { name: 'Sentinel Hub EO Browser',url: 'apps.sentinel-hub.com/eo-browser',        category: 'Satellite',      what: 'Free 10 m optical imagery from ESA Sentinel-2, Landsat, MODIS',                                          notes: 'Imagery refreshes every ~5 days. Compare temporal series for change detection. SAR (Sentinel-1) penetrates cloud cover.' },
+  { name: 'Google Earth Pro',       url: 'earth.google.com/web',                    category: 'Satellite',      what: 'Historical commercial imagery (Maxar etc.) with multi-year time slider',                                 notes: 'Free desktop version. Historical imagery slider goes back to ~2000 in many areas. Crucial for comparing site state over time.' },
+  { name: 'NASA Worldview',         url: 'worldview.earthdata.nasa.gov',            category: 'Satellite',      what: 'Daily MODIS / VIIRS imagery — fires, smoke plumes, ice, dust',                                          notes: 'Lower resolution (~250 m) but daily revisit. Best for environmental, fires, atmospheric phenomena. Free.' },
+  { name: 'Planet Explorer',        url: 'planet.com/explorer',                     category: 'Satellite',      what: 'Daily 3–5 m commercial imagery (paid)',                                                                  notes: 'Used by journalists and researchers. Free trial available. Planet NICFI program offers free monthly tropics imagery.' },
+  // Mapping
+  { name: 'OpenStreetMap',          url: 'openstreetmap.org',                       category: 'Mapping',        what: 'Editable global map data — POIs, building footprints, infrastructure',                                  notes: 'Often more detailed than Google for non-Western regions. Use Overpass Turbo (overpass-turbo.eu) for arbitrary geographic queries.' },
+  { name: 'Mapillary',              url: 'mapillary.com',                           category: 'Street-level',   what: 'Crowd-sourced street-level imagery alternative to Street View',                                          notes: 'Coverage is patchy but reaches places Street View doesn\'t — backroads, industrial, post-event. Owned by Meta.' },
+  { name: 'KartaView',              url: 'kartaview.org',                           category: 'Street-level',   what: 'Open-source street-level imagery (formerly OpenStreetCam)',                                              notes: 'Cross-check with Mapillary; complementary coverage. Open data — bulk-downloadable.' },
+  // Chronolocation
+  { name: 'SunCalc',                url: 'suncalc.org',                             category: 'Chronolocation', what: 'Sun azimuth/elevation by lat/lon and time — drives shadow-based geolocation',                           notes: 'Reverse-solve: given a shadow direction at a known location, infer time of day/year. Or: given time, predict shadow direction.' },
+  { name: 'PeakVisor',              url: 'peakvisor.com',                           category: 'Chronolocation', what: 'Match horizon silhouettes against mountain databases',                                                   notes: 'Useful when an image shows distinctive ridgelines. Web AR mode for in-field confirmation.' },
+  { name: 'WolframAlpha (weather)', url: 'wolframalpha.com',                        category: 'Chronolocation', what: 'Historical weather queries by location and date',                                                       notes: 'Cross-check claimed conditions: "weather in Kyiv 2024-03-15" returns recorded conditions. Catches faked content with wrong weather.' },
+]
+
+// ─── Crypto / Blockchain OSINT ────────────────────────────────────────────────
+
+export interface CryptoTool {
+  name: string
+  url: string
+  category: string
+  cost: string
+  what: string
+  notes: string
+}
+
+export const cryptoOSINT: CryptoTool[] = [
+  { name: 'Etherscan',                url: 'etherscan.io',                                category: 'Block explorer (ETH)',  cost: 'Free / paid API',     what: 'Ethereum mainnet explorer — addresses, transactions, contract code',                                      notes: 'Click any address for balance, tx history, token holdings. Sister explorers exist for L2s and other chains: arbiscan.io, polygonscan.com, basescan.org, bscscan.com.' },
+  { name: 'Blockchain.com Explorer',  url: 'blockchain.com/explorer',                     category: 'Block explorer (BTC)',  cost: 'Free',                what: 'Bitcoin chain explorer — addresses, mempool, blocks, fees',                                                notes: 'Address pages include transaction graphs. Limited heuristic clustering compared to specialized tools.' },
+  { name: 'Mempool.space',            url: 'mempool.space',                               category: 'Block explorer (BTC)',  cost: 'Free / self-host',    what: 'Modern Bitcoin explorer with mempool visualization',                                                       notes: 'Better UI than Blockchain.com. Lightning Network explorer included. Self-hostable.' },
+  { name: 'Wallet Explorer',          url: 'walletexplorer.com',                          category: 'Bitcoin clustering',    cost: 'Free',                what: 'BTC address clustering — labels known exchanges/services by their wallet groupings',                       notes: 'Identifies if an address belongs to a known exchange, gambling site, or mixer. Older but still authoritative for known clusters.' },
+  { name: 'OXT',                      url: 'oxt.me',                                      category: 'Bitcoin analytics',     cost: 'Free',                what: 'Heuristic BTC clustering with visual transaction graphs',                                                  notes: 'Reveals likely co-spending wallets. Visual graph traversal complements WalletExplorer\'s table view.' },
+  { name: 'Breadcrumbs',              url: 'breadcrumbs.app',                             category: 'Investigation tool',    cost: 'Freemium',            what: 'Multi-chain investigation graph — drag-and-drop UI, attribution, sanctions screening',                     notes: 'Good for non-engineers. Includes OFAC sanctions list overlays. Free tier generous enough for casual investigations.' },
+  { name: 'GraphSense',               url: 'graphsense.info',                             category: 'Investigation tool',    cost: 'Free (self-host)',    what: 'Open-source crypto analytics platform (academic / govt-leaning)',                                          notes: 'Used by Iknaio for AT/EU LE work. Heavy infra requirement; managed instance available.' },
+  { name: 'Chainalysis Reactor',      url: 'chainalysis.com/reactor',                     category: 'Commercial analytics',  cost: 'Paid (enterprise)',   what: 'Industry-standard commercial blockchain investigation tool',                                                notes: 'Used by major exchanges and law enforcement. Best attribution coverage but expensive.' },
+  { name: 'TRM Labs',                 url: 'trmlabs.com',                                 category: 'Commercial analytics',  cost: 'Paid (enterprise)',   what: 'Commercial blockchain risk intelligence — sanctions, fraud, ransomware',                                    notes: 'Direct competitor to Chainalysis. Stronger on real-time wallet screening for compliance.' },
+  { name: 'Arkham Intelligence',      url: 'arkhamintelligence.com',                      category: 'Attribution',           cost: 'Free',                what: 'Crowd-sourced address labels, entity profiles, wallet tracking',                                            notes: 'Strong on identifying institutional wallets. "Bounty" system for unmasking entities. Free with login.' },
+  { name: 'Etherscan label cloud',    url: 'etherscan.io/labelcloud',                     category: 'Attribution',           cost: 'Free',                what: 'Public address labels (CEX, mixer, MEV bot, sanctioned, etc.)',                                             notes: 'First stop for "who is this address?" before paid tools. Crowd-curated.' },
+  { name: 'Dune Analytics',           url: 'dune.com',                                    category: 'Custom analytics',      cost: 'Free / paid',         what: 'SQL queries against indexed blockchain data',                                                              notes: 'Write custom queries; community has thousands of public dashboards. Powerful for pattern hunting at scale.' },
+  { name: 'OFAC SDN List',            url: 'sanctionssearch.ofac.treas.gov',              category: 'Sanctions',             cost: 'Free',                what: 'US Treasury sanctioned crypto addresses',                                                                    notes: 'Cross-reference any wallet of interest. Both EU and UK maintain separate lists; OFAC is the most-cited.' },
+]
+
+// ─── Code & Repo OSINT ────────────────────────────────────────────────────────
+
+export interface CodeOSINTTool {
+  name: string
+  url: string
+  category: string
+  cost: string
+  what: string
+  notes: string
+}
+
+export const codeOSINT: CodeOSINTTool[] = [
+  { name: 'GitHub search dorks',          url: 'github.com/search',                                category: 'Search',                cost: 'Free',                what: 'GitHub-specific dorking: filename:, extension:, org:, language:, raw strings',                       notes: 'Examples: filename:.env DB_PASSWORD; extension:pem private; org:target "internal"; language:python "secret_key". Free GitHub login required for full results.' },
+  { name: 'TruffleHog',                   url: 'github.com/trufflesecurity/trufflehog',            category: 'Secret scanning',       cost: 'Free (open source)',  what: 'Scan repos / orgs / git history for committed secrets — verifies live keys',                          notes: 'Verifier mode confirms whether found credentials are still valid. Run against entire orgs: trufflehog github --org=acme --only-verified.' },
+  { name: 'Gitleaks',                     url: 'github.com/gitleaks/gitleaks',                     category: 'Secret scanning',       cost: 'Free (open source)',  what: 'Static analysis for secrets across git history',                                                      notes: 'Faster than TruffleHog for pure pattern matching; no live verification. Great for pre-commit hooks and CI gates.' },
+  { name: 'GitHound',                     url: 'github.com/tillson/git-hound',                     category: 'Secret scanning',       cost: 'Free (open source)',  what: 'GitHub-wide secret hunting with regex + entropy across all of public GitHub',                          notes: 'Targets specific orgs/users at scale. Pattern-based dorking. Requires multiple GitHub PATs to bypass rate limits.' },
+  { name: 'Sourcegraph',                  url: 'sourcegraph.com/search',                           category: 'Code search',           cost: 'Free public / paid',  what: 'Cross-repo code search — regex, structural, public + private',                                         notes: 'Search across millions of GitHub/GitLab repos via cloud instance. Better regex and structural search than GitHub native.' },
+  { name: 'grep.app',                     url: 'grep.app',                                         category: 'Code search',           cost: 'Free',                what: 'Fast regex search across millions of public GitHub repos',                                             notes: 'No login required. Snappy. Useful for finding unique strings, idioms, or vulnerable patterns.' },
+  { name: 'GitDorker',                    url: 'github.com/obheda12/GitDorker',                    category: 'Dorking',               cost: 'Free (open source)',  what: 'Automated GitHub dork runner — wordlist + token rotation',                                              notes: 'Runs hundreds of dorks against a target org. Supply multiple PATs to relieve rate limits.' },
+  { name: 'gitGraber',                    url: 'github.com/hisxo/gitGraber',                       category: 'Continuous monitoring', cost: 'Free (open source)',  what: 'Continuously monitor GitHub for newly-committed secrets',                                              notes: 'Daemon-style. Useful as continuous SOC-style detection over a target organization or technology fingerprint.' },
+  { name: 'S3Scanner',                    url: 'github.com/sa7mon/S3Scanner',                      category: 'Cloud config leaks',    cost: 'Free (open source)',  what: 'Find publicly readable S3 / GCS / Azure blob buckets',                                                 notes: 'Common bucket patterns: company-{prod,dev,backup,assets}. Public bucket = potential data leak. Pairs with subdomain enumeration.' },
+  { name: 'Sourcegraph code intelligence',url: 'sourcegraph.com',                                  category: 'Code intelligence',     cost: 'Free public',         what: 'Code navigation across the indexed open-source ecosystem',                                              notes: 'Find references, definitions, and dependents. Useful for understanding the spread of a vulnerability or pattern across ecosystems.' },
+  { name: 'PyPI / npm typosquat search',  url: 'pypi.org',                                         category: 'Supply chain',          cost: 'Free',                what: 'Inspect packages by name; check for typosquats around target dependencies',                            notes: 'For supply-chain investigations: identify suspicious package names, recent first-time publishers, and packages with single maintainers.' },
+]
+
+// ─── Archive & Wayback ────────────────────────────────────────────────────────
+
+export interface ArchiveTool {
+  name: string
+  url: string
+  category: string
+  cost: string
+  what: string
+  notes: string
+}
+
+export const archiveOSINT: ArchiveTool[] = [
+  { name: 'Wayback Machine',              url: 'web.archive.org',                                 category: 'Web archive',           cost: 'Free',                  what: 'Internet Archive snapshots — billions of captures since 1996',                                            notes: 'Calendar view to compare versions. URL prefix queries: web.archive.org/web/*/example.com/* finds all snapshots of a domain.' },
+  { name: 'Archive.today',                url: 'archive.ph',                                      category: 'Web archive',           cost: 'Free',                  what: 'On-demand web page archiving with screenshot — captures paywalled / JS-heavy pages',                       notes: 'Robots.txt-defying. Captures dynamic content better than Wayback. Permanent shareable URLs. Good for citing rapidly-changing pages.' },
+  { name: 'Google Cache',                 url: 'webcache.googleusercontent.com',                  category: 'Web archive',           cost: 'Free (mostly retired)', what: 'Google\'s cached version of indexed pages',                                                                notes: 'Largely retired in Sept 2024. Try cache:url operator or Wayback for historical pages.' },
+  { name: 'CommonCrawl',                  url: 'commoncrawl.org',                                 category: 'Web archive',           cost: 'Free',                  what: 'Petabytes of crawled web pages, freely downloadable',                                                      notes: 'Best for large-scale historical web mining. Requires AWS / scripting; not for casual one-off lookups.' },
+  { name: 'Wayback CDX API',              url: 'archive.org/help/wayback_api.php',                category: 'API',                   cost: 'Free',                  what: 'Programmatic access to Wayback snapshots',                                                                 notes: 'curl "http://web.archive.org/cdx/search/cdx?url=example.com&output=json" returns all snapshot metadata for a URL.' },
+  { name: 'Hunchly',                      url: 'hunch.ly',                                        category: 'Investigation archive', cost: '$130/year',             what: 'Browser plugin that auto-archives every page during an investigation',                                    notes: 'Used by professional investigators. Captures visited pages with metadata; chain-of-custody friendly.' },
+  { name: 'SingleFile',                   url: 'github.com/gildas-lormeau/SingleFile',            category: 'Investigation archive', cost: 'Free',                  what: 'Browser extension that saves a webpage as a single self-contained HTML file',                              notes: 'Lightweight alternative to Hunchly. No central index but each capture is portable and auditable.' },
+  { name: 'Memento Time Travel',          url: 'timetravel.mementoweb.org',                       category: 'Multi-archive',         cost: 'Free',                  what: 'Aggregator that searches multiple web archives at once (Wayback, LOC, etc.)',                              notes: 'Useful when Wayback is missing a snapshot — try here as the meta-search across all federated archives.' },
+  { name: 'PullPush (Reddit archive)',    url: 'pullpush.io',                                     category: 'Forum archive',         cost: 'Free',                  what: 'Reddit submissions and comments, including deleted ones',                                                  notes: 'Replaces the defunct Pushshift API. Same shape. Critical for retrieving moderated/deleted Reddit content.' },
+  { name: 'YouTube content on archive.org',url: 'archive.org',                                    category: 'Media archive',         cost: 'Free',                  what: 'Many removed YouTube videos persist as fan mirrors on archive.org',                                        notes: 'Search archive.org for the YouTube channel ID or video URL — controversial / removed content often shows up here.' },
+]
+
+// ─── Vehicle / Transport OSINT ────────────────────────────────────────────────
+
+export interface VehicleTool {
+  name: string
+  url: string
+  category: string
+  jurisdiction: string
+  cost: string
+  what: string
+  notes: string
+}
+
+export const vehicleOSINT: VehicleTool[] = [
+  { name: 'NHTSA VIN Decoder',     url: 'vpic.nhtsa.dot.gov/decoder',                     category: 'VIN',           jurisdiction: 'US (works for global compliant VINs)', cost: 'Free',          what: 'Free VIN decoder — make, model, engine, manufacturing plant',                                                       notes: 'Authoritative for US-market vehicles. VINs from 1981+ are 17 chars; older are non-standard. API also available.' },
+  { name: 'NICB VINCheck',         url: 'nicb.org/vincheck',                              category: 'VIN history',   jurisdiction: 'US',                                  cost: 'Free (5/day)',  what: 'Check if a vehicle is reported stolen or salvaged',                                                                  notes: 'Limited to 5 lookups per day. Good for vehicle provenance checks.' },
+  { name: 'VinAudit',              url: 'vinaudit.com',                                   category: 'VIN history',   jurisdiction: 'US',                                  cost: '$10–25/report', what: 'Title history, accidents, mileage, theft',                                                                          notes: 'Cheaper alternative to Carfax. Pulls from same DMV data sources.' },
+  { name: 'FAA Aircraft Registry', url: 'registry.faa.gov',                               category: 'Aircraft',      jurisdiction: 'US',                                  cost: 'Free',          what: 'N-number / serial → registered owner, address, model, year',                                                       notes: 'Free public records. Reveals shell-company aircraft ownership patterns common in private/corporate aviation.' },
+  { name: 'UK CAA G-INFO',         url: 'siteapps.caa.co.uk/g-info',                      category: 'Aircraft',      jurisdiction: 'UK',                                  cost: 'Free',          what: 'UK aircraft registry — G- prefix tail numbers',                                                                     notes: 'Each EU country has its own registry. Germany: lba.de; France: aviation-civile.gouv.fr. EASA portal aggregates some.' },
+  { name: 'Equasis (vessels)',     url: 'equasis.org',                                    category: 'Maritime',      jurisdiction: 'Global',                              cost: 'Free',          what: 'IMO number → owner, classification, port-state inspection history',                                                  notes: 'Free with registration. Beneficial-owner trails often visible despite shell-company structures. Industry-standard.' },
+  { name: 'IHS Sea-web',           url: 'sea-web.com',                                    category: 'Maritime',      jurisdiction: 'Global',                              cost: 'Paid',          what: 'Commercial vessel database with ownership history',                                                                  notes: 'Used by sanctions analysts. Tracks ownership changes over time more completely than free sources.' },
+  { name: 'Plate Recognizer',      url: 'platerecognizer.com',                            category: 'License plate', jurisdiction: 'Varies',                              cost: 'Freemium',      what: 'OCR for license plates from images',                                                                                 notes: 'Free 2,500/month tier. Use ethically and lawfully — many jurisdictions restrict plate-to-owner lookups for non-LE.' },
+]
+
+// ─── Document & Metadata OSINT ────────────────────────────────────────────────
+
+export interface DocumentTool {
+  name: string
+  url: string
+  category: string
+  cost: string
+  what: string
+  notes: string
+}
+
+export const documentOSINT: DocumentTool[] = [
+  { name: 'ExifTool',                    url: 'exiftool.org',                                category: 'Metadata',          cost: 'Free (open source)', what: 'CLI: read/write/edit metadata in 100+ file formats (JPEG, PDF, Office, video)',                                       notes: 'Standard practitioner tool. exiftool file.pdf reveals author, software, creation timestamps, GPS coordinates from photos.' },
+  { name: 'FOCA',                        url: 'github.com/ElevenPaths/FOCA',                 category: 'Metadata harvest',  cost: 'Free (open source)', what: 'Crawl a domain for documents and extract metadata at scale',                                                            notes: 'Pulls all docs from a target site, extracts authors / usernames / internal paths from metadata. Windows-native; runs in Wine.' },
+  { name: 'Metagoofil',                  url: 'github.com/laramies/metagoofil',              category: 'Metadata harvest',  cost: 'Free (open source)', what: 'CLI alternative to FOCA — doc enumeration via search engines + metadata extraction',                                  notes: 'Cross-platform. Slower than FOCA for big targets but scriptable.' },
+  { name: 'GetMetadata',                 url: 'getmetadata.com',                             category: 'Web tools',         cost: 'Free / paid',        what: 'Web-based metadata viewer for uploaded files',                                                                          notes: 'Quick checks without installing anything. Don\'t upload sensitive or classified files — they hit a third party.' },
+  { name: 'pdfgrep',                     url: 'pdfgrep.org',                                 category: 'PDF',               cost: 'Free (open source)', what: 'Grep across PDF files — searches text content, not just filenames',                                                    notes: 'pdfgrep -r "pattern" /docs/ — invaluable for searching large doc collections during investigations.' },
+  { name: 'pdftotext / pdfinfo',         url: 'poppler.freedesktop.org',                     category: 'PDF',               cost: 'Free (open source)', what: 'Poppler utilities: extract text and metadata from PDF',                                                                 notes: 'apt install poppler-utils. pdfinfo reveals creation tool, author, dates. pdftotext for content extraction.' },
+  { name: 'oletools',                    url: 'github.com/decalage2/oletools',               category: 'Office docs',       cost: 'Free (open source)', what: 'Analyze Office documents — macros, embedded objects, metadata',                                                         notes: 'olevba for macros, oleid for general triage, oleobj for embedded payloads. Useful for both investigation and threat triage.' },
+  { name: 'DocumentCloud',               url: 'documentcloud.org',                           category: 'Document hosting',  cost: 'Free (verified)',    what: 'Investigative journalist platform — searchable archive of public-interest documents',                                  notes: 'Search across millions of leaked / FOIA\'d documents from journalist organizations worldwide.' },
+  { name: 'CrossRef / Sci-Hub mirror',   url: 'crossref.org',                                category: 'Academic',          cost: 'Free',               what: 'DOI lookup → academic paper metadata, authors, citation graph',                                                         notes: 'Free DOI resolution. Author affiliations and ORCIDs link academic personas across publications.' },
+  { name: 'Google Scholar',              url: 'scholar.google.com',                          category: 'Academic',          cost: 'Free',               what: 'Academic publication search — author profiles, citation metrics, affiliations',                                        notes: 'Author profile pages reveal employment history through paper affiliations over time. h-index for credibility scoring.' },
+]
+
+// ─── Verification Toolkit ─────────────────────────────────────────────────────
+
+export interface VerificationTool {
+  name: string
+  url: string
+  category: string
+  what: string
+  notes: string
+}
+
+export const verificationToolkit: VerificationTool[] = [
+  { name: 'Bellingcat Online Investigations Toolkit', url: 'bit.ly/bcattools',                                  category: 'Toolkit (curated)',  what: 'Curated, frequently-updated list of OSINT tools maintained by Bellingcat',                                                   notes: 'Hundreds of tools categorized by use case. Authoritative starting point — cross-check before adopting any new tool.' },
+  { name: 'InVID Verification Plugin',                url: 'invid-project.eu/tools-and-services/invid-verification-plugin', category: 'Video verification', what: 'Browser plugin: keyframe extraction, reverse image search on frames, magnifier, metadata',                                  notes: 'EU-funded; standard tool for journalist video verification. Identifies repurposed / staged videos by extracting keyframes for reverse search.' },
+  { name: 'RevEye',                                   url: 'github.com/JOSM/reveye',                            category: 'Image search relay', what: 'Browser extension: right-click → search image across multiple reverse engines simultaneously',                                notes: 'Sends one image to Google, Bing, Yandex, TinEye, Baidu in one click. Massive time-saver vs. running each manually.' },
+  { name: 'FotoForensics',                            url: 'fotoforensics.com',                                 category: 'Image forensics',    what: 'Error Level Analysis (ELA) and metadata for tamper detection',                                                                notes: 'Quick check for "is this image edited?" — ELA shows JPEG compression inconsistencies. Not definitive but a useful first pass.' },
+  { name: 'Forensically',                             url: 'forensically.guillermoamaral.com',                  category: 'Image forensics',    what: 'Browser-based suite: ELA, clone detection, noise analysis, geometry tools',                                                  notes: 'No upload required — runs in-browser, so safer for sensitive images. Better UX than FotoForensics for one-off analysis.' },
+  { name: 'YouTube DataViewer',                       url: 'amnestyusa.org/citizenevidence',                    category: 'Video verification', what: 'Amnesty Citizen Evidence Lab tool — extract upload time, thumbnails, reverse image search',                                  notes: 'Identifies if a video was reposted / re-uploaded. Compare upload date against claimed event date.' },
+  { name: 'SunCalc',                                  url: 'suncalc.org',                                       category: 'Chronolocation',     what: 'Sun azimuth/elevation by time and place — solve shadow puzzles',                                                              notes: 'Given a shadow direction in an image, infer the time of year + day for a known location. Cross-listed under Geo.' },
+  { name: 'WolframAlpha (weather queries)',           url: 'wolframalpha.com',                                  category: 'Chronolocation',     what: 'Historical weather data by city + date',                                                                                       notes: 'Cross-check claimed conditions: rain, fog, snow on a specific day. Identifies fakes via mismatched weather.' },
+  { name: 'Plonkit (geolocation guides)',             url: 'plonkit.net',                                       category: 'Geolocation training', what: 'Community guides for country/region identification by visual cues',                                                          notes: 'Plates, road markings, utility poles, vegetation, vehicles — all signal national/regional origin. Built for GeoGuessr but excellent for OSINT.' },
+  { name: 'OSINT Combine — Verification methods',     url: 'osintcombine.com/free-osint-tools',                 category: 'Methodology',        what: 'Free tools and methodology guides for verifying digital content',                                                              notes: 'Process-oriented — explains how to chain verification steps for a coherent finding.' },
+  { name: 'TinEye reverse image',                     url: 'tineye.com',                                        category: 'Image provenance',   what: 'Reverse image search optimized for finding the earliest occurrence of an image online',                                       notes: 'Sort results by oldest. Best for verifying whether an image existed before a claimed date.' },
+]
 
 import type { RawSearchEntry } from '@/lib/search/types'
 
@@ -521,10 +840,18 @@ export const osintSearchEntries: RawSearchEntry[] = [
   ...searchOperators.map<RawSearchEntry>(o => ({ title: o.operator, aka: o.engine.join('/'), subtitle: o.description, section: 'search' })),
   ...peopleSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.cost, subtitle: s.dataTypes.join(' · '), section: 'people' })),
   ...usernameSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.method, subtitle: s.coverage, section: 'username' })),
+  ...emailOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.cost}`, subtitle: t.what, section: 'email' })),
   ...imageTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.method, subtitle: t.bestFor, section: 'image' })),
   ...socialPlatforms.map<RawSearchEntry>(p => ({ title: p.platform, aka: 'Social media', subtitle: p.keyTechniques[0] ?? '', section: 'social' })),
   ...infraTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.url, subtitle: t.what, section: 'infra' })),
+  ...archiveOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.cost}`, subtitle: t.what, section: 'archive' })),
+  ...codeOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.cost}`, subtitle: t.what, section: 'code' })),
+  ...cryptoOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.cost}`, subtitle: t.what, section: 'crypto' })),
   ...phoneTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.cost, subtitle: t.what, section: 'phone' })),
   ...darkWebSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.type, subtitle: s.what, section: 'darkweb' })),
   ...corpSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.cost, subtitle: s.what, section: 'corp' })),
+  ...geoTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.category, subtitle: t.what, section: 'geo' })),
+  ...vehicleOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.jurisdiction}`, subtitle: t.what, section: 'vehicle' })),
+  ...documentOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: t.category, subtitle: t.what, section: 'document' })),
+  ...verificationToolkit.map<RawSearchEntry>(t => ({ title: t.name, aka: t.category, subtitle: t.what, section: 'verify' })),
 ]
