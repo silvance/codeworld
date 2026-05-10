@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { readInitialQueryParam } from "@/lib/queryParam"
+import { externalHref } from '@/lib/url'
 import {
   freqReference, tscmDevices, wifi24Channels, wifi5Channels, bleChannels,
   rogueAPIndicators, rogueAPTools,
@@ -656,9 +657,15 @@ export function RogueAP() {
         <div className="space-y-3">
           {rogueAPTools.map(tool => (
             <div key={tool.tool} className="border border-zinc-800 rounded p-4 bg-zinc-900/30">
-              <div className="flex items-start gap-3 mb-1.5">
+              <div className="flex items-start gap-3 mb-1.5 flex-wrap">
                 <span className="text-xs font-mono font-semibold text-zinc-100 min-w-[160px]">{tool.tool}</span>
                 {badge(tool.platform, 'bg-blue-950 text-blue-400')}
+                {tool.url && (
+                  <a href={externalHref(tool.url)} target="_blank" rel="noopener noreferrer"
+                     className="text-[10px] font-mono text-blue-400 hover:text-blue-300 hover:underline">
+                    Visit ↗
+                  </a>
+                )}
               </div>
               <div className="text-xs font-mono text-amber-400 mb-1.5">{tool.primaryUse}</div>
               <p className="text-xs text-zinc-400">{tool.notes}</p>

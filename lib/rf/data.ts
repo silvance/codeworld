@@ -306,14 +306,15 @@ export interface RogueAPTool {
   platform: string
   primaryUse: string
   notes: string
+  url?: string
 }
 
 export const rogueAPTools: RogueAPTool[] = [
-  { tool: 'WiFi Pineapple Mark VII', platform: 'Dedicated HW', primaryUse: 'Evil twin, KARMA, PineAP recon', notes: 'Firmware 2.1.3. OUI: 94:83:C4. Broadcasts SSID list from PineAP pool.' },
-  { tool: 'hostapd-wpe',            platform: 'Linux',         primaryUse: 'WPA-Enterprise credential capture', notes: 'PEAP/TTLS MitM. Captures MSCHAPv2 hashes for offline crack.' },
-  { tool: 'airbase-ng',             platform: 'Linux',         primaryUse: 'Soft AP / fake AP flood',          notes: 'Part of aircrack-ng. Can flood thousands of fake BSSIDs.' },
-  { tool: 'eaphammer',              platform: 'Linux',         primaryUse: 'WPA-Enterprise attacks',          notes: 'Successor to hostapd-wpe. GTC downgrade, PMKID capture.' },
-  { tool: 'Bettercap',              platform: 'Linux/macOS',   primaryUse: 'WiFi MitM + HTTP interception',   notes: 'wifi.ap module + arp.spoof for full layer 2/3 intercept.' },
+  { tool: 'WiFi Pineapple Mark VII', platform: 'Dedicated HW', primaryUse: 'Evil twin, KARMA, PineAP recon', notes: 'Firmware 2.1.3. OUI: 94:83:C4. Broadcasts SSID list from PineAP pool.',  url: 'https://shop.hak5.org/products/wifi-pineapple' },
+  { tool: 'hostapd-wpe',            platform: 'Linux',         primaryUse: 'WPA-Enterprise credential capture', notes: 'PEAP/TTLS MitM. Captures MSCHAPv2 hashes for offline crack.',          url: 'https://github.com/OpenSecurityResearch/hostapd-wpe' },
+  { tool: 'airbase-ng',             platform: 'Linux',         primaryUse: 'Soft AP / fake AP flood',          notes: 'Part of aircrack-ng. Can flood thousands of fake BSSIDs.',              url: 'https://www.aircrack-ng.org/doku.php?id=airbase-ng' },
+  { tool: 'eaphammer',              platform: 'Linux',         primaryUse: 'WPA-Enterprise attacks',          notes: 'Successor to hostapd-wpe. GTC downgrade, PMKID capture.',                url: 'https://github.com/s0lst1c3/eaphammer' },
+  { tool: 'Bettercap',              platform: 'Linux/macOS',   primaryUse: 'WiFi MitM + HTTP interception',   notes: 'wifi.ap module + arp.spoof for full layer 2/3 intercept.',                url: 'https://www.bettercap.org' },
 ]
 
 // ─── SDR Quick Reference ─────────────────────────────────────────────────────
@@ -329,6 +330,7 @@ export interface SDRDevice {
   tscmUse: string[]
   notes: string
   software: string[]
+  url?: string
 }
 
 export const sdrDevices: SDRDevice[] = [
@@ -343,6 +345,7 @@ export const sdrDevices: SDRDevice[] = [
     tscmUse: ['Low-cost sweep tool', 'Baseline spectrum capture', 'Detecting broadband transmitters', 'WiFi/BT anomaly spotting with 2.4 GHz capable variant'],
     notes: 'RTL-SDR V3/V4 adds direct sampling for HF below 30 MHz. Excellent starting point. Susceptible to overload near strong transmitters — use attenuator. No bias tee on cheap variants.',
     software: ['SDR#', 'GQRX', 'SDR++', 'Kismet (WiFi)', 'dump1090 (ADS-B)'],
+    url: 'https://www.rtl-sdr.com',
   },
   {
     name: 'HackRF One',
@@ -355,6 +358,7 @@ export const sdrDevices: SDRDevice[] = [
     tscmUse: ['Broadband sweep 1 MHz–6 GHz', 'Transmit test signals for link budget verification', 'Replay attacks in training', 'WiFi Pineapple companion for out-of-band analysis', 'PortaPack: standalone field use'],
     notes: 'PortaPack H2/H4 adds screen + controls for standalone operation. 8-bit ADC limits dynamic range vs higher-end SDRs. Excellent for TSCM training scenarios — can simulate threat devices.',
     software: ['GNU Radio', 'SDR#', 'GQRX', 'URH (Universal Radio Hacker)', 'PortaPack Mayhem firmware'],
+    url: 'https://greatscottgadgets.com/hackrf/',
   },
   {
     name: 'SDRplay RSP1A / RSPdx',
@@ -367,6 +371,7 @@ export const sdrDevices: SDRDevice[] = [
     tscmUse: ['High-sensitivity sweep', 'Detecting low-power bugs near noise floor', 'HF carrier current analysis', 'Better strong-signal rejection than RTL-SDR near transmitter sites'],
     notes: 'RSP1A: ~$100. RSPdx adds enhanced HF and better selectivity. SDRuno software well-integrated. 14-bit ADC significantly improves weak signal detection vs 8-bit RTL-SDR. Best value for serious TSCM use.',
     software: ['SDRuno', 'HDSDR', 'SDR#', 'GQRX'],
+    url: 'https://www.sdrplay.com',
   },
   {
     name: 'Airspy HF+ Discovery',
@@ -379,6 +384,7 @@ export const sdrDevices: SDRDevice[] = [
     tscmUse: ['Powerline carrier bug detection (10–500 kHz)', 'Very low frequency bug detection', 'TEMPEST-adjacent low-frequency emissions'],
     notes: 'Exceptional HF performance. Not suited for UHF/microwave. Pair with a separate UHF SDR for complete coverage. Overkill for basic TSCM but best tool for powerline carrier analysis.',
     software: ['SDR#', 'HDSDR', 'Airspy SDR#'],
+    url: 'https://airspy.com',
   },
   {
     name: 'TinySA Ultra',
@@ -391,6 +397,7 @@ export const sdrDevices: SDRDevice[] = [
     tscmUse: ['Primary field sweep tool', 'Waterfall display for FHSS detection', 'Precise signal level measurement in dBm', 'In-room walk-around with antenna', 'Battery-powered: no laptop needed'],
     notes: 'Best portable sweep tool for TSCM work. Waterfall mode catches FHSS bursts. Touch screen. USB-C charging. ~$100. TinySA Basic covers to 960 MHz only — get Ultra for 5.3 GHz. tinySA-App on PC adds logging.',
     software: ['TinySA-App (Windows/Linux)', 'NanoVNA Saver (companion)'],
+    url: 'https://tinysa.org',
   },
   {
     name: 'Flipper Zero',
@@ -403,6 +410,7 @@ export const sdrDevices: SDRDevice[] = [
     tscmUse: ['Detecting and characterizing 315/433/868/915 MHz devices', 'Key fob replay in physical security assessments', 'RFID reader detection', 'Momentum firmware: WiFi DevBoard adds 2.4 GHz scanning'],
     notes: 'Not a spectrum analyzer — cannot do wideband sweep. Protocol-specific tool. Momentum/Unleashed firmware significantly expands capability. WiFi DevBoard required for 2.4 GHz. Good complement to TinySA for targeted protocol analysis.',
     software: ['Flipper Zero firmware', 'Momentum firmware', 'qFlipper (PC companion)'],
+    url: 'https://flipperzero.one',
   },
 ]
 
@@ -727,6 +735,7 @@ export interface TSCMTool {
   limitations: string[]
   approxCost: string
   tscmRole: string
+  url?: string
 }
 
 export const tscmTools: TSCMTool[] = [
@@ -740,6 +749,7 @@ export const tscmTools: TSCMTool[] = [
     limitations: ['No TX capability', 'Limited dynamic range vs lab equipment', 'Swept (not real-time) — may miss short bursts', '5.3 GHz ceiling misses 5.8 GHz band partially'],
     approxCost: '$100',
     tscmRole: 'Primary portable sweep tool. Best value for in-room walk-around sweeps. Waterfall catches FHSS better than swept display alone.',
+    url: 'https://tinysa.org',
   },
   {
     name: 'HackRF One + PortaPack',
@@ -751,6 +761,7 @@ export const tscmTools: TSCMTool[] = [
     limitations: ['8-bit ADC limits sensitivity', 'Half-duplex only', 'No real-time wide bandwidth (20 MS/s max)', 'Requires laptop or PortaPack for use'],
     approxCost: '$340 (HackRF + PortaPack)',
     tscmRole: 'Wide coverage sweep companion. Training device simulation. PortaPack enables fully standalone field operation.',
+    url: 'https://greatscottgadgets.com/hackrf/',
   },
   {
     name: 'OSCOR Blue',
@@ -762,6 +773,7 @@ export const tscmTools: TSCMTool[] = [
     limitations: ['Extremely expensive', 'Requires training for full capability', 'Overkill for basic TSCM'],
     approxCost: '$30,000+',
     tscmRole: 'Professional standard for thorough TSCM surveys. Automated signal classification and wide real-time bandwidth are primary advantages over SDR-based approaches.',
+    url: 'https://reiusa.net/oscor-blue',
   },
   {
     name: 'REI TALAN',
@@ -773,6 +785,7 @@ export const tscmTools: TSCMTool[] = [
     limitations: ['POTS-specific — less relevant for VoIP', 'Cannot detect audio bugs not connected to line'],
     approxCost: '$6,000–8,000',
     tscmRole: 'Definitive tool for telephone infrastructure sweep. Essential for any facility with POTS lines. Detects bugs that RF sweep would miss entirely.',
+    url: 'https://reiusa.net/talan-3.0',
   },
   {
     name: 'ORION 2.4 NLJD',
@@ -784,6 +797,7 @@ export const tscmTools: TSCMTool[] = [
     limitations: ['False positives from corrosion and semiconductor materials', 'Penetration limited by RF-absorbing materials', 'High cost'],
     approxCost: '$12,000–18,000',
     tscmRole: 'Only tool that reliably detects non-transmitting devices. Critical for finding dormant bugs, devices with scheduled activation, or devices currently powered off. Should be used on all surfaces in sensitive sweeps.',
+    url: 'https://reiusa.net/orion-2-4-nljd',
   },
   {
     name: 'Fluke Networks IntelliTone Pro',
@@ -795,6 +809,7 @@ export const tscmTools: TSCMTool[] = [
     limitations: ['Not an RF tool', 'Limited to cable tracing function'],
     approxCost: '$200–350',
     tscmRole: 'Identifying unknown cable runs. Tracing cables to determine where they go without cutting. Essential for finding unauthorized cable additions in walls or ceilings.',
+    url: 'https://www.flukenetworks.com',
   },
   {
     name: 'Somfy/Generic RF Power Meter',
@@ -817,6 +832,7 @@ export const tscmTools: TSCMTool[] = [
     limitations: ['BLE only — not wideband', 'Requires laptop', 'Nordic firmware flashing required'],
     approxCost: '$40 hardware + free software',
     tscmRole: 'BLE tracker detection and characterization. Identifies AirTags, Tile, and other BLE devices by advertising MAC and payload. Far more capable than phone-based scanning for professional use.',
+    url: 'https://www.nordicsemi.com/Products/Development-tools/nrf-sniffer-for-bluetooth-le',
   },
 ]
 
