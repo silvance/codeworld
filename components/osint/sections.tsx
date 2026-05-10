@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { readInitialQueryParam } from "@/lib/queryParam"
+import { externalHref } from '@/lib/url'
 import {
   searchOperators, peopleSources, personaSteps, usernameSources,
   imageTools, socialPlatforms, infraTools, phoneTools,
@@ -90,7 +91,7 @@ export function PeopleSearch() {
               className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900/40 hover:bg-zinc-900 transition-colors text-left">
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-sm font-mono font-semibold text-zinc-100">{s.name}</span>
-                <code className="text-xs font-mono text-blue-400">{s.url}</code>
+                <a href={externalHref(s.url)} target="_blank" rel="noopener noreferrer" className="text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{s.url}</a>
                 <Badge text={s.cost} cls="bg-zinc-800 text-zinc-500" />
               </div>
               <span className="text-zinc-600 text-xs ml-2">{open === s.name ? '▲' : '▼'}</span>
@@ -113,7 +114,7 @@ export function PeopleSearch() {
                 </div>
                 <p className="text-xs font-mono text-zinc-400">{s.notes}</p>
                 {s.optOutUrl && (
-                  <div className="text-xs font-mono text-zinc-600">Opt-out: <span className="text-red-400">{s.optOutUrl}</span></div>
+                  <div className="text-xs font-mono text-zinc-600">Opt-out: <a href={externalHref(s.optOutUrl)} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 hover:underline">{s.optOutUrl}</a></div>
                 )}
               </div>
             )}
@@ -193,7 +194,7 @@ export function UsernameEnum() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{s.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{s.url}</code>
+                <a href={externalHref(s.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{s.url}</a>
               </div>
               <div className="flex gap-2">
                 <Badge text={s.method} cls="bg-zinc-800 text-zinc-400" />
@@ -242,7 +243,7 @@ export function ImageOSINT() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <Badge text={t.method} cls="bg-zinc-800 text-zinc-400" />
             </div>
@@ -290,7 +291,7 @@ export function SocialMedia() {
               <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs font-mono font-semibold text-zinc-200">{t.name}</span>
-                  <code className="text-xs font-mono text-blue-400">{t.url}</code>
+                  <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
                 </div>
                 <p className="text-xs font-mono text-zinc-500">{t.notes}</p>
               </div>
@@ -356,7 +357,7 @@ export function InfraOSINT() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               {catMap[t.name] && <Badge text={catMap[t.name]} cls="bg-zinc-800 text-zinc-400" />}
             </div>
@@ -396,7 +397,7 @@ export function PhoneOSINT() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
             </div>
@@ -489,7 +490,7 @@ export function CorpIntel() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{s.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{s.url}</code>
+                <a href={externalHref(s.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{s.url}</a>
               </div>
               <Badge text={s.cost} cls="bg-zinc-800 text-zinc-500" />
             </div>
@@ -536,7 +537,7 @@ export function EmailOSINTSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <div className="flex gap-1.5">
                 <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
@@ -586,7 +587,7 @@ export function GeoOSINTSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
             </div>
@@ -633,7 +634,7 @@ export function CryptoOSINTSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <div className="flex gap-1.5">
                 <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
@@ -683,7 +684,7 @@ export function CodeOSINTSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <div className="flex gap-1.5">
                 <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
@@ -719,7 +720,7 @@ export function ArchiveOSINTSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <div className="flex gap-1.5">
                 <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
@@ -758,7 +759,7 @@ export function VehicleOSINTSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <div className="flex gap-1.5 flex-wrap">
                 <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
@@ -809,7 +810,7 @@ export function DocumentOSINTSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <div className="flex gap-1.5">
                 <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
@@ -859,7 +860,7 @@ export function VerificationSection() {
             <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
               <div>
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
               <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
             </div>
