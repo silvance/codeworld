@@ -123,6 +123,21 @@ const nextConfig = {
     return [
       // /email merged into the Tools page; preserve old links
       { source: '/email', destination: '/tools?tool=email', permanent: true },
+
+      // dfir.codes is a parked vanity domain that points at this deployment.
+      // Send all traffic (apex + www) to codeworld.codes, preserving path and query.
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'dfir.codes' }],
+        destination: 'https://codeworld.codes/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.dfir.codes' }],
+        destination: 'https://codeworld.codes/:path*',
+        permanent: true,
+      },
     ]
   },
 
