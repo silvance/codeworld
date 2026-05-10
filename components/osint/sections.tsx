@@ -6,6 +6,8 @@ import {
   searchOperators, peopleSources, personaSteps, usernameSources,
   imageTools, socialPlatforms, infraTools, phoneTools,
   darkWebSources, corpSources,
+  emailOSINT, geoTools, cryptoOSINT, codeOSINT, archiveOSINT,
+  vehicleOSINT, documentOSINT, verificationToolkit,
 } from '@/lib/osint/data'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -493,6 +495,376 @@ export function CorpIntel() {
             </div>
             <p className="text-xs font-mono text-zinc-300 mb-1">{s.what}</p>
             <p className="text-xs font-mono text-zinc-500">{s.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Email OSINT ──────────────────────────────────────────────────────────────
+
+export function EmailOSINTSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [catFilter, setCatFilter] = useState('ALL')
+  const cats = ['ALL', ...Array.from(new Set(emailOSINT.map(t => t.category)))]
+
+  const filtered = useMemo(() => emailOSINT.filter(t => {
+    if (catFilter !== 'ALL' && t.category !== catFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
+  }), [catFilter, search])
+
+  return (
+    <div>
+      <SH title="Email OSINT" sub="Pattern enumeration, account-presence checks, breach hunting, reputation scoring" />
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <input placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
+        <div className="flex flex-wrap gap-1">
+          {cats.map(c => (
+            <button key={c} onClick={() => setCatFilter(c)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+                catFilter === c ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600 hover:text-zinc-300'
+              }`}>{c}</button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <div className="flex gap-1.5">
+                <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+                <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
+              </div>
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Geospatial / Map OSINT ───────────────────────────────────────────────────
+
+export function GeoOSINTSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [catFilter, setCatFilter] = useState('ALL')
+  const cats = ['ALL', ...Array.from(new Set(geoTools.map(t => t.category)))]
+
+  const filtered = useMemo(() => geoTools.filter(t => {
+    if (catFilter !== 'ALL' && t.category !== catFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
+  }), [catFilter, search])
+
+  return (
+    <div>
+      <SH title="Geospatial / map OSINT" sub="Aviation, maritime, satellite imagery, mapping, chronolocation by sun and weather" />
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <input placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
+        <div className="flex flex-wrap gap-1">
+          {cats.map(c => (
+            <button key={c} onClick={() => setCatFilter(c)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+                catFilter === c ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600 hover:text-zinc-300'
+              }`}>{c}</button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Crypto / Blockchain OSINT ────────────────────────────────────────────────
+
+export function CryptoOSINTSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [catFilter, setCatFilter] = useState('ALL')
+  const cats = ['ALL', ...Array.from(new Set(cryptoOSINT.map(t => t.category)))]
+
+  const filtered = useMemo(() => cryptoOSINT.filter(t => {
+    if (catFilter !== 'ALL' && t.category !== catFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
+  }), [catFilter, search])
+
+  return (
+    <div>
+      <SH title="Crypto / blockchain OSINT" sub="Block explorers, wallet clustering, attribution, sanctions screening" />
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <input placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
+        <div className="flex flex-wrap gap-1">
+          {cats.map(c => (
+            <button key={c} onClick={() => setCatFilter(c)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+                catFilter === c ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600 hover:text-zinc-300'
+              }`}>{c}</button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <div className="flex gap-1.5">
+                <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+                <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
+              </div>
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Code & Repo OSINT ────────────────────────────────────────────────────────
+
+export function CodeOSINTSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [catFilter, setCatFilter] = useState('ALL')
+  const cats = ['ALL', ...Array.from(new Set(codeOSINT.map(t => t.category)))]
+
+  const filtered = useMemo(() => codeOSINT.filter(t => {
+    if (catFilter !== 'ALL' && t.category !== catFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
+  }), [catFilter, search])
+
+  return (
+    <div>
+      <SH title="Code & repository OSINT" sub="GitHub dorking, secret scanning, code search, supply-chain investigation" />
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <input placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
+        <div className="flex flex-wrap gap-1">
+          {cats.map(c => (
+            <button key={c} onClick={() => setCatFilter(c)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+                catFilter === c ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600 hover:text-zinc-300'
+              }`}>{c}</button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <div className="flex gap-1.5">
+                <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+                <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
+              </div>
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Archive & Wayback ────────────────────────────────────────────────────────
+
+export function ArchiveOSINTSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const filtered = useMemo(() => archiveOSINT.filter(t => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
+  }), [search])
+
+  return (
+    <div>
+      <SH title="Archive & wayback" sub="Historical web pages, deleted Reddit, on-demand archiving, investigation-grade capture" />
+      <input placeholder="Search archive tools..." value={search} onChange={e => setSearch(e.target.value)} className={`w-full mb-5 ${inputCls}`} />
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <div className="flex gap-1.5">
+                <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+                <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
+              </div>
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Vehicle / Transport OSINT ────────────────────────────────────────────────
+
+export function VehicleOSINTSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const filtered = useMemo(() => vehicleOSINT.filter(t => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q) || t.jurisdiction.toLowerCase().includes(q)
+  }), [search])
+
+  return (
+    <div>
+      <SH title="Vehicle / transport OSINT" sub="VIN history, aircraft and vessel registries, license-plate OCR — jurisdictional caveats apply" />
+      <div className="border border-amber-900/40 bg-amber-950/20 rounded p-3 mb-5 text-xs font-mono text-amber-400">
+        ⚠ License-plate-to-owner lookups are restricted by law in most jurisdictions for non-LE. The tools listed here are decoders, registries, and OCR — not commercial lookup services for plate-to-PII. Know your local law.
+      </div>
+      <input placeholder="Search vehicle tools..." value={search} onChange={e => setSearch(e.target.value)} className={`w-full mb-5 ${inputCls}`} />
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+                <Badge text={t.jurisdiction} cls="bg-zinc-800 text-zinc-500" />
+                <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
+              </div>
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Document & Metadata ──────────────────────────────────────────────────────
+
+export function DocumentOSINTSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [catFilter, setCatFilter] = useState('ALL')
+  const cats = ['ALL', ...Array.from(new Set(documentOSINT.map(t => t.category)))]
+
+  const filtered = useMemo(() => documentOSINT.filter(t => {
+    if (catFilter !== 'ALL' && t.category !== catFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
+  }), [catFilter, search])
+
+  return (
+    <div>
+      <SH title="Documents & metadata" sub="EXIF, FOCA, Office macro analysis, PDF tooling, journalist document archives" />
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <input placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
+        <div className="flex flex-wrap gap-1">
+          {cats.map(c => (
+            <button key={c} onClick={() => setCatFilter(c)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+                catFilter === c ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600 hover:text-zinc-300'
+              }`}>{c}</button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <div className="flex gap-1.5">
+                <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+                <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
+              </div>
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Verification Toolkit ─────────────────────────────────────────────────────
+
+export function VerificationSection() {
+  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [catFilter, setCatFilter] = useState('ALL')
+  const cats = ['ALL', ...Array.from(new Set(verificationToolkit.map(t => t.category)))]
+
+  const filtered = useMemo(() => verificationToolkit.filter(t => {
+    if (catFilter !== 'ALL' && t.category !== catFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
+  }), [catFilter, search])
+
+  return (
+    <div>
+      <SH title="Verification toolkit" sub="Image and video forensics, chronolocation, Bellingcat-style verification methods" />
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <input placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
+        <div className="flex flex-wrap gap-1">
+          {cats.map(c => (
+            <button key={c} onClick={() => setCatFilter(c)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+                catFilter === c ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600 hover:text-zinc-300'
+              }`}>{c}</button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {filtered.map(t => (
+          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div>
+                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                <code className="ml-3 text-xs font-mono text-blue-400">{t.url}</code>
+              </div>
+              <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+            </div>
+            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
           </div>
         ))}
       </div>
