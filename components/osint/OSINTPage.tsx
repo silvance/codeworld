@@ -8,9 +8,11 @@ import {
   ImageOSINT, SocialMedia, InfraOSINT, PhoneOSINT, DarkWebOSINT, CorpIntel,
   EmailOSINTSection, GeoOSINTSection, CryptoOSINTSection, CodeOSINTSection,
   ArchiveOSINTSection, VehicleOSINTSection, DocumentOSINTSection, VerificationSection,
+  WorkflowsSection,
 } from './sections'
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {
+  workflows:<WorkflowsSection />,
   search:   <SearchOperators />,
   people:   <PeopleSearch />,
   persona:  <SockPuppet />,
@@ -32,7 +34,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
 }
 
 export default function OSINTPage() {
-  const [active, setActive]               = useSectionParam<SectionId>('search', NAV.map(n => n.id))
+  const [active, setActive]               = useSectionParam<SectionId>('workflows', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (

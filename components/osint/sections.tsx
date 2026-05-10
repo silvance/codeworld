@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { readInitialQueryParam } from "@/lib/queryParam"
 import { externalHref } from '@/lib/url'
+import { playbooks } from '@/lib/osint/workflows'
 import {
   searchOperators, peopleSources, personaSteps, usernameSources,
   imageTools, socialPlatforms, infraTools, phoneTools,
@@ -868,6 +870,115 @@ export function VerificationSection() {
             <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Investigation Workflows ──────────────────────────────────────────────────
+
+export function WorkflowsSection() {
+  const [open, setOpen] = useState<string | null>(playbooks[0].id)
+
+  return (
+    <div>
+      <SH title="Investigation workflows" sub="Step-by-step playbooks tying tools together — start here if you're new to OSINT" />
+
+      <div className="bg-emerald-950/20 border border-emerald-900/40 rounded p-3 mb-5 text-xs font-mono text-emerald-300 leading-relaxed">
+        Each playbook is one common investigation type — what you start with, what you end up with, and the exact tool to use at each step. Click any step’s tool to jump to its entry on this site.
+      </div>
+
+      <div className="space-y-3">
+        {playbooks.map(pb => {
+          const isOpen = open === pb.id
+          return (
+            <div key={pb.id} className="border border-zinc-800 rounded overflow-hidden">
+              <button
+                onClick={() => setOpen(isOpen ? null : pb.id)}
+                className="w-full px-4 py-3 bg-zinc-900/40 hover:bg-zinc-900 transition-colors text-left flex items-start justify-between gap-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-mono font-semibold text-zinc-100">{pb.title}</div>
+                  <div className="text-[11px] font-mono text-zinc-500 mt-0.5">{pb.goal}</div>
+                </div>
+                <span className="text-zinc-600 text-xs ml-2 flex-shrink-0">{isOpen ? '▲' : '▼'}</span>
+              </button>
+
+              {isOpen && (
+                <div className="border-t border-zinc-800 p-4 space-y-4 bg-zinc-900/20">
+                  {/* Inputs / Outputs */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mb-1.5">Inputs</div>
+                      <ul className="space-y-1">
+                        {pb.inputs.map((i, idx) => (
+                          <li key={idx} className="text-[11px] font-mono text-zinc-300 flex gap-2">
+                            <span className="text-zinc-700 flex-shrink-0">→</span>{i}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mb-1.5">Outputs</div>
+                      <ul className="space-y-1">
+                        {pb.outputs.map((o, idx) => (
+                          <li key={idx} className="text-[11px] font-mono text-emerald-400 flex gap-2">
+                            <span className="text-zinc-700 flex-shrink-0">✓</span>{o}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Steps */}
+                  <div>
+                    <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mb-2">Steps</div>
+                    <ol className="space-y-3">
+                      {pb.steps.map(step => (
+                        <li key={step.num} className="border border-zinc-800 rounded p-3 bg-zinc-950/30">
+                          <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+                            <span className="text-[10px] font-mono font-bold text-emerald-500 flex-shrink-0">{String(step.num).padStart(2, '0')}</span>
+                            {step.href ? (
+                              <Link
+                                href={step.href}
+                                className="text-xs font-mono font-semibold text-blue-400 hover:text-blue-300 hover:underline"
+                              >
+                                {step.tool} ↗
+                              </Link>
+                            ) : (
+                              <span className="text-xs font-mono font-semibold text-zinc-300">{step.tool}</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-mono text-zinc-300 leading-relaxed mb-1">{step.action}</p>
+                          <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
+                            <span className="text-zinc-600 uppercase tracking-wide mr-1">why:</span>{step.why}
+                          </p>
+                          {step.notes && (
+                            <p className="text-[11px] font-mono text-zinc-600 leading-relaxed mt-1">
+                              <span className="text-zinc-700 uppercase tracking-wide mr-1">note:</span>{step.notes}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  {/* Pitfalls */}
+                  <div className="bg-amber-950/20 border border-amber-900/40 rounded p-3">
+                    <div className="text-[10px] font-mono text-amber-500 uppercase tracking-widest mb-1.5">Pitfalls & opsec</div>
+                    <ul className="space-y-1">
+                      {pb.pitfalls.map((p, idx) => (
+                        <li key={idx} className="text-[11px] font-mono text-amber-300 flex gap-2 leading-relaxed">
+                          <span className="text-amber-700 flex-shrink-0">!</span>{p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

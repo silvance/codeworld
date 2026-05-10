@@ -1,4 +1,5 @@
 export type SectionId =
+  | 'workflows'
   | 'search' | 'people' | 'persona' | 'username' | 'email'
   | 'image' | 'social' | 'infra' | 'archive' | 'code' | 'crypto'
   | 'phone' | 'darkweb' | 'corp' | 'geo' | 'vehicle' | 'document' | 'verify'
@@ -6,6 +7,8 @@ export type SectionId =
 export interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
 
 export const NAV: NavItem[] = [
+  // Start here
+  { id: 'workflows', label: 'Investigation workflows', sub: 'Step-by-step playbooks for common types', icon: '🧭', group: 'Start here' },
   // Identity & people
   { id: 'search',   label: 'Search operators',    sub: 'Google · Bing · dorks',                icon: '🔎', group: 'Identity & people' },
   { id: 'people',   label: 'People search',       sub: 'Spokeo · Pipl · PACER',                icon: '👤', group: 'Identity & people' },
@@ -33,4 +36,4 @@ export const NAV: NavItem[] = [
   { id: 'persona',  label: 'Sock puppet OPSEC',   sub: 'Infrastructure · identity · ops',      icon: '🎭', group: 'Adversary & operations' },
 ]
 
-export const GROUPS = ['Identity & people', 'Infrastructure & code', 'Place & object', 'Adversary & operations']
+export const GROUPS = ['Start here', 'Identity & people', 'Infrastructure & code', 'Place & object', 'Adversary & operations']

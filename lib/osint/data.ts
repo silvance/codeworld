@@ -835,6 +835,7 @@ export const verificationToolkit: VerificationTool[] = [
 ]
 
 import type { RawSearchEntry } from '@/lib/search/types'
+import { playbooks } from './workflows'
 
 export const osintSearchEntries: RawSearchEntry[] = [
   ...searchOperators.map<RawSearchEntry>(o => ({ title: o.operator, aka: o.engine.join('/'), subtitle: o.description, section: 'search' })),
@@ -854,4 +855,6 @@ export const osintSearchEntries: RawSearchEntry[] = [
   ...vehicleOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.jurisdiction}`, subtitle: t.what, section: 'vehicle' })),
   ...documentOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: t.category, subtitle: t.what, section: 'document' })),
   ...verificationToolkit.map<RawSearchEntry>(t => ({ title: t.name, aka: t.category, subtitle: t.what, section: 'verify' })),
+  // Workflow playbooks — surfaceable via search so people can find them by name.
+  ...playbooks.map<RawSearchEntry>(p => ({ title: p.title, aka: 'Playbook', subtitle: p.goal, section: 'workflows' })),
 ]
