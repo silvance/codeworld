@@ -1,7 +1,7 @@
 import { externalHref } from '@/lib/url'
-import type { SectionTool } from '@/lib/pentest/sectionTools'
+import type { SectionTool } from '@/lib/sectionTools'
 
-// Renders the "Tools used here" card block at the top of each pentest section.
+// Renders the "Tools used here" card block at the top of a reference section.
 // Each tool gets a short blurb explaining what it is and when to reach for it,
 // with an optional link to the project / vendor.
 export default function ToolsUsedHere({ tools }: { tools: SectionTool[] }) {
