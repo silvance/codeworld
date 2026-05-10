@@ -34,8 +34,6 @@ function Copy({ text }: { text: string }) {
   )
 }
 
-const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500'
-
 function CmdBlock({ cmd }: { cmd: string }) {
   return (
     <div className="relative group">
@@ -58,7 +56,6 @@ const platBadge = (p: string) => {
 
 export function IOSUnifiedLog() {
   const [catFilter, setCatFilter] = useState('ALL')
-  const [open, setOpen] = useState<string | null>(null)
   const cats = ['ALL', ...Array.from(new Set(iosLogQueries.map(q => q.category)))]
   const filtered = useMemo(() => iosLogQueries.filter(q =>
     catFilter === 'ALL' || q.category === catFilter

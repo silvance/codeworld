@@ -112,50 +112,6 @@ function yamlToJson(yaml: string): unknown {
     return line.match(/^(\s*)/)?.[1].length ?? 0
   }
 
-  function parseBlock(startIdx: number, baseIndent: number): [unknown, number] {
-    const firstLine = lines[startIdx]
-    const isListItem = firstLine.trim().startsWith('- ')
-
-    // Detect if this block is a list
-    let i = startIdx
-    const blockLines: string[] = []
-    while (i < lines.length) {
-      const ind = getIndent(lines[i])
-      if (ind < baseIndent && i !== startIdx) break
-      blockLines.push(lines[i])
-      i++
-    }
-
-    // List block
-    if (blockLines.every(l => l.trim().startsWith('- ') || getIndent(l) > baseIndent)) {
-      const result: unknown[] = []
-      let j = 0
-      while (j < blockLines.length) {
-        const l = blockLines[j]
-        if (l.trim().startsWith('- ')) {
-          const rest = l.trim().slice(2)
-          if (rest.includes(': ') || (rest === '' && j + 1 < blockLines.length)) {
-            // nested object item
-            const subLines = rest ? [' '.repeat(baseIndent) + rest] : []
-            let k = j + 1
-            while (k < blockLines.length && !blockLines[k].trim().startsWith('- ')) {
-              subLines.push(blockLines[k])
-              k++
-            }
-            const sub = parseLines(subLines, baseIndent)
-            result.push(sub)
-            j = k
-          } else {
-            result.push(parseValue(rest))
-            j++
-          }
-        } else { j++ }
-      }
-      return [result, startIdx + blockLines.length]
-    }
-
-    return [parseLines(blockLines, baseIndent), startIdx + blockLines.length]
-  }
 
   function parseLines(ls: string[], baseIndent: number): unknown {
     const result: Record<string, unknown> = {}
