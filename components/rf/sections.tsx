@@ -398,7 +398,7 @@ export function ChannelMaps() {
 export function SignalMath() {
   const [dbm, setDbm]       = useState('-70')
   const [mw, setMw]         = useState('')
-  const [lastEdit, setLastEdit] = useState<'dbm' | 'mw'>('dbm')
+  const [, setLastEdit] = useState<'dbm' | 'mw'>('dbm')
 
   const [eirpTx, setEirpTx] = useState('20')
   const [eirpGain, setEirpGain] = useState('2')
