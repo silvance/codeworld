@@ -226,3 +226,37 @@ main:focus-visible {
     margin: 1.5cm 1.2cm;
   }
 }
+
+/* ─── Scrollbar styling ─────────────────────────────────────────────────────
+   Blend into the dark theme: track matches the page background, thumb is
+   a soft zinc-800 that brightens on hover. Applies globally, including
+   on the section-scroll panes inside subpages.
+   ────────────────────────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent; /* zinc-800 thumb, transparent track */
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #27272a; /* zinc-800 */
+  border-radius: 8px;
+  border: 2px solid transparent; /* gives the thumb breathing room from the track */
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #3f3f46; /* zinc-700 */
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

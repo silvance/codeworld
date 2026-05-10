@@ -73,7 +73,7 @@ function ProviderRef({
 
       <div className="space-y-2">
         {filtered.map(s => (
-          <div key={s.name} className="border border-zinc-800 rounded p-3 bg-zinc-950/40">
+          <div key={s.name} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
             <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
               <div className="flex items-center gap-2">
                 {cloudBadge(badge)}
@@ -81,8 +81,8 @@ function ProviderRef({
                 {categoryBadge(s.category)}
               </div>
             </div>
-            <p className="text-xs text-zinc-400 leading-relaxed">{s.description}</p>
-            <p className="text-[11px] text-zinc-500 mt-1.5 leading-relaxed"><span className="text-zinc-600">↳ </span>{s.notable}</p>
+            <p className="text-xs font-mono text-zinc-400 leading-relaxed">{s.description}</p>
+            <p className="text-[11px] font-mono text-zinc-500 mt-1.5 leading-relaxed"><span className="text-zinc-600">↳ </span>{s.notable}</p>
           </div>
         ))}
         {filtered.length === 0 && <p className="text-xs text-zinc-600 font-mono">No matches.</p>}
@@ -121,7 +121,7 @@ export function IAMAttacks() {
       </div>
       <div className="space-y-3">
         {filtered.map(p => (
-          <div key={p.cloud + p.name} className="border border-zinc-800 rounded p-4 bg-zinc-950/40">
+          <div key={p.cloud + p.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
             <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
               <div className="flex items-center gap-2">
                 {cloudBadge(p.cloud)}
@@ -136,7 +136,7 @@ export function IAMAttacks() {
             </ol>
             <div className="mt-3 pt-2.5 border-t border-zinc-800/80">
               <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wide">Detect</span>
-              <p className="text-[11px] text-zinc-400 leading-relaxed mt-0.5">{p.detection}</p>
+              <p className="text-[11px] font-mono text-zinc-400 leading-relaxed mt-0.5">{p.detection}</p>
             </div>
           </div>
         ))}
@@ -158,10 +158,10 @@ export function ContainersK8s() {
             <h3 className="text-xs font-mono font-semibold text-violet-400 uppercase tracking-wider mb-2">{stage}</h3>
             <div className="space-y-2">
               {k8sChain.filter(s => s.stage === stage).map((s, i) => (
-                <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-950/40">
+                <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
                   <div className="text-sm font-mono text-zinc-100 mb-1.5">{s.technique}</div>
                   <pre className="text-[11px] font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 mb-2 whitespace-pre-wrap break-all">{s.command}</pre>
-                  <p className="text-[11px] text-zinc-500 leading-relaxed"><span className="text-zinc-600 uppercase tracking-wide mr-1.5">detect:</span>{s.detect}</p>
+                  <p className="text-[11px] font-mono text-zinc-500 leading-relaxed"><span className="text-zinc-600 uppercase tracking-wide mr-1.5">detect:</span>{s.detect}</p>
                 </div>
               ))}
             </div>
@@ -180,13 +180,13 @@ export function StorageAttacks() {
       <SH title="Storage attacks" sub="S3, Azure Blob, and GCS misconfiguration patterns and how to surface them in audit logs" />
       <div className="space-y-2">
         {storageAttacks.map((a, i) => (
-          <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-950/40">
+          <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
             <div className="flex items-center gap-2 mb-1.5">
               {cloudBadge(a.cloud)}
               <span className="text-sm font-mono font-semibold text-zinc-100">{a.pattern}</span>
             </div>
-            <p className="text-xs text-zinc-400 leading-relaxed">{a.description}</p>
-            <p className="text-[11px] text-zinc-500 mt-1.5"><span className="text-zinc-600 uppercase tracking-wide mr-1.5">detect:</span>{a.detect}</p>
+            <p className="text-xs font-mono text-zinc-400 leading-relaxed">{a.description}</p>
+            <p className="text-[11px] font-mono text-zinc-500 mt-1.5"><span className="text-zinc-600 uppercase tracking-wide mr-1.5">detect:</span>{a.detect}</p>
           </div>
         ))}
       </div>
@@ -195,15 +195,15 @@ export function StorageAttacks() {
         <h3 className="text-xs font-mono font-semibold text-zinc-300 uppercase tracking-wider mb-2">High-signal audit events</h3>
         <div className="space-y-1.5">
           {auditEvents.map((e, i) => (
-            <div key={i} className="border border-zinc-800 rounded px-3 py-2 bg-zinc-950/40">
+            <div key={i} className="border border-zinc-800 rounded px-3 py-2 bg-zinc-900/20">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 min-w-0">
                   {cloudBadge(e.cloud)}
                   <code className="text-[11px] font-mono text-zinc-100 truncate">{e.event}</code>
                 </div>
               </div>
-              <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">{e.description}</p>
-              <p className="text-[11px] text-zinc-500 mt-0.5"><span className="text-zinc-600 uppercase tracking-wide mr-1.5">why:</span>{e.why}</p>
+              <p className="text-[11px] font-mono text-zinc-400 mt-1 leading-relaxed">{e.description}</p>
+              <p className="text-[11px] font-mono text-zinc-500 mt-0.5"><span className="text-zinc-600 uppercase tracking-wide mr-1.5">why:</span>{e.why}</p>
             </div>
           ))}
         </div>
@@ -223,7 +223,7 @@ export function CloudForensicsIR() {
 
       <div className="border border-amber-900/60 bg-amber-950/20 rounded p-3 mb-6">
         <p className="text-[11px] font-mono text-amber-400 mb-1 uppercase tracking-wide">First 15 minutes</p>
-        <ul className="text-xs text-zinc-300 leading-relaxed list-disc list-inside marker:text-amber-700 space-y-0.5">
+        <ul className="text-xs font-mono text-zinc-300 leading-relaxed list-disc list-inside marker:text-amber-700 space-y-0.5">
           <li>Pin a 14-day pre-window for log queries — long enough to catch staging, short enough to be queryable.</li>
           <li>Prefer disable over delete on identities and resources. Evidence first.</li>
           <li>Treat compromised compute as evidence, not as something to repair. Replace from IaC.</li>
@@ -237,10 +237,10 @@ export function CloudForensicsIR() {
             <h3 className="text-xs font-mono font-semibold text-violet-400 uppercase tracking-wider mb-2">{phase}</h3>
             <div className="space-y-2">
               {irRunbook.filter(r => r.phase === phase).map((r, i) => (
-                <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-950/40">
+                <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
                   <div className="text-sm font-mono text-zinc-100 mb-1">{r.step}</div>
                   <pre className="text-[11px] font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 mb-2 whitespace-pre-wrap break-all">{r.command}</pre>
-                  <p className="text-[11px] text-zinc-500 leading-relaxed">{r.notes}</p>
+                  <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{r.notes}</p>
                 </div>
               ))}
             </div>
@@ -259,14 +259,14 @@ export function MisconfigCatalog() {
       <SH title="Common misconfigurations" sub="Patterns that show up in nearly every cloud assessment, with the fix" />
       <div className="space-y-2">
         {misconfigs.map((m, i) => (
-          <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-950/40">
+          <div key={i} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
             <div className="flex items-center gap-2 mb-1.5">
               {cloudBadge(m.cloud)}
               {categoryBadge(m.area)}
               <span className="text-sm font-mono font-semibold text-zinc-100">{m.pattern}</span>
             </div>
-            <p className="text-xs text-zinc-400 leading-relaxed"><span className="text-zinc-600">impact:</span> {m.impact}</p>
-            <p className="text-[11px] text-zinc-500 mt-1"><span className="text-zinc-600">fix:</span> {m.fix}</p>
+            <p className="text-xs font-mono text-zinc-400 leading-relaxed"><span className="text-zinc-600">impact:</span> {m.impact}</p>
+            <p className="text-[11px] font-mono text-zinc-500 mt-1"><span className="text-zinc-600">fix:</span> {m.fix}</p>
           </div>
         ))}
       </div>
@@ -288,13 +288,13 @@ export function CloudToolsRef() {
             <div className="space-y-1.5">
               {cloudTools.filter(t => t.category === c).map(t => (
                 <a key={t.name} href={t.url} target="_blank" rel="noopener noreferrer"
-                   className="block border border-zinc-800 rounded p-3 bg-zinc-950/40 hover:border-zinc-600 transition-colors">
+                   className="block border border-zinc-800 rounded p-3 bg-zinc-900/20 hover:border-zinc-600 transition-colors">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
                     <span className="text-[10px] font-mono text-zinc-600 truncate">{t.url.replace(/^https?:\/\//, '')}</span>
                   </div>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{t.description}</p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">{t.notes}</p>
+                  <p className="text-xs font-mono text-zinc-400 mt-1 leading-relaxed">{t.description}</p>
+                  <p className="text-[11px] font-mono text-zinc-500 mt-0.5">{t.notes}</p>
                 </a>
               ))}
             </div>
