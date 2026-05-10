@@ -5,6 +5,8 @@ import {
   acquisitionMethods, androidArtifacts, iosArtifacts, iosBackupTypes,
   sqliteDatabases, appArtifacts, adbCommands,
 } from '@/lib/mobile/data'
+import { sectionTools } from '@/lib/mobile/sectionTools'
+import ToolsUsedHere from '@/components/ToolsUsedHere'
 
 // ─── Shared ──────────────────────────────────────────────────────────────────
 
@@ -135,6 +137,7 @@ export function DeviceArtifacts() {
   return (
     <div>
       <SectionHeader title="Device artifacts" sub="Android and iOS artifact paths, formats, and forensic value" />
+      <ToolsUsedHere tools={sectionTools.artifacts ?? []} />
 
       <div className="flex gap-2 mb-4">
         {(['Android', 'iOS'] as const).map(p => (
@@ -180,6 +183,7 @@ export function BackupStructure() {
   return (
     <div>
       <SectionHeader title="iOS backup structure" sub="iTunes, encrypted iTunes, iCloud, and GrayKey — what each contains and limitations" />
+      <ToolsUsedHere tools={sectionTools.backups ?? []} />
 
       <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-xs font-mono text-zinc-500 space-y-1">
         <div className="text-zinc-400 font-semibold mb-1">Seizure priority</div>
@@ -252,6 +256,7 @@ export function SQLiteDatabases() {
   return (
     <div>
       <SectionHeader title="SQLite databases" sub="Key databases, tables, columns, and epoch conversion notes" />
+      <ToolsUsedHere tools={sectionTools.sqlite ?? []} />
 
       <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-xs font-mono space-y-1 text-zinc-500">
         <div className="text-zinc-400 font-semibold mb-1">Epoch conversions</div>
@@ -323,6 +328,7 @@ export function AppArtifactPaths() {
   return (
     <div>
       <SectionHeader title="App artifact paths" sub="WhatsApp, Signal, Telegram, Snapchat, and more — database locations and encryption status" />
+      <ToolsUsedHere tools={sectionTools.apps ?? []} />
 
       <div className="flex gap-3 mb-5 flex-wrap">
         <input placeholder="Search app name or bundle ID..." value={search}
@@ -389,6 +395,7 @@ export function ADBReference() {
   return (
     <div>
       <SectionHeader title="ADB command reference" sub="Setup, device info, file ops, app enumeration, logs, and forensic data extraction" />
+      <ToolsUsedHere tools={sectionTools.adb ?? []} />
 
       <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-5 text-xs font-mono text-zinc-500 space-y-1">
         <div className="text-zinc-400 font-semibold mb-1">Prerequisites</div>

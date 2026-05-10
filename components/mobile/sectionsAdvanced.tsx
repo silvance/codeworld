@@ -7,6 +7,8 @@ import {
   mobileIOCs, mobileAntiForensics, jtagWorkflow,
   ufedExtractionTypes, ufedWorkflow,
 } from '@/lib/mobile/data'
+import { sectionTools } from '@/lib/mobile/sectionTools'
+import ToolsUsedHere from '@/components/ToolsUsedHere'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -66,6 +68,7 @@ export function IOSUnifiedLog() {
     <div>
       <SH title="iOS Unified Log forensics"
         sub="sysdiagnose acquisition · app execution · network activity · security events · jailbreak indicators" />
+      <ToolsUsedHere tools={sectionTools.ioslog ?? []} />
       <div className="bg-blue-950/20 border border-blue-900/30 rounded p-3 mb-5 text-xs font-mono text-blue-400">
         Trigger sysdiagnose immediately on seizure — log buffers are volatile and overwrite. Hold Volume Up + Volume Down + Side button for 1.5s. Collect from Settings → Privacy → Analytics before rebooting.
       </div>
@@ -108,6 +111,7 @@ export function AndroidLogs() {
     <div>
       <SH title="Android logcat & tombstones"
         sub="Logcat buffers · crash tombstones · Dropbox events · package history · permission audit · network stats" />
+      <ToolsUsedHere tools={sectionTools.androidlog ?? []} />
       <div className="flex flex-wrap gap-1.5 mb-5">
         {cats.map(c => (
           <button key={c} onClick={() => setCatFilter(c)}
@@ -146,6 +150,7 @@ export function CloudExtractionSection() {
     <div>
       <SH title="Cloud extraction reference"
         sub="iCloud · Google · Samsung Cloud · WhatsApp backup — what you get, legal process, retention, and tools" />
+      <ToolsUsedHere tools={sectionTools.cloud ?? []} />
       <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400">
         ⚠ Send preservation holds to providers BEFORE device is seized or wiped — providers auto-delete data on account closure. iCloud Advanced Data Protection (iOS 16.2+) and WhatsApp E2E backup fundamentally limit server-side collection.
       </div>
@@ -204,6 +209,7 @@ export function AppDeepDivesSection() {
     <div>
       <SH title="App-specific deep dives"
         sub="WhatsApp · Signal · Telegram · Snapchat · Instagram — schemas, deleted recovery, encryption, server retention" />
+      <ToolsUsedHere tools={sectionTools.appdeep ?? []} />
       <div className="flex flex-wrap gap-1.5 mb-5">
         {appDeepDives.map(a => (
           <button key={a.app} onClick={() => { setActive(a.app); setDbIndex(0) }}
@@ -290,6 +296,7 @@ export function LocationForensics() {
     <div>
       <SH title="Location forensics"
         sub="iOS Significant Locations · KnowledgeC · Google Timeline · cell towers · WiFi geolocation" />
+      <ToolsUsedHere tools={sectionTools.location ?? []} />
       <div className="space-y-2">
         {locationArtifacts.map(a => (
           <div key={a.name} className="border border-zinc-800 rounded overflow-hidden">
@@ -348,6 +355,7 @@ export function CommCorrelation() {
     <div>
       <SH title="Communication artifact correlation"
         sub="SMS/iMessage · call logs (iOS + Android) · iMessage identity linking — schemas, queries, cross-artifact chains" />
+      <ToolsUsedHere tools={sectionTools.comms ?? []} />
       <div className="flex flex-wrap gap-1.5 mb-5">
         {commArtifacts.map(a => (
           <button key={a.type} onClick={() => setActive(a.type)}
@@ -406,6 +414,7 @@ export function MobileMalware() {
     <div>
       <SH title="Mobile malware & integrity indicators"
         sub="iOS jailbreak · iOS stalkerware · Android root · Android stalkerware/malicious APK — IOCs and detection" />
+      <ToolsUsedHere tools={sectionTools.malware ?? []} />
       <div className="flex gap-2 mb-5">
         {['ALL', 'iOS', 'Android'].map(p => (
           <button key={p} onClick={() => setPlatFilter(p)}

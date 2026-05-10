@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react'
 import { readInitialQueryParam } from "@/lib/queryParam"
 import { ports, wiresharkFilters, nmapCommands, protocols, attackSignatures } from '@/lib/network/data'
+import { sectionTools } from '@/lib/network/sectionTools'
+import ToolsUsedHere from '@/components/ToolsUsedHere'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -176,6 +178,7 @@ export function NmapReference() {
   return (
     <div>
       <SH title="Nmap scan reference" sub="Host discovery, port scanning, service detection, NSE scripts, timing, evasion, output, and common combos" />
+      <ToolsUsedHere tools={sectionTools.nmap ?? []} />
       <div className="flex gap-3 mb-4 flex-wrap">
         <input placeholder="Flag, description..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
         <select value={cat} onChange={e => setCat(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none">
@@ -285,6 +288,7 @@ export function AttackSigs() {
   return (
     <div>
       <SH title="Network attack signatures" sub="Reconnaissance, credential attacks, exploitation, DoS, covert channels, C2 beaconing — indicators and mitigations" />
+      <ToolsUsedHere tools={sectionTools.attacks ?? []} />
       <div className="flex gap-3 mb-5 flex-wrap">
         <select value={cat} onChange={e => setCat(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none">
           {cats.map(c => <option key={c} value={c}>{c}</option>)}
