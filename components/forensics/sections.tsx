@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { readInitialQueryParam } from "@/lib/queryParam"
+import { externalHref } from '@/lib/url'
 import {
   windowsEventIDs, registryHives, execArtifacts, usbArtifacts,
   lnkArtifacts, browserArtifacts, linuxArtifacts, volatilityPlugins,
@@ -497,7 +498,19 @@ export function ToolCheatSheets() {
       <div className="bg-zinc-900/40 border border-zinc-800 rounded p-4 mb-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <div className="text-sm font-mono font-semibold text-zinc-100">{tool.tool}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-sm font-mono font-semibold text-zinc-100">{tool.tool}</div>
+              {tool.url && (
+                <a
+                  href={externalHref(tool.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-mono text-blue-400 hover:text-blue-300 hover:underline"
+                >
+                  Visit ↗
+                </a>
+              )}
+            </div>
             <div className="text-xs font-mono text-zinc-500 mt-0.5">{tool.purpose}</div>
           </div>
           <Badge text={`v${tool.version}`} cls="bg-zinc-800 text-zinc-500" />

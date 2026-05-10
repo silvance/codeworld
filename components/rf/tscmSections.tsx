@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { readInitialQueryParam } from "@/lib/queryParam"
+import { externalHref } from '@/lib/url'
 import {
   sdrDevices, sweepMethodology, physicalIndicators, modulations,
   counterSurvIndicators, bugFrequencies, tscmTools, antennaTypes, linkBudgetFormulas,
@@ -74,6 +75,12 @@ export function SDRReference() {
                   <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Software</div>
                   <div className="flex flex-wrap gap-1.5">{d.software.map(s => <Badge key={s} text={s} cls="bg-zinc-800 text-zinc-400" />)}</div>
                 </div>
+                {d.url && (
+                  <a href={externalHref(d.url)} target="_blank" rel="noopener noreferrer"
+                     className="inline-block text-[11px] font-mono text-blue-400 hover:text-blue-300 hover:underline">
+                    Visit project ↗
+                  </a>
+                )}
               </div>
             )}
           </div>
@@ -418,6 +425,12 @@ export function TSCMToolRef() {
                   <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">TSCM role</div>
                   <p className="text-[11px] font-mono text-blue-400">{t.tscmRole}</p>
                 </div>
+                {t.url && (
+                  <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer"
+                     className="inline-block text-[11px] font-mono text-blue-400 hover:text-blue-300 hover:underline">
+                    Visit manufacturer ↗
+                  </a>
+                )}
               </div>
             )}
           </div>

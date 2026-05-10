@@ -485,6 +485,7 @@ export interface ToolSheet {
   version: string
   purpose: string
   install: string
+  url?: string
   commands: ToolCommand[]
 }
 
@@ -494,6 +495,7 @@ export const toolSheets: ToolSheet[] = [
     version: '2.x',
     purpose: 'Memory forensics framework',
     install: 'pip install volatility3  OR  git clone + python vol.py',
+    url: 'https://github.com/volatilityfoundation/volatility3',
     commands: [
       { cmd: 'vol -f mem.raw windows.info',                             description: 'Identify OS / symbol table' },
       { cmd: 'vol -f mem.raw windows.pslist',                           description: 'List processes (EPROCESS list)' },
@@ -518,6 +520,7 @@ export const toolSheets: ToolSheet[] = [
     version: 'EZ Tools suite',
     purpose: 'Windows artifact parsing (best-in-class for DFIR)',
     install: 'https://ericzimmermann.github.io — download individual tools or Get-ZimmermanTools.ps1',
+    url: 'https://ericzimmermann.github.io',
     commands: [
       { cmd: 'PECmd.exe -f C:\\Windows\\Prefetch\\NOTEPAD.EXE-12345678.pf',         description: 'Parse single prefetch file' },
       { cmd: 'PECmd.exe -d C:\\Windows\\Prefetch --csv C:\\out',                     description: 'Parse all prefetch to CSV' },
@@ -538,6 +541,7 @@ export const toolSheets: ToolSheet[] = [
     version: '4.x',
     purpose: 'GUI digital forensics platform — disk image analysis',
     install: 'https://www.autopsy.com/download/ — Windows installer',
+    url: 'https://www.autopsy.com',
     commands: [
       { cmd: 'New Case → Add Data Source → Disk Image (.E01/.dd/.img)',  description: 'Load forensic image' },
       { cmd: 'Ingest Modules: Run All (or select)',                       description: 'Hash lookup, keyword search, web artifacts, recent activity, EXIF' },
@@ -553,6 +557,7 @@ export const toolSheets: ToolSheet[] = [
     version: '1.x (Kroll Artifact Parser and Extractor)',
     purpose: 'Triage collection and processing — fastest artifact acquisition',
     install: 'https://www.kroll.com/en/services/cyber-risk/incident-response-litigation-support/kroll-artifact-parser-extractor-kape',
+    url: 'https://www.kroll.com/en/services/cyber-risk/incident-response-litigation-support/kroll-artifact-parser-extractor-kape',
     commands: [
       { cmd: 'kape.exe --tsource C: --tdest D:\\triage --target !BasicCollection',           description: 'Collect basic triage artifacts from live C: to D:\\triage' },
       { cmd: 'kape.exe --tsource C: --tdest D:\\triage --target WindowsEventLogs',           description: 'Collect Windows event logs only' },
@@ -567,6 +572,7 @@ export const toolSheets: ToolSheet[] = [
     version: '20230717+',
     purpose: 'Supertimeline generation from disk images',
     install: 'pip install plaso  OR  docker pull log2timeline/plaso',
+    url: 'https://github.com/log2timeline/plaso',
     commands: [
       { cmd: 'log2timeline.py --storage-file output.plaso image.E01',        description: 'Parse image into Plaso storage file' },
       { cmd: 'log2timeline.py --storage-file output.plaso --parsers win7 image.E01', description: 'Parse with Windows 7 parser preset' },
@@ -581,6 +587,7 @@ export const toolSheets: ToolSheet[] = [
     version: '0.7.x',
     purpose: 'Enterprise DFIR — live response, hunting, artifact collection at scale',
     install: 'https://docs.velociraptor.app — single binary, no dependencies',
+    url: 'https://docs.velociraptor.app',
     commands: [
       { cmd: 'velociraptor.exe gui',                                                    description: 'Start single-user GUI mode (local investigation)' },
       { cmd: 'velociraptor.exe artifacts collect Windows.KapeFiles.Targets --output triage.zip', description: 'KAPE-style collection via VQL' },
@@ -596,6 +603,7 @@ export const toolSheets: ToolSheet[] = [
     version: '20.7',
     purpose: 'Disk/image forensics — highly efficient, minimal overhead, extremely feature-dense. Steepest learning curve of any major DFIR tool.',
     install: 'https://x-ways.net — extract ZIP to directory of choice, no installer needed. Portable — runs from USB. Download viewer component separately (\\viewer subdirectory).',
+    url: 'https://x-ways.net',
     commands: [
       // ── Case setup ────────────────────────────────────────────────────────
       { cmd: 'File → New Case → set case folder, investigator name, case number',            description: 'Case metadata goes into all reports. Fill out before adding evidence. Case saved as .xfc file + same-named folder.' },
@@ -766,6 +774,7 @@ export const toolSheets: ToolSheet[] = [
     version: '7.x',
     purpose: 'All-in-one acquisition + processing + analysis — strongest cloud and mobile artifact support',
     install: 'https://www.magnetforensics.com/products/magnet-axiom — license required',
+    url: 'https://www.magnetforensics.com/products/magnet-axiom',
     commands: [
       // AXIOM Process (acquisition + processing)
       { cmd: 'AXIOM Process → New Case → set case path and number',                           description: 'Process handles acquisition and processing; Examine handles analysis — two separate apps' },
