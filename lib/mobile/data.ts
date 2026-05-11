@@ -1842,6 +1842,180 @@ export const smartwatchCIConsiderations = [
   },
 ]
 
+// ─── Push tokens (artifact locations) ────────────────────────────────────────
+// Push tokens — APNs, FCM, FBNS, etc. — are an under-parsed mobile artifact.
+// Axiom and Cellebrite extract the raw plist/sqlite values but rarely identify
+// or explain them. This reference lists where push tokens land on disk so an
+// analyst can pull them out by hand and feed them into the Push Token
+// Identifier tool.
+
+export interface PushTokenLocation {
+  platform: 'iOS' | 'Android'
+  provider: string
+  app: string
+  path: string
+  format: string
+  acquisition: string
+  ciValue: string
+  notes: string
+}
+
+export const pushTokenLocations: PushTokenLocation[] = [
+  // ── iOS / APNs ─────────────────────────────────────────────────────────────
+  {
+    platform: 'iOS',
+    provider: 'APNs',
+    app: 'System (per-app device tokens)',
+    path: '/private/var/mobile/Library/SpringBoard/PushStore/<bundle-id>.pushstore',
+    format: 'Binary plist — keychain-style. Contains "device-token" (NSData, 32 bytes), "topics", and registration timestamp.',
+    acquisition: 'File-system extraction (Cellebrite Advanced Logical, AXIOM full FS, checkm8 dump). Standard iTunes backup omits PushStore.',
+    ciValue: 'Per-app APNs device token + the topics (bundle IDs / extension IDs) the app registered for. Confirms the device was registered for push for that app at extraction time.',
+    notes: 'Cellebrite PA shows the file in the file tree but does not parse it; export the .pushstore and run plistutil / Xcode plutil -p. Token bytes appear as <hex> blob; render with xxd or read with python: plistlib.loads(open(p,"rb").read())["device-token"].hex().',
+  },
+  {
+    platform: 'iOS',
+    provider: 'APNs',
+    app: 'apsd cache',
+    path: '/private/var/mobile/Library/Caches/com.apple.apsd/',
+    format: 'apsd is the APNs daemon. Caches contain connection-state plists; recent versions also store registration ledgers in apsd.db.',
+    acquisition: 'File-system extraction.',
+    ciValue: 'apsd.db (SQLite, where present) tracks topic registration → bundle ID. Useful for proving an app was actively receiving push at a given time.',
+    notes: 'Schema changes across iOS versions; manually open in DB Browser and inspect tables (incoming_messages, settings, topics). Unified Log "apsd" subsystem is the live equivalent — see iOS Unified Log section.',
+  },
+  {
+    platform: 'iOS',
+    provider: 'APNs / app',
+    app: 'App Documents / Library (app-stored copy)',
+    path: '/private/var/mobile/Containers/Data/Application/<UUID>/Library/Preferences/<bundle-id>.plist',
+    format: 'NSUserDefaults plist. Many apps store the APNs token they received as a string under a key like "device_token", "apns_token", "pushToken".',
+    acquisition: 'iTunes backup (encrypted preferred), file-system extraction.',
+    ciValue: 'Confirms which token the app saw and likely sent to its backend — anchors backend-side logs (e.g. server records) to the device.',
+    notes: 'Token is often hex-encoded (64 chars) but some apps store base64 or a hex-with-spaces variant. Check the app keychain item too: <bundle-id>.com.apple.push-token (Cellebrite Keychain.xml).',
+  },
+
+  // ── iOS / FBNS (Facebook / Instagram / WhatsApp) ──────────────────────────
+  {
+    platform: 'iOS',
+    provider: 'FBNS',
+    app: 'Facebook / Messenger / Instagram',
+    path: '/private/var/mobile/Containers/Data/Application/<UUID>/Library/Preferences/com.facebook.<app>.plist · Library/Caches/fbns/',
+    format: 'NSUserDefaults plist key "FBNSDeviceTokenPreferencesKey" or "fbns_token". MQTT-based; often a long base64 string plus a numeric MQTT user ID.',
+    acquisition: 'File-system extraction. iTunes backup excludes the Caches/fbns directory.',
+    ciValue: 'Anchors a Facebook / Instagram session to the physical device on the FBNS side. Combined with com.facebook.fbns.device-id, lets investigators correlate device → account on a Facebook/Meta legal-process return.',
+    notes: 'Neither AXIOM nor Cellebrite identifies these as push tokens — they appear as opaque preference values. The companion "fbns/" cache contains MQTT broker state and last-connect timestamps.',
+  },
+  {
+    platform: 'iOS',
+    provider: 'APNs (proxied to FBNS bootstrap)',
+    app: 'WhatsApp',
+    path: '/private/var/mobile/Containers/Data/Application/<UUID>/Library/Preferences/group.net.whatsapp.WhatsApp.shared.plist',
+    format: 'Plist key includes a "voipToken" (PushKit) and a regular "token". Hex strings, 64 chars each.',
+    acquisition: 'File-system extraction.',
+    ciValue: 'WhatsApp uses PushKit (VoIP push) for incoming-call wake; a separate APNs token handles message notifications. Both anchor the install to the device.',
+    notes: 'PushKit voip tokens are operationally identical to standard APNs tokens but issued against the VoIP topic. Cellebrite groups these under WhatsApp artifacts but does not extract or label the token specifically.',
+  },
+
+  // ── Android / FCM ──────────────────────────────────────────────────────────
+  {
+    platform: 'Android',
+    provider: 'FCM (Google Play services)',
+    app: 'System (Google Play services)',
+    path: '/data/data/com.google.android.gms/databases/google_app_measurement_local.db · /data/data/com.google.android.gms/files/app_chimera/',
+    format: 'GMS keeps registration metadata across multiple SQLite DBs. The actual FCM Instance ID lives in com.google.android.gms shared_prefs.',
+    acquisition: 'Full FS / physical extraction (root, EDL, Pixel checkm8-equivalent). Standard ADB backup excludes /data/data/com.google.android.gms.',
+    ciValue: 'Establishes the device\'s Firebase Instance ID — the key that maps every per-app FCM token back to the device. Critical pivot for cross-app device tracking.',
+    notes: 'Without root, the GMS data is effectively unobtainable. AXIOM Mobile + EDL exploits or Cellebrite EDL clients are the practical path on Android.',
+  },
+  {
+    platform: 'Android',
+    provider: 'FCM',
+    app: 'Per-app SharedPreferences',
+    path: '/data/data/<package>/shared_prefs/*.xml — keys often named "fcm_token", "registration_id", "push_token", "gcm_token"',
+    format: 'XML. Token format: <INSTANCE_ID>:APA91b<base64-body>. The :APA91b separator is the unique signature.',
+    acquisition: 'Full FS extraction (root or backup-set on debuggable apps). adb backup -f works on apps with android:allowBackup=true.',
+    ciValue: 'Per-app FCM token — proves the app registered for push and what backend identifier the app stored locally. Pair with FCM Instance ID from GMS to confirm device identity.',
+    notes: 'ALEAPP currently has limited push-token coverage. grep -r "APA91b" /path/to/extraction is the fastest way to enumerate every FCM token across all apps in one pass.',
+  },
+  {
+    platform: 'Android',
+    provider: 'FCM',
+    app: 'App SQLite DBs',
+    path: '/data/data/<package>/databases/*.db — tables named "registration", "subscriptions", "device_tokens"',
+    format: 'SQLite. Token typically in TEXT column matching :APA91b pattern.',
+    acquisition: 'Full FS extraction.',
+    ciValue: 'Some apps (Telegram, Discord, custom enterprise apps) store the token in their app database rather than SharedPreferences. Worth grepping the raw .db files.',
+    notes: 'Use sqlite3 .db ".schema" then SELECT … WHERE column LIKE \'%APA91b%\'. Recover deleted rows with undark or commercial recovery for tokens that have been rotated.',
+  },
+
+  // ── Android / FBNS ─────────────────────────────────────────────────────────
+  {
+    platform: 'Android',
+    provider: 'FBNS',
+    app: 'Facebook / Messenger / Instagram / WhatsApp',
+    path: '/data/data/com.facebook.{katana,orca,instagram} · /data/data/com.whatsapp/shared_prefs/com.whatsapp_preferences.xml',
+    format: 'SharedPreferences XML keys: "fbns/token", "device_id_token". Long alphanumeric strings.',
+    acquisition: 'Full FS extraction (root). Meta apps explicitly disable adb backup.',
+    ciValue: 'FBNS device tokens. Pair with the Meta-issued device ID stored alongside to anchor account ↔ device on legal-process return.',
+    notes: 'WhatsApp-on-Android also uses FCM for primary push but FBNS for some channels — both tokens may be present. Inspect /data/data/com.whatsapp/files/ for additional registration artifacts.',
+  },
+
+  // ── Android / OEM push services ────────────────────────────────────────────
+  {
+    platform: 'Android',
+    provider: 'Huawei HMS Push',
+    app: 'Apps targeting Huawei devices (no Google Play)',
+    path: '/data/data/<package>/shared_prefs/com.huawei.hms.client.appid.xml · /data/data/com.huawei.hwid/',
+    format: 'SharedPreferences XML. Token is a long opaque string; format differs from FCM (no :APA91b prefix).',
+    acquisition: 'Full FS extraction.',
+    ciValue: 'On Huawei AOSP-without-GMS devices (post-2019 EMUI/HarmonyOS), HMS Push replaces FCM. Identify by HMS Core package presence.',
+    notes: 'Push Token Identifier tool will flag these as "possible FBNS / proprietary" because format-only detection can\'t separate HMS from FBNS. Look at the source app and the presence of com.huawei.hms.* packages.',
+  },
+  {
+    platform: 'Android',
+    provider: 'Xiaomi MiPush',
+    app: 'Apps targeting Xiaomi MIUI',
+    path: '/data/data/<package>/shared_prefs/mipush_*.xml · /data/data/com.xiaomi.xmsf/',
+    format: 'XML. Token field commonly "regid".',
+    acquisition: 'Full FS extraction.',
+    ciValue: 'MiPush is widely used on Chinese-market Xiaomi devices, sometimes alongside FCM. Presence of com.xiaomi.xmsf indicates MiPush is in use.',
+    notes: 'Xiaomi devices for non-China markets typically also register on FCM; expect both tokens in those cases.',
+  },
+
+  // ── Cross-platform wrappers ───────────────────────────────────────────────
+  {
+    platform: 'iOS',
+    provider: 'OneSignal / Airship / Braze (SDK wrappers)',
+    app: 'Apps using OneSignal/Airship/Braze SDKs',
+    path: 'iOS: Library/Preferences/<bundle-id>.plist keys "OneSignal-PlayerId", "ua.deviceTags". Android: shared_prefs/OneSignal.xml, com.urbanairship.preferences.xml.',
+    format: 'OneSignal "player ID" is a UUIDv4. Airship "channel ID" is a UUID. The underlying APNs/FCM token is held by the SDK vendor.',
+    acquisition: 'iTunes backup (iOS) / FS extraction (Android).',
+    ciValue: 'These IDs are the only client-side handle for SDK-vendor-managed push. Lookup of the underlying APNs/FCM token requires legal process to the SDK vendor.',
+    notes: 'A bare UUID by itself isn\'t identifiable as a push token from format alone — use the source-app context to attribute. Push Token Identifier tool flags UUIDs as "OneSignal Player ID or generic UUIDv4 — confirm by context".',
+  },
+  {
+    platform: 'iOS',
+    provider: 'Expo (React Native)',
+    app: 'Apps built with Expo SDK',
+    path: 'iOS: <UUID>/Library/Preferences/host.exp.Exponent.plist (or <bundle-id>.plist for standalone). Android: /data/data/<package>/shared_prefs/host.exp.exponent.xml.',
+    format: 'String wrapper: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]',
+    acquisition: 'iTunes backup, FS extraction.',
+    ciValue: 'Expo proxies push delivery through expo.dev. Recovering the underlying APNs/FCM target requires the Expo project credentials or legal process to Expo.',
+    notes: 'Push Token Identifier tool detects the ExponentPushToken[ prefix as High confidence.',
+  },
+
+  // ── AWS SNS endpoint ARNs (server-side) ───────────────────────────────────
+  {
+    platform: 'iOS',
+    provider: 'AWS SNS Platform Endpoint',
+    app: 'Apps using SNS Mobile Push',
+    path: 'Found in app SQLite / preferences as a configured "endpoint ARN" alongside the raw APNs/FCM token.',
+    format: 'arn:aws:sns:<region>:<account>:endpoint/APNS|GCM/<app>/<UUID>',
+    acquisition: 'FS extraction. Sometimes only present in server-side / cloud extraction (not on device).',
+    ciValue: 'The ARN is the server-side handle. With AWS access (or the underlying CreatePlatformEndpoint CloudTrail event), the ARN resolves to the original APNs/FCM token.',
+    notes: 'Often the most useful artifact for backend-side correlation when you have access to the corresponding AWS account. Push Token Identifier tool detects the ARN format.',
+  },
+]
+
 // ─── Search index entries ────────────────────────────────────────────────────
 
 import type { RawSearchEntry } from '@/lib/search/types'
@@ -1864,4 +2038,5 @@ export const mobileSearchEntries: RawSearchEntry[] = [
   ...jtagWorkflow.map<RawSearchEntry>(j => ({ title: j.step, aka: `JTAG · ${j.phase}`, subtitle: j.detail, section: 'jtag' })),
   ...ufedExtractionTypes.map<RawSearchEntry>(u => ({ title: u.type, aka: 'UFED / Cellebrite', subtitle: u.description, section: 'ufed' })),
   ...smartwatchPlatforms.map<RawSearchEntry>(s => ({ title: s.name, aka: `Smartwatch · ${s.os}`, subtitle: s.devices, section: 'smartwatch' })),
+  ...pushTokenLocations.map<RawSearchEntry>(p => ({ title: `${p.app} (${p.provider})`, aka: `${p.platform} · push token`, subtitle: p.path, section: 'pushtokens' })),
 ]

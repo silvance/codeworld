@@ -1,6 +1,7 @@
 export type ToolId =
   | 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'email'
   | 'entropy' | 'mac' | 'uuid' | 'chars' | 'codeopt' | 'explain' | 'jsonyaml' | 'urlparser' | 'cron'
+  | 'pushtoken'
 
 export interface NavItem { id: ToolId; label: string; sub: string; icon: string }
 
@@ -22,6 +23,7 @@ export const NAV: NavItem[] = [
   { id: 'jsonyaml',  label: 'JSON ↔ YAML',        sub: 'Convert between formats — local',          icon: '⇄'  },
   { id: 'urlparser', label: 'URL parser',         sub: 'Scheme · host · params · fragment',        icon: '🔗' },
   { id: 'cron',      label: 'Cron visualizer',    sub: 'Schedule → plain English + next runs',     icon: '🕒' },
+  { id: 'pushtoken', label: 'Push token ID',      sub: 'APNs · FCM · WNS · SNS · Expo · OneSignal', icon: '📲' },
 ]
 
 export const VALID_TOOL_IDS: ToolId[] = NAV.map(n => n.id)
