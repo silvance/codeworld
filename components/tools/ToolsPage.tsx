@@ -297,9 +297,24 @@ export default function ToolsPage() {
             TOOLS[active]
           ) : (
             <div className="max-w-4xl mx-auto px-6 py-8">
-              <div className="mb-5 pb-4 border-b border-zinc-800">
-                <h1 className="text-sm font-mono font-semibold text-zinc-100 mb-0.5">{current.label}</h1>
-                <p className="text-[11px] font-mono text-zinc-600">{current.sub}</p>
+              <div className="mb-5 pb-4 border-b border-zinc-800 flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-sm font-mono font-semibold text-zinc-100 mb-0.5">{current.label}</h1>
+                  <p className="text-[11px] font-mono text-zinc-600">{current.sub}</p>
+                </div>
+                {current.script && (
+                  <a
+                    href={current.script}
+                    download={current.script.replace(/^\//, '')}
+                    title="Download a standalone Python version of this tool — runs offline on air-gapped systems."
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-700 rounded hover:border-zinc-500 hover:text-zinc-200 transition-colors flex-shrink-0"
+                  >
+                    <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current" aria-hidden="true">
+                      <path d="M8 12L3 7h3V1h4v6h3L8 12zM1 14h14v1H1z"/>
+                    </svg>
+                    .py
+                  </a>
+                )}
               </div>
               {TOOLS[active]}
             </div>
