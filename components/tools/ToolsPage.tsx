@@ -316,6 +316,24 @@ export default function ToolsPage() {
                   </a>
                 )}
               </div>
+              {current.script && current.cliExamples && (
+                <details className="mb-5 border border-zinc-800 rounded bg-zinc-900/20">
+                  <summary className="cursor-pointer select-none px-3 py-2 text-[11px] font-mono text-zinc-400 hover:text-zinc-200 transition-colors">
+                    How to run offline / on an air-gapped system
+                  </summary>
+                  <div className="px-3 pb-3 pt-1 space-y-2 text-[11px] font-mono text-zinc-400 leading-relaxed">
+                    <p><span className="text-zinc-600">1.</span> Click the <code className="text-zinc-200">.py</code> button above to download <code className="text-zinc-200">{current.script.replace(/^\//, '')}</code>.</p>
+                    <p><span className="text-zinc-600">2.</span> Move it to the target machine. Needs Python 3.6+ (<code className="text-zinc-200">python3 --version</code>). Stdlib only — no <code className="text-zinc-200">pip install</code> required.</p>
+                    <p><span className="text-zinc-600">3.</span> Run it. Examples:</p>
+                    <ul className="space-y-1 pl-4">
+                      {current.cliExamples.map(ex => (
+                        <li key={ex}><code className="text-emerald-400 break-all">$ {ex}</code></li>
+                      ))}
+                    </ul>
+                    <p className="text-zinc-600 pt-1">Add <code className="text-zinc-300">--json</code> to any command for machine-readable output. Windows: use <code className="text-zinc-300">python</code> or <code className="text-zinc-300">py</code> if <code className="text-zinc-300">python3</code> isn&apos;t on PATH.</p>
+                  </div>
+                </details>
+              )}
               {TOOLS[active]}
             </div>
           )}
