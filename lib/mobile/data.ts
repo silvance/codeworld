@@ -2016,6 +2016,356 @@ export const pushTokenLocations: PushTokenLocation[] = [
   },
 ]
 
+// ─── Deep links / universal links ────────────────────────────────────────────
+// What proves a URL was opened in a particular app, and which app handled
+// a given web → app handoff. Under-parsed by AXIOM / Cellebrite.
+
+export interface DeepLinkArtifact {
+  platform: 'iOS' | 'Android'
+  category: string
+  name: string
+  path: string
+  description: string
+  ciValue: string
+  notes: string
+}
+
+export const deepLinkArtifacts: DeepLinkArtifact[] = [
+  // iOS Universal Links
+  {
+    platform: 'iOS',
+    category: 'Universal Links (AASA)',
+    name: 'Cached AASA files',
+    path: '/private/var/mobile/Library/SharedWebCredentials/* (legacy) · swcd cache: /private/var/db/swcd/',
+    description: 'Apple-App-Site-Association JSON — fetched from each domain that supports Universal Links. Lists which paths on the domain hand off to which app bundle ID.',
+    ciValue: 'Proves the device fetched AASA for a given domain (i.e., the user navigated to or installed an app that claims that domain). Maps domain ↔ bundle ID for downstream link analysis.',
+    notes: 'swcd = Shared Web Credentials Daemon. Look at swcd cache + Unified Log subsystem "swcd" for fetch events with timestamps.',
+  },
+  {
+    platform: 'iOS',
+    category: 'Universal Links (AASA)',
+    name: 'Universal Link routing log',
+    path: 'Unified Log: subsystem == "com.apple.swcd" or process == "swcd" / "biomesyncd"',
+    description: 'When a Universal Link is tapped, swcd resolves the domain and hands the URL to the registered app. Logged with the URL and the recipient bundle ID.',
+    ciValue: 'Reconstructs which URL was tapped, which app received it, and when. Often the only way to prove a specific phishing URL was opened in a specific app.',
+    notes: 'Pull via sysdiagnose → log show --predicate \'subsystem == "com.apple.swcd"\'. Logs evict — capture early.',
+  },
+  {
+    platform: 'iOS',
+    category: 'Custom URL schemes',
+    name: 'LSApplicationQueriesSchemes / CFBundleURLTypes',
+    path: '<bundle-id>.app/Info.plist (in the app bundle)',
+    description: 'Info.plist declares which custom schemes the app registers (CFBundleURLTypes) and which other-app schemes it queries (LSApplicationQueriesSchemes).',
+    ciValue: 'Static enumeration of how an app interacts with other apps via URL schemes. E.g., a banking app querying for malware C2 schemes is suspicious.',
+    notes: 'Read with plutil -p Info.plist. Combine with runtime URL-open events from Unified Log subsystem "com.apple.LaunchServices".',
+  },
+
+  // Android App Links
+  {
+    platform: 'Android',
+    category: 'App Links',
+    name: 'Domain verification state',
+    path: '/data/system/users/0/domain-verification.xml · /data/system/users/0/package-restrictions.xml',
+    description: 'Tracks every package that declared autoVerify="true" on an intent-filter, the domains it claims, and the verification result (verified / askEveryTime / never).',
+    ciValue: 'Proves which app would handle a given URL by default. Verified state shows the asset-links.json check succeeded — strong evidence of legitimate domain ownership.',
+    notes: 'Pre-Android 12: PackageManager-side verification. Android 12+: Domain Verification API. Check both XML files; pre-12 devices may only have package-restrictions.xml.',
+  },
+  {
+    platform: 'Android',
+    category: 'App Links',
+    name: 'pm get-app-links query',
+    path: 'adb shell pm get-app-links --user 0 [package]',
+    description: 'Live query of the per-user app-link routing table. Output shows each domain a package handles and the verification status.',
+    ciValue: 'On a powered, unlocked device this is the fastest way to enumerate which app handles which URL host. Cross-reference against package-restrictions.xml for historical state.',
+    notes: 'Add a package name to scope; omit for all packages. ADB only — no equivalent in Cellebrite/AXIOM extraction reports.',
+  },
+  {
+    platform: 'Android',
+    category: 'App Links',
+    name: 'Intent resolution logs',
+    path: 'logcat IntentFilterIntentSvc / PackageManager events',
+    description: 'When a URL is shared / clicked, PackageManager logs the resolution attempt and chosen handler. Captured by logcat (volatile) and Dropbox event log.',
+    ciValue: 'Time-correlated proof of which app actually opened a given URL. Combines with the deep-link payload to reconstruct user navigation.',
+    notes: 'adb logcat -d | grep -i "intentfilter\\|app-link". For historical events: adb shell dumpsys dropbox --print.',
+  },
+  {
+    platform: 'Android',
+    category: 'Custom URL schemes',
+    name: 'Manifest intent-filters',
+    path: 'AndroidManifest.xml inside the APK · adb shell dumpsys package <pkg> | grep -A5 intent',
+    description: 'Static declaration of which schemes (deeplink://, https://, etc.) and hosts an app handles. Required reading for understanding how an app receives URLs.',
+    ciValue: 'Identifies attack surface (deep link → activity) and lets you reverse a captured URL back to which activity it triggers.',
+    notes: 'Pull APK with adb shell pm path <pkg> → adb pull. Use apktool or aapt dump xmltree for readable XML.',
+  },
+]
+
+// ─── App group containers / shared keychain (iOS-heavy) ──────────────────────
+// Where messaging apps and their extensions actually share data — often
+// invisible to per-app parsers because the data lives outside the main
+// app container.
+
+export interface AppGroupArtifact {
+  platform: 'iOS' | 'Android'
+  app: string
+  groupId: string
+  path: string
+  contents: string[]
+  ciValue: string
+  notes: string
+}
+
+export const appGroupArtifacts: AppGroupArtifact[] = [
+  {
+    platform: 'iOS',
+    app: 'WhatsApp',
+    groupId: 'group.net.whatsapp.WhatsApp.shared',
+    path: '/private/var/mobile/Containers/Shared/AppGroup/<UUID>/',
+    contents: ['ChatStorage.sqlite — primary message store', 'Media/ — sent/received attachments', 'Library/Preferences/group.net.whatsapp.WhatsApp.shared.plist — APNs/voipToken, settings', 'Library/Caches/ — image thumbnails'],
+    ciValue: 'WhatsApp\'s real message database lives in the shared group container, NOT in the main app container. Per-app parsers that scan only Containers/Data/Application/<UUID>/ MISS THIS ENTIRELY.',
+    notes: 'Map shared group UUIDs via /private/var/mobile/Library/FrontBoard/applicationState.db (table application_identifier_tab). Cellebrite Advanced Logical and AXIOM full-FS expose the shared container; iTunes backup excludes it.',
+  },
+  {
+    platform: 'iOS',
+    app: 'Signal',
+    groupId: 'group.org.whispersystems.signal.group',
+    path: '/private/var/mobile/Containers/Shared/AppGroup/<UUID>/',
+    contents: ['signal.sqlite (encrypted) — message store', 'Library/Application Support/ — Sender Key state', 'Notification Service Extension cache'],
+    ciValue: 'Same pattern as WhatsApp — the message DB is in the shared group, encrypted with a key in the keychain. Without keychain access the DB is opaque.',
+    notes: 'Decryption requires Signal\'s database key from the keychain (kSecClassGenericPassword, service "org.whispersystems.signal.SignalDatabaseKey"). Only available in keychain-extracted dumps.',
+  },
+  {
+    platform: 'iOS',
+    app: 'Telegram',
+    groupId: 'group.ph.telegra.Telegraph',
+    path: '/private/var/mobile/Containers/Shared/AppGroup/<UUID>/',
+    contents: ['telegram-data/account-* — per-account session + cache', 'postbox/ — Telegram\'s custom KV store with messages, peers, media', 'Notification extension state'],
+    ciValue: 'Telegram\'s postbox is a custom format (not SQLite). Lives in shared group. Multiple accounts → multiple account-* directories under the same shared container.',
+    notes: 'Postbox parsing requires the open-source Telegram source as reference. iLEAPP has partial coverage; for thorough analysis run telegramdumper or analyze postbox files manually.',
+  },
+  {
+    platform: 'iOS',
+    app: 'Apple Mail / Notes / Reminders',
+    groupId: 'group.com.apple.mail · group.com.apple.notes · group.com.apple.reminders',
+    path: '/private/var/mobile/Containers/Shared/AppGroup/<UUID>/',
+    contents: ['Apple\'s built-in apps share data with widgets, watch app, and CloudKit sync via group containers'],
+    ciValue: 'Notes attachments, mail draft data, reminder list state can live here. Useful when the main app DB has been wiped but the widget cache persists.',
+    notes: 'Apple\'s built-in app group IDs use the com.apple.* prefix and are owned by Apple\'s team ID, so they don\'t need explicit entitlements.',
+  },
+  {
+    platform: 'iOS',
+    app: 'Shared Keychain (cross-app sharing)',
+    groupId: 'kSecAttrAccessGroup matching shared group ID or team-ID prefix',
+    path: 'iOS keychain (extracted via Cellebrite Advanced Logical / AXIOM full-FS as Keychain.xml or keychain-backup.plist)',
+    contents: ['Shared keychain items have access group != bundle ID', 'Items shared across apps from same Apple Developer team via team-ID prefix', 'Examples: shared SSO tokens, federated identity, OAuth refresh tokens'],
+    ciValue: 'Shows which apps in the same developer team share credentials. E.g., Google\'s suite (Gmail, Drive, Maps, etc.) shares OAuth tokens via the same team-ID prefix.',
+    notes: 'Use Keychain.xml from extraction; group items by accessGroup field. Missing this is the #1 reason analysts say "I can\'t find the OAuth token" — they\'re looking in the wrong app\'s keychain.',
+  },
+  {
+    platform: 'Android',
+    app: 'Shared user IDs (legacy)',
+    groupId: 'android:sharedUserId="com.example.shared"',
+    path: '/data/data/<each-package-with-same-shared-uid>/ — same UID, mutual access',
+    contents: ['Multiple packages running under one UID can read each other\'s files', 'Used historically by Google\'s suite, Samsung apps, Sony apps'],
+    ciValue: 'Shared UID means a vulnerability in one package can compromise data in all packages sharing that UID. For analysis: enumerate packages by UID via /data/system/packages.xml.',
+    notes: 'Deprecated in Android 10+; new apps cannot use it but legacy installs still do. Check packages.xml: <package ... sharedUser="com.example.shared">.',
+  },
+]
+
+// ─── Install referrer + analytics IDs ────────────────────────────────────────
+// How the app got there (Play Store campaign, sideload, etc.) and which
+// analytics IDs anchor the install to backend / ad-network records.
+
+export interface InstallReferrerArtifact {
+  platform: 'iOS' | 'Android'
+  category: string
+  name: string
+  path: string
+  description: string
+  ciValue: string
+  notes: string
+}
+
+export const installReferrerArtifacts: InstallReferrerArtifact[] = [
+  // ── Android install attribution ──────────────────────────────────────────
+  {
+    platform: 'Android',
+    category: 'Install Referrer',
+    name: 'Play Install Referrer (per-app)',
+    path: '/data/data/<package>/databases/referrer.db · /data/data/<package>/shared_prefs/install_referrer.xml',
+    description: 'Apps that integrate the Play Install Referrer API receive a referrer string on install (utm_source, utm_campaign, utm_content, click ID, install timestamp).',
+    ciValue: 'Proves whether the install came from a specific ad campaign, a specific click ID, or organic Play Store search. Empty / null referrer = sideloaded or organic.',
+    notes: 'Schema differs per app. Common SDK keys: install_referrer, referrer_click_timestamp_seconds, install_begin_timestamp_seconds. AppsFlyer / Adjust / Branch wrap these and store similar tables.',
+  },
+  {
+    platform: 'Android',
+    category: 'Install Referrer',
+    name: 'Play Store install database',
+    path: '/data/data/com.android.vending/databases/library.db · /data/data/com.android.vending/databases/install_referrer.db (legacy)',
+    description: 'Play Store\'s own record of installs. library.db lists installed apps with timestamps; install_referrer.db (older devices) stored referrer strings centrally.',
+    ciValue: 'Independent confirmation of when an app was installed and from where. Survives some app uninstalls (library.db retains "owned" status across uninstall).',
+    notes: 'Requires root or full-FS extraction. ADB backup excludes /data/data/com.android.vending/.',
+  },
+  {
+    platform: 'Android',
+    category: 'Install source',
+    name: 'PackageManager installer attribution',
+    path: 'adb shell pm list packages -i  ·  adb shell dumpsys package <pkg> | grep installerPackageName',
+    description: 'Android records which package "installed" each app — Play Store (com.android.vending), F-Droid, sideload (null/empty), or another app (e.g., Samsung Galaxy Store, vendor stores).',
+    ciValue: 'Sideload detection: installerPackageName == null or == com.android.shell strongly suggests ADB / pm install. Useful for proving / disproving claims about how malware got onto a device.',
+    notes: 'Persisted in /data/system/packages.xml as installer="<pkg>" attribute. Survives reboots; cleared on uninstall+reinstall from a different source.',
+  },
+
+  // ── Analytics / advertising IDs ──────────────────────────────────────────
+  {
+    platform: 'Android',
+    category: 'Advertising ID',
+    name: 'Google Advertising ID (GAID / AAID)',
+    path: '/data/data/com.google.android.gms/shared_prefs/adid_settings.xml',
+    description: 'Per-device advertising identifier issued by Google Play services. UUID format. Resettable by user; set to all-zeros if user opted out (Limit Ad Tracking).',
+    ciValue: 'GAID anchors the device across every app and ad SDK that uses it. Subpoena to ad networks (Google Ads, Meta, etc.) returns ad-impression history keyed by GAID.',
+    notes: 'Look for adid (the actual ID) and adid_settings_bup (backup). Apps that captured GAID also store it in their own SDK preferences — search shared_prefs for the same UUID.',
+  },
+  {
+    platform: 'Android',
+    category: 'Firebase',
+    name: 'Firebase Installation ID (FID)',
+    path: '/data/data/<package>/shared_prefs/com.google.firebase.installations.xml · /data/data/<package>/files/PersistedInstallation.<digits>.json',
+    description: 'Per-app-install identifier issued by Firebase Installations service. Distinct from FCM token and Firebase Instance ID (legacy). Used by Firebase Analytics, Crashlytics, Remote Config.',
+    ciValue: 'Anchors a specific install of an app to all Firebase backend records (analytics events, crashes, A/B test variants) for that install. Independent device-side handle.',
+    notes: 'Rotates on app reinstall or "delete app data." The FID + project ID is the lookup key for legal-process to Firebase / Google Cloud.',
+  },
+  {
+    platform: 'Android',
+    category: 'Third-party SDK IDs',
+    name: 'AppsFlyer / Adjust / Branch / Singular install IDs',
+    path: '/data/data/<package>/shared_prefs/appsflyer-data.xml · adjust_preferences.xml · io.branch.sdk.* · singular-pref-session.xml',
+    description: 'Mobile attribution SDKs each store their own per-install ID, plus the install referrer they captured at install time. Format varies by SDK.',
+    ciValue: 'These IDs are how ad networks attribute installs back to specific ads. Subpoena to AppsFlyer/Adjust returns the full install + post-install event history keyed by these IDs.',
+    notes: 'AppsFlyer key: AppsFlyerKey. Adjust key: adjust_persisted_uuid. Branch key: bnc_identity. Multiple SDKs commonly coexist in one app.',
+  },
+
+  // ── iOS attribution ──────────────────────────────────────────────────────
+  {
+    platform: 'iOS',
+    category: 'Advertising ID',
+    name: 'IDFA (App Tracking Transparency)',
+    path: 'Per-app: <UUID>/Library/Preferences/<bundle-id>.plist (when ATT consent granted) · System: not directly readable',
+    description: 'iOS Advertising Identifier. Since iOS 14.5, requires explicit ATT consent — without it, IDFA returns all-zeros. Stored per-app where the app captured it after consent.',
+    ciValue: 'When present, IDFA is the same cross-app device identifier as Android\'s GAID. Critical for ad-network legal-process correlation.',
+    notes: 'Most modern apps see all-zero IDFA because users decline ATT. Look for any non-zero IDFA in app prefs as evidence the user explicitly consented to tracking.',
+  },
+  {
+    platform: 'iOS',
+    category: 'Advertising ID',
+    name: 'IDFV (Identifier for Vendor)',
+    path: 'Per-app: <UUID>/Library/Preferences/<bundle-id>.plist or app SDK prefs',
+    description: 'Per-app-vendor identifier. Same value across all apps from the same developer (same Apple Team ID). No ATT consent required.',
+    ciValue: 'Anchors all apps from one vendor to the same device. E.g., all Meta apps (Facebook, Messenger, Instagram, WhatsApp) share an IDFV per device.',
+    notes: 'IDFV resets on uninstall of the LAST app from that vendor — reinstalling any one of them gives a new IDFV. Useful timeline marker.',
+  },
+  {
+    platform: 'iOS',
+    category: 'Install attribution',
+    name: 'SKAdNetwork postbacks (privacy-preserving attribution)',
+    path: '/private/var/mobile/Library/com.apple.adservices/ — encrypted; not directly readable',
+    description: 'Apple\'s privacy-preserving ad-attribution framework. Postbacks are signed and sent server-side; client-side artifacts are minimal.',
+    ciValue: 'Limited forensic value on-device. Backend (ad network) holds the postback history. SKAdNetwork attribution lookups require legal process to Apple AND the ad network.',
+    notes: 'iOS 15+ added AdAttributionKit. On-device storage is intentionally opaque — Apple\'s privacy posture excludes meaningful client-side artifacts here.',
+  },
+  {
+    platform: 'iOS',
+    category: 'Third-party SDK IDs',
+    name: 'AppsFlyer / Adjust / Branch / Singular',
+    path: '<UUID>/Library/Preferences/<bundle-id>.plist · <UUID>/Library/Application Support/* (per SDK)',
+    description: 'Same SDKs as Android, same IDs. Plist storage on iOS instead of XML. Format keys identical.',
+    ciValue: 'Cross-platform consistency: an investigator who knows the AppsFlyer ID for a user\'s Android install can correlate to their iOS install if they have both devices.',
+    notes: 'Plist keys: AppsFlyerUID (AppsFlyer), adjust_persisted_uuid (Adjust), io.branch.sdk.device.identity (Branch).',
+  },
+]
+
+// ─── Notification preview cache ──────────────────────────────────────────────
+// System-side cache of notifications delivered to the device. Often
+// preserves message preview text even after the source app's data is wiped.
+
+export interface NotificationCacheArtifact {
+  platform: 'iOS' | 'Android'
+  name: string
+  path: string
+  format: string
+  ciValue: string
+  notes: string
+}
+
+export const notificationCacheArtifacts: NotificationCacheArtifact[] = [
+  // iOS
+  {
+    platform: 'iOS',
+    name: 'UserNotificationsServer.db',
+    path: '/private/var/mobile/Library/UserNotifications/UserNotificationsServer.db',
+    format: 'SQLite. Tables: Record (notification metadata), Records (per-app posted notifications). Stores delivery time, source app, notification title, subtitle, body, attachments.',
+    ciValue: 'Often preserves message preview text from messaging apps even after the source app or message has been deleted. Critical when an OTP / message was screenshotted from the lock screen.',
+    notes: 'iOS 12+. Cellebrite PA / AXIOM extract this file but parse coverage varies by version. SELECT datetime(date+978307200,\'unixepoch\'),title,subtitle,body FROM Record ORDER BY date DESC.',
+  },
+  {
+    platform: 'iOS',
+    name: 'Notification attachments cache',
+    path: '/private/var/mobile/Library/UserNotifications/Attachments/<UUID>/',
+    format: 'Per-notification subdirectories. Contains thumbnail images, audio attachments, and other rich-notification media that was rendered on the lock screen / banner.',
+    ciValue: 'Image previews of sent/received media (Signal/iMessage stickers, photos from notifications) — can persist after app cleanup.',
+    notes: 'Subdirectory mtime ≈ notification delivery time. Cross-reference UUID with UserNotificationsServer.db Record.identifier.',
+  },
+  {
+    platform: 'iOS',
+    name: 'Notification Service Extension data',
+    path: '/private/var/mobile/Containers/Data/PluginKitPlugin/<UUID>/Library/ — per-NSE container',
+    format: 'Each app with a Notification Service Extension (NSE) gets its own container. NSEs decrypt end-to-end-encrypted message previews before the OS displays them.',
+    ciValue: 'Signal, WhatsApp, etc. use NSEs to decrypt push payloads for preview. Cached state in the NSE container can include decryption metadata, sender info, and recent message context.',
+    notes: 'Plugin containers are listed in /private/var/mobile/Library/FrontBoard/applicationState.db. Bundle ID format: <app-bundle-id>.NotificationService or similar.',
+  },
+  {
+    platform: 'iOS',
+    name: 'apsd notification log (Unified Log)',
+    path: 'Unified Log: subsystem == "com.apple.apsd" or process == "apsd" / "usernotificationsd"',
+    format: 'Unified Log entries — push delivery events, topic, recipient bundle ID, payload metadata (size, but not body for E2EE).',
+    ciValue: 'Time-correlates push deliveries with user activity. Even if the notification body is encrypted, the metadata (when, to which app, of what size) is captured.',
+    notes: 'sysdiagnose acquisition required. log show --predicate \'subsystem == "com.apple.apsd"\' --info --debug --last 7d.',
+  },
+
+  // Android
+  {
+    platform: 'Android',
+    name: 'NotificationManagerService logs',
+    path: '/data/system/notification_log.db (older devices) · logcat events buffer · dumpsys notification --noredact',
+    format: 'SQLite (legacy) or in-memory (current). dumpsys output is text. Notification text, sender app, post time, dismiss time.',
+    ciValue: 'NotificationManager logs every posted notification with metadata. dumpsys is live-only; the events buffer and Dropbox event log retain history for hours-to-days.',
+    notes: 'adb shell dumpsys notification --noredact — without --noredact, message text is replaced with [REDACTED]. Requires shell user with READ_LOGS and notification access.',
+  },
+  {
+    platform: 'Android',
+    name: 'NotificationListenerService data',
+    path: '/data/data/<package>/* — for any package with android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',
+    format: 'Each NLS-enabled app stores its own captured notification history. Format depends on the app — SQLite or shared_prefs typical.',
+    ciValue: 'Apps with notification access (parental controls, automation tools, some smartwatches, malicious "notification readers") may have a complete copy of every notification the device received. Stalkerware indicator.',
+    notes: 'Enumerate authorized listeners: adb shell settings get secure enabled_notification_listeners. Cross-reference against installed apps; unfamiliar entries warrant investigation.',
+  },
+  {
+    platform: 'Android',
+    name: 'System UI notification cache',
+    path: '/data/data/com.android.systemui/databases/ · /data/data/com.android.systemui/cache/',
+    format: 'SystemUI caches some notification icons and assets for re-rendering. Schema varies heavily by Android version and OEM.',
+    ciValue: 'Limited but occasionally useful — preserved icons + truncated text fragments after the originating app has been removed.',
+    notes: 'Heavily OEM-customized (Samsung One UI, MIUI, ColorOS each rework SystemUI). Inspect the actual files; don\'t assume AOSP layout.',
+  },
+  {
+    platform: 'Android',
+    name: 'Quick Reply / direct-reply intent cache',
+    path: 'logcat NotificationListenerService events when user replies from notification shade',
+    format: 'Logcat event entries.',
+    ciValue: 'When a user replies to a message from the notification (without opening the app), the reply text and target intent are logged. Can show outgoing message content not yet committed to the app DB.',
+    notes: 'Volatile — logcat ages out within minutes. Capture early or rely on Dropbox event log for delayed retention.',
+  },
+]
+
 // ─── Search index entries ────────────────────────────────────────────────────
 
 import type { RawSearchEntry } from '@/lib/search/types'
@@ -2039,4 +2389,8 @@ export const mobileSearchEntries: RawSearchEntry[] = [
   ...ufedExtractionTypes.map<RawSearchEntry>(u => ({ title: u.type, aka: 'UFED / Cellebrite', subtitle: u.description, section: 'ufed' })),
   ...smartwatchPlatforms.map<RawSearchEntry>(s => ({ title: s.name, aka: `Smartwatch · ${s.os}`, subtitle: s.devices, section: 'smartwatch' })),
   ...pushTokenLocations.map<RawSearchEntry>(p => ({ title: `${p.app} (${p.provider})`, aka: `${p.platform} · push token`, subtitle: p.path, section: 'pushtokens' })),
+  ...deepLinkArtifacts.map<RawSearchEntry>(d => ({ title: d.name, aka: `${d.platform} · ${d.category}`, subtitle: d.path, section: 'deeplinks' })),
+  ...appGroupArtifacts.map<RawSearchEntry>(a => ({ title: a.app, aka: `${a.platform} · app group`, subtitle: a.groupId, section: 'appgroups' })),
+  ...installReferrerArtifacts.map<RawSearchEntry>(i => ({ title: i.name, aka: `${i.platform} · ${i.category}`, subtitle: i.path, section: 'install' })),
+  ...notificationCacheArtifacts.map<RawSearchEntry>(n => ({ title: n.name, aka: `${n.platform} · notification cache`, subtitle: n.path, section: 'notifcache' })),
 ]

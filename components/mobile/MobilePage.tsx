@@ -8,6 +8,7 @@ import {
   IOSUnifiedLog, AndroidLogs, CloudExtractionSection, AppDeepDivesSection,
   LocationForensics, CommCorrelation, MobileMalware, MobileAntiForensicsSection,
   JTAGWorkflow, UFEDReference, PushTokensSection,
+  DeepLinksSection, AppGroupsSection, InstallAttributionSection, NotificationCacheSection,
 } from './sectionsAdvanced'
 import { SmartwatchForensics } from './SmartwatchSection'
 
@@ -27,6 +28,10 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   malware:       <MobileMalware />,
   antiforensics: <MobileAntiForensicsSection />,
   pushtokens:    <PushTokensSection />,
+  deeplinks:     <DeepLinksSection />,
+  appgroups:     <AppGroupsSection />,
+  install:       <InstallAttributionSection />,
+  notifcache:    <NotificationCacheSection />,
   smartwatch:    <SmartwatchForensics />,
   jtag:          <JTAGWorkflow />,
   ufed:          <UFEDReference />,
