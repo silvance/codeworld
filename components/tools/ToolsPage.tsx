@@ -8,7 +8,7 @@ import {
 } from './ToolsExtra'
 import { CodeOptimizer } from './CodeOptimizer'
 import { CodeExplainer } from './CodeExplainer'
-import { JSONYAMLConverter, URLParser, CronVisualizer } from './MicroTools'
+import { JSONYAMLConverter, URLParser, CronVisualizer, PushTokenIdentifier } from './MicroTools'
 import EmailAnalyzer from '../email/EmailAnalyzer'
 
 // ─── Hash tool (inlined here for the sidebar layout) ─────────────────────────
@@ -238,6 +238,7 @@ const TOOLS: Record<ToolId, React.ReactNode> = {
   jsonyaml:  <JSONYAMLConverter />,
   urlparser: <URLParser />,
   cron:      <CronVisualizer />,
+  pushtoken: <PushTokenIdentifier />,
 }
 
 

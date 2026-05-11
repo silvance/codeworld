@@ -5,8 +5,9 @@ import {
   iosLogQueries, androidLogEntries, cloudExtractions,
   appDeepDives, locationArtifacts, commArtifacts,
   mobileIOCs, mobileAntiForensics, jtagWorkflow,
-  ufedExtractionTypes, ufedWorkflow,
+  ufedExtractionTypes, ufedWorkflow, pushTokenLocations,
 } from '@/lib/mobile/data'
+import Link from 'next/link'
 import { sectionTools } from '@/lib/mobile/sectionTools'
 import ToolsUsedHere from '@/components/ToolsUsedHere'
 
@@ -632,6 +633,83 @@ export function UFEDReference() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── 11. Push Tokens (artifact locations) ────────────────────────────────────
+
+export function PushTokensSection() {
+  const [platFilter, setPlatFilter] = useState<'ALL' | 'iOS' | 'Android'>('ALL')
+  const [provFilter, setProvFilter] = useState('ALL')
+
+  const providers = ['ALL', ...Array.from(new Set(pushTokenLocations.map(p => p.provider)))]
+
+  const filtered = useMemo(() => pushTokenLocations.filter(p =>
+    (platFilter === 'ALL' || p.platform === platFilter) &&
+    (provFilter === 'ALL' || p.provider === provFilter)
+  ), [platFilter, provFilter])
+
+  return (
+    <div>
+      <SH title="Push token artifact locations"
+        sub="Where APNs · FCM · FBNS · OEM · SDK push tokens live on disk — and what each is good for in CI" />
+      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400 leading-relaxed">
+        Push tokens are an under-parsed mobile artifact: AXIOM and Cellebrite extract the underlying plist / XML / SQLite values but rarely identify them as push tokens or attribute them to a provider. Once you have the raw value, paste it into the{' '}
+        <Link href="/tools?tool=pushtoken" className="underline hover:text-amber-300">Push Token Identifier</Link>{' '}
+        tool to confirm provider and parse the structure.
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Platform:</span>
+        {(['ALL', 'iOS', 'Android'] as const).map(p => (
+          <button key={p} onClick={() => setPlatFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${platFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>
+            {p}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Provider:</span>
+        {providers.map(p => (
+          <button key={p} onClick={() => setProvFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${provFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((p, i) => (
+          <div key={i} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {platBadge(p.platform)}
+              <Badge text={p.provider} cls="bg-purple-950 text-purple-400" />
+              <span className="text-xs font-mono font-semibold text-zinc-100">{p.app}</span>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Path</div>
+              <code className="text-[11px] font-mono text-emerald-400 break-all">{p.path}</code>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Format</div>
+              <p className="text-xs font-mono text-zinc-400">{p.format}</p>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Acquisition</div>
+              <p className="text-xs font-mono text-zinc-400">{p.acquisition}</p>
+            </div>
+            <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI: </span>
+              <span className="text-xs font-mono text-amber-400">{p.ciValue}</span>
+            </div>
+            <p className="text-[11px] font-mono text-zinc-600">{p.notes}</p>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="text-xs font-mono text-zinc-600">No entries for this filter combination.</p>
+        )}
+      </div>
     </div>
   )
 }
