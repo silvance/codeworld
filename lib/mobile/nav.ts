@@ -1,7 +1,8 @@
 export type SectionId =
   | 'acquisition' | 'artifacts' | 'backups' | 'sqlite' | 'apps' | 'adb'
   | 'ioslog' | 'androidlog' | 'cloud' | 'appdeep' | 'location'
-  | 'comms' | 'malware' | 'antiforensics' | 'pushtokens' | 'smartwatch' | 'jtag' | 'ufed'
+  | 'comms' | 'malware' | 'antiforensics' | 'pushtokens' | 'deeplinks'
+  | 'appgroups' | 'install' | 'notifcache' | 'smartwatch' | 'jtag' | 'ufed'
 
 export interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
 
@@ -21,6 +22,10 @@ export const NAV: NavItem[] = [
   { id: 'malware',       label: 'Malware indicators',   sub: 'Jailbreak · stalkerware · root',      icon: '🦠', group: 'Advanced' },
   { id: 'antiforensics', label: 'Anti-forensics',       sub: 'Factory reset · wipe · encryption',   icon: '🕵', group: 'Advanced' },
   { id: 'pushtokens',    label: 'Push tokens',          sub: 'APNs · FCM · FBNS artifact paths',     icon: '📲', group: 'Advanced' },
+  { id: 'deeplinks',     label: 'Deep / universal links', sub: 'AASA · App Links · URL schemes',     icon: '🔗', group: 'Advanced' },
+  { id: 'appgroups',     label: 'App group containers', sub: 'Shared containers · shared keychain',  icon: '🗃', group: 'Advanced' },
+  { id: 'install',       label: 'Install attribution',  sub: 'Referrer · GAID/IDFA · FID · AppsFlyer', icon: '🪪', group: 'Advanced' },
+  { id: 'notifcache',    label: 'Notification cache',   sub: 'UserNotificationsServer · Android NLS', icon: '🔔', group: 'Advanced' },
   { id: 'smartwatch',    label: 'Smartwatch forensics', sub: 'Apple Watch · Samsung · Fitbit · Garmin', icon: '⌚', group: 'Advanced' },
   { id: 'jtag',          label: 'JTAG / chip-off',      sub: 'Hardware extraction workflow',        icon: '🔧', group: 'Hardware' },
   { id: 'ufed',          label: 'Cellebrite / UFED',    sub: 'Extraction types · PA workflow',      icon: '🏛', group: 'Hardware' },
