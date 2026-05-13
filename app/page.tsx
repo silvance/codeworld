@@ -4,71 +4,70 @@ import TypewriterCycle from '@/components/TypewriterCycle'
 const TOOLS = [
   {
     href: '/tools', label: 'Tools', cmd: 'cd /tools',
-    desc: 'Hashing, encoding, subnet math, timestamps, JWT, certificate decoder, email header analyzer, regex tester, packet decoder, and more. All local — nothing leaves the browser.',
+    desc: 'Hashes, subnets, timestamps, JWT, certs, regex, packet decode — plus a push-token identifier. All local. Several have a single-file Python version you can download.',
     tags: ['Hash', 'Subnet', 'JWT', 'Email Headers', 'Regex', 'Cert'],
-    stat: { label: 'Tools', value: '17' }, color: 'zinc',
+    stat: { label: 'Tools', value: '18' }, color: 'zinc',
   },
   {
     href: '/playground', label: 'Code Playground', cmd: 'cd /playground',
-    desc: 'Live Python, JavaScript, Go, Ruby, and Bash execution. Pre-loaded with cyber-relevant snippets for hash analysis, encoding, subnet math, and more.',
+    desc: 'Live Python, JavaScript, Go, Ruby, and Bash execution. Pre-loaded with cyber-relevant snippets.',
     tags: ['Python', 'JavaScript', 'Go', 'Ruby', 'Bash'],
     stat: { label: 'Languages', value: '5' }, color: 'emerald',
   },
   {
     href: '/osint', label: 'OSINT Reference', cmd: 'cd /osint',
-    desc: 'Search operators, people search sources, sock puppet OPSEC, username enumeration, image OSINT, social media, infrastructure, dark web, and corporate intel.',
+    desc: 'Search operators, username and email enum, image / social / infra workflows — plus a sock-puppet OPSEC playbook and 5 investigation workflows that tie tools together.',
     tags: ['Search Ops', 'People Search', 'Sock Puppet', 'Infra', 'Dark Web'],
     stat: { label: 'Sections', value: '10' }, color: 'coral',
   },
   {
     href: '/pentest', label: 'Pentesting', cmd: 'cd /pentest',
-    desc: 'Recon, scanning, service enumeration, Metasploit, web app testing, password attacks, post-exploitation, Active Directory attacks, and reporting workflows — all in one reference.',
+    desc: 'Recon → AD → reporting. Metasploit, web-app testing, password attacks, post-exploit, AD attack chains.',
     tags: ['Metasploit', 'BloodHound', 'SQLi', 'PrivEsc', 'AD'],
     stat: { label: 'Sections', value: '10' }, color: 'rose',
   },
   {
     href: '/malware', label: 'Malware Analysis', cmd: 'cd /malware',
-    desc: 'PE structure, static analysis workflow, packer signatures, YARA rule writing, C2 beacon patterns, sandbox evasion, anti-analysis techniques, and malware families.',
+    desc: 'PE structure, static analysis workflow, packer signatures, YARA, C2 beacon patterns, evasion techniques, family reference.',
     tags: ['PE Structure', 'YARA', 'Packers', 'C2', 'Evasion'],
     stat: { label: 'Sections', value: '8' }, color: 'amber',
   },
   {
     href: '/network', label: 'Network Utilities', cmd: 'cd /network',
-    desc: 'Common ports with security notes, Wireshark display filters, Nmap scan reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), and attack signatures.',
+    desc: 'Ports with security notes, Wireshark display filters, Nmap reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), attack signatures.',
     tags: ['Ports', 'Wireshark', 'Nmap', 'Protocols', 'Attack Sigs'],
     stat: { label: 'Sections', value: '5' }, color: 'teal',
   },
   {
     href: '/forensics', label: 'Digital Forensics', cmd: 'cd /forensics',
-    desc: 'Windows, Linux, and macOS artifact locations, registry hives, execution artifacts, memory analysis workflow, and tool cheat sheets.',
+    desc: 'Windows · Linux · macOS artifact paths, registry hives, execution evidence, memory workflow, tool cheat sheets.',
     tags: ['Windows', 'Linux', 'macOS', 'Memory', 'X-Ways'],
     stat: { label: 'Sections', value: '5' }, color: 'purple',
   },
   {
     href: '/cloud', label: 'Cloud Security', cmd: 'cd /cloud',
-    desc: 'AWS, Azure, and GCP reference. Critical services, audit log events, IAM attack paths, container & Kubernetes chains, storage misconfigs, and a cloud IR runbook.',
+    desc: 'AWS · Azure · GCP services, audit-log events, IAM attack paths, K8s chains, storage misconfigs. The cloud-IR runbook is the part I actually reach for.',
     tags: ['AWS', 'Azure', 'GCP', 'IAM', 'K8s', 'IR'],
     stat: { label: 'Sections', value: '8' }, color: 'violet',
   },
   {
     href: '/mobile', label: 'Mobile Forensics', cmd: 'cd /mobile',
-    desc: 'Android and iOS artifact paths, acquisition methods, key SQLite databases, app artifact locations, and ADB command reference.',
+    desc: 'iOS + Android paths, acquisition, SQLite, ADB. Plus the artifacts AXIOM / Cellebrite extract but don\'t identify — push tokens, app groups, install attribution, notification cache.',
     tags: ['Android', 'iOS', 'ADB', 'SQLite'],
-    stat: { label: 'Sections', value: '6' }, color: 'sky',
+    stat: { label: 'Sections', value: '17' }, color: 'sky',
   },
   {
     href: '/rf', label: 'RF / TSCM', cmd: 'cd /rf',
-    desc: 'Frequency reference, path loss calculator, sweep methodology, bug frequencies, physical indicators, counter-surveillance, SDR reference, and TSCM tool guide.',
+    desc: 'Frequency reference, path-loss math, sweep methodology — written around the TSCM workflow I use, not generic SDR tutorial stuff.',
     tags: ['Freq Ref', 'Sweep', 'Bug Freq', 'SDR', 'Counter-Surv'],
     stat: { label: 'Sections', value: '14' }, color: 'blue',
   },
 ]
 
-const STATS = [
-  { label: 'Tools',            value: '10'  },
-  { label: 'Sections',         value: '60+' },
-  { label: 'Nmap Commands',    value: '35+' },
-  { label: 'Wireshark Filters', value: '55+' },
+const RECENT = [
+  { date: 'May 13', href: '/mobile?section=pushtokens', text: 'Modern mobile artifacts: push tokens, app groups, install attribution, notification cache' },
+  { date: 'May 11', href: '/tools?tool=pushtoken',     text: 'Push token identifier + 8 Python CLI versions for air-gapped use' },
+  { date: 'May 09', href: '/osint?section=workflows',  text: 'OSINT investigation workflows tying tools together' },
 ]
 
 const colorMap: Record<string, { border: string; bg: string; text: string; tag: string; tagText: string; glow: string }> = {
@@ -99,14 +98,11 @@ export default function HomePage() {
 
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 flex items-baseline">
-                <span className="bg-gradient-to-br from-zinc-50 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-                  codeworld
-                </span>
-                <span aria-hidden="true" className="text-emerald-400 cursor-blink ml-0.5">_</span>
+              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 flex items-baseline text-zinc-100">
+                codeworld<span aria-hidden="true" className="text-emerald-400 cursor-blink ml-0.5">_</span>
               </h1>
               <p className="text-sm text-zinc-400 max-w-xl leading-relaxed mb-3">
-                A collection of reference tools and interactive utilities for cyber operations, TSCM, and digital forensics. Built for practitioners, not demos.
+                For CI cyber, TSCM, and forensics work. Built because I kept re-Googling the same things.
               </p>
               <TypewriterCycle
                 items={[
@@ -120,21 +116,27 @@ export default function HomePage() {
                 ]}
               />
             </div>
-            <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded px-3 py-1.5 backdrop-blur-sm">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              </span>
-              All systems operational
-            </div>
+            <a
+              href="https://github.com/silvance/codeworld/commits/main"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              last updated · 2026-05-13 →
+            </a>
           </div>
-          <div className="flex gap-6 mt-6 flex-wrap">
-            {STATS.map(s => (
-              <div key={s.label}>
-                <div className="text-lg font-semibold text-zinc-100">{s.value}</div>
-                <div className="text-xs text-zinc-600">{s.label}</div>
-              </div>
-            ))}
+          <div className="mt-6">
+            <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-2">Recent additions</div>
+            <ul className="space-y-1">
+              {RECENT.map(r => (
+                <li key={r.href} className="text-xs font-mono leading-relaxed">
+                  <span className="text-zinc-600 mr-3">{r.date}</span>
+                  <Link href={r.href} className="text-zinc-400 hover:text-zinc-100 transition-colors">
+                    {r.text}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
@@ -176,9 +178,7 @@ export default function HomePage() {
           <div className="flex items-center gap-4 text-xs font-mono text-zinc-500 flex-wrap">
             <span>Cyber · TSCM · Forensics · Network · Malware · OSINT</span>
             <span className="text-zinc-800">·</span>
-            <span>v1.4.0</span>
-            <span className="text-zinc-800">·</span>
-            <span>Updated 2026-03-26</span>
+            <span>v1.5.0</span>
           </div>
           <div className="flex items-center gap-4 text-xs font-mono text-zinc-500 flex-wrap">
             <Link href="/about" className="hover:text-zinc-200 transition-colors">About</Link>
