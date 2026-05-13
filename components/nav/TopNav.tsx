@@ -33,7 +33,7 @@ export default function TopNav() {
         </Link>
 
         {/* Desktop links */}
-        <div className="hidden sm:flex items-center gap-1 flex-1">
+        <div className="hidden lg:flex items-center gap-1 flex-1">
           <div className="w-px h-4 bg-zinc-800 mr-2" />
           {LINKS.map(link => {
             const isActive = pathname.startsWith(link.href)
@@ -61,7 +61,7 @@ export default function TopNav() {
           <button
             onClick={() => setMenuOpen(o => !o)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            className="sm:hidden text-zinc-500 hover:text-zinc-200 px-2 py-1 text-sm flex-shrink-0"
+            className="lg:hidden text-zinc-500 hover:text-zinc-200 px-2 py-1 text-sm flex-shrink-0"
           >
             {menuOpen ? '✕' : '☰'}
           </button>
@@ -70,7 +70,7 @@ export default function TopNav() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="codeworld on GitHub"
-            className="hidden sm:block text-zinc-600 hover:text-zinc-300 transition-colors"
+            className="hidden lg:block text-zinc-600 hover:text-zinc-300 transition-colors"
             title="GitHub"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden="true">
@@ -80,9 +80,9 @@ export default function TopNav() {
         </div>
       </nav>
 
-      {/* Mobile dropdown */}
+      {/* Mobile / narrow-desktop dropdown */}
       {menuOpen && (
-        <div className="fixed top-10 left-0 right-0 z-40 bg-zinc-900 border-b border-zinc-800 sm:hidden">
+        <div className="fixed top-10 left-0 right-0 z-40 bg-zinc-900 border-b border-zinc-800 lg:hidden">
           {LINKS.map(link => (
             <Link key={link.href} href={link.href}
               onClick={() => setMenuOpen(false)}
