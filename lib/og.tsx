@@ -58,25 +58,8 @@ export function brandImage({ pageTitle, tagline, accent = 'emerald' }: BrandCard
           fontFamily: 'sans-serif',
         }}
       >
-        {/* Top row: status pill */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              fontSize: 18,
-              fontFamily: 'monospace',
-              color: '#34d399',
-              padding: '8px 16px',
-              border: '1px solid #064e3b',
-              borderRadius: 6,
-              background: 'rgba(6, 78, 59, 0.4)',
-            }}
-          >
-            <div style={{ width: 8, height: 8, borderRadius: 4, background: '#34d399' }} />
-            All systems operational
-          </div>
+        {/* Top row: domain wordmark */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <div style={{ fontSize: 16, fontFamily: 'monospace', color: '#52525b' }}>
             codeworld.codes
           </div>
