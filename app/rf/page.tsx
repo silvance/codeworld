@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import RFPage from '@/components/rf/RFPage'
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function RFToolsPage() {
-  return <RFPage />
+  return <Suspense><RFPage /></Suspense>
 }

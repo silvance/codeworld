@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { readInitialQueryParam } from "@/lib/queryParam"
+import { useUrlSyncedQueryParam } from "@/lib/queryParam"
 import { externalHref } from '@/lib/url'
 import { playbooks } from '@/lib/osint/workflows'
 import {
@@ -35,7 +35,7 @@ const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs
 // ─── 1. Search Operators ─────────────────────────────────────────────────────
 
 export function SearchOperators() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [engineFilter, setEngineFilter] = useState('ALL')
 
   const filtered = useMemo(() => searchOperators.filter(op => {
@@ -318,7 +318,7 @@ export function SocialMedia() {
 // ─── 7. Domain / IP / Infrastructure ─────────────────────────────────────────
 
 export function InfraOSINT() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
 
   const catMap: Record<string, string> = {
@@ -464,7 +464,7 @@ export function DarkWebOSINT() {
 // ─── 10. Corporate / Business Intelligence ────────────────────────────────────
 
 export function CorpIntel() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
 
   const filtered = useMemo(() => corpSources.filter(s => {
     if (!search) return true
@@ -508,7 +508,7 @@ export function CorpIntel() {
 // ─── Email OSINT ──────────────────────────────────────────────────────────────
 
 export function EmailOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', ...Array.from(new Set(emailOSINT.map(t => t.category)))]
 
@@ -558,7 +558,7 @@ export function EmailOSINTSection() {
 // ─── Geospatial / Map OSINT ───────────────────────────────────────────────────
 
 export function GeoOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', ...Array.from(new Set(geoTools.map(t => t.category)))]
 
@@ -605,7 +605,7 @@ export function GeoOSINTSection() {
 // ─── Crypto / Blockchain OSINT ────────────────────────────────────────────────
 
 export function CryptoOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', ...Array.from(new Set(cryptoOSINT.map(t => t.category)))]
 
@@ -655,7 +655,7 @@ export function CryptoOSINTSection() {
 // ─── Code & Repo OSINT ────────────────────────────────────────────────────────
 
 export function CodeOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', ...Array.from(new Set(codeOSINT.map(t => t.category)))]
 
@@ -705,7 +705,7 @@ export function CodeOSINTSection() {
 // ─── Archive & Wayback ────────────────────────────────────────────────────────
 
 export function ArchiveOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const filtered = useMemo(() => archiveOSINT.filter(t => {
     if (!search) return true
     const q = search.toLowerCase()
@@ -741,7 +741,7 @@ export function ArchiveOSINTSection() {
 // ─── Vehicle / Transport OSINT ────────────────────────────────────────────────
 
 export function VehicleOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const filtered = useMemo(() => vehicleOSINT.filter(t => {
     if (!search) return true
     const q = search.toLowerCase()
@@ -781,7 +781,7 @@ export function VehicleOSINTSection() {
 // ─── Document & Metadata ──────────────────────────────────────────────────────
 
 export function DocumentOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', ...Array.from(new Set(documentOSINT.map(t => t.category)))]
 
@@ -831,7 +831,7 @@ export function DocumentOSINTSection() {
 // ─── Verification Toolkit ─────────────────────────────────────────────────────
 
 export function VerificationSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', ...Array.from(new Set(verificationToolkit.map(t => t.category)))]
 

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import CloudPage from '@/components/cloud/CloudPage'
 
 export const metadata: Metadata = {
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 }
 
 export default function CloudRoute() {
-  return <CloudPage />
+  return <Suspense><CloudPage /></Suspense>
 }

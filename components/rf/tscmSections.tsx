@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { readInitialQueryParam } from "@/lib/queryParam"
+import { useUrlSyncedQueryParam } from "@/lib/queryParam"
 import { externalHref } from '@/lib/url'
 import {
   sdrDevices, sweepMethodology, physicalIndicators, modulations,
@@ -145,7 +145,7 @@ export function SweepMethodology() {
 // ─── Physical Indicators ─────────────────────────────────────────────────────
 
 export function PhysicalIndicators() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const [riskFilter, setRiskFilter] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'MED'>('ALL')
 
@@ -323,7 +323,7 @@ export function CounterSurv() {
 // ─── Bug Frequencies ──────────────────────────────────────────────────────────
 
 export function BugFrequencies() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
 
   const cats = ['ALL', 'Audio', 'Video', 'Tracking']
