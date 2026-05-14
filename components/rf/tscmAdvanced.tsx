@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { useUrlSyncedQueryParam } from "@/lib/queryParam"
 import {
   threatDevices, threatActors, spectrumBaselines, tempestEntries,
@@ -295,7 +296,10 @@ export function CellularThreats() {
 
   return (
     <div>
-      <SH title="Cellular threat analysis" sub="IMSI catchers · rogue base stations · carrier current · GSM/LTE bugs — detection, legal notes, and countermeasures" />
+      <SH title="Cellular intercept · carrier-current" sub="Powerline carrier surveillance and covert GSM/LTE bugs — detection and countermeasures" />
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded p-3 mb-3 text-xs font-mono text-zinc-400 leading-relaxed">
+        IMSI catchers and rogue cellular base stations are covered in depth in the <Link href="?section=rbs" className="text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline">Rogue base stations</Link> section. This section covers two cellular-adjacent threats that aren&apos;t false-tower attacks: surveillance modulated onto building power wiring, and covert devices with embedded SIMs.
+      </div>
       <div className="bg-amber-950/20 border border-amber-900/40 rounded p-3 mb-5 text-xs font-mono text-amber-400">
         ⚠ Cellular jamming is a federal crime in the US (47 USC 333) with no legal exception for facility security. Detection and passive countermeasures only.
       </div>

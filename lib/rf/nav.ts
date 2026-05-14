@@ -1,6 +1,6 @@
 export type SectionId =
   | 'freq' | 'fspl' | 'channels' | 'math' | 'tscm' | 'rogue' | 'rbs'
-  | 'sdr' | 'sweep' | 'physical' | 'modulation' | 'countersurv' | 'bugfreq' | 'tools' | 'antenna'
+  | 'sdr' | 'sweep' | 'sweepplan' | 'physical' | 'modulation' | 'countersurv' | 'bugfreq' | 'tools' | 'antenna'
   | 'taxonomy' | 'actors' | 'baseline' | 'tempest' | 'cellular' | 'countermeasures' | 'training' | 'report'
 
 export interface NavItem { id: SectionId; label: string; sub: string; icon: string; group: string }
@@ -15,6 +15,7 @@ export const NAV: NavItem[] = [
   { id: 'modulation',     label: 'Modulation reference', sub: 'AM · FM · FHSS · OFDM · OOK',                icon: '〜', group: 'RF Tools' },
   // TSCM — Operations
   { id: 'sweep',          label: 'Sweep methodology',    sub: 'Pre-sweep · RF · physical · docs',           icon: '🔄', group: 'TSCM' },
+  { id: 'sweepplan',      label: 'Sweep planner',        sub: 'By room type — office · conf · vehicle · hotel · residence', icon: '🧭', group: 'TSCM' },
   { id: 'tscm',           label: 'TSCM devices',         sub: 'Threat freqs · detection',                   icon: '🔍', group: 'TSCM' },
   { id: 'bugfreq',        label: 'Bug frequencies',      sub: 'Audio · video · GSM · cellular',             icon: '🐛', group: 'TSCM' },
   { id: 'physical',       label: 'Physical indicators',  sub: 'Screws · paint · wiring · weight',           icon: '👁', group: 'TSCM' },
