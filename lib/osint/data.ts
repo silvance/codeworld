@@ -714,6 +714,611 @@ export const cryptoOSINT: CryptoTool[] = [
   { name: 'OFAC SDN List',            url: 'sanctionssearch.ofac.treas.gov',              category: 'Sanctions',             cost: 'Free',                what: 'US Treasury sanctioned crypto addresses',                                                                    notes: 'Cross-reference any wallet of interest. Both EU and UK maintain separate lists; OFAC is the most-cited.' },
 ]
 
+// ─── Crypto concepts cheat sheet ─────────────────────────────────────────────
+// What an investigator who's never worked a crypto case needs to know first.
+// Plain-language definitions of the terms that show up in case files.
+
+export interface CryptoConcept {
+  term: string
+  oneLiner: string
+  detail: string
+  whyItMatters: string
+}
+
+export const cryptoConcepts: CryptoConcept[] = [
+  {
+    term: 'Address',
+    oneLiner: 'The string of characters that holds crypto — the equivalent of an account number.',
+    detail: 'Format varies per chain: Bitcoin (bc1q…, 1…, 3…), Ethereum (0x…, 42 hex chars), Solana (Base58, ~44 chars), Monero (4… / 8…, 95 chars). An address is derived from a public key, which is derived from a private key. Owning the private key = owning the funds.',
+    whyItMatters: 'Every crypto investigation starts with an address. Format alone tells you which chain to look on.',
+  },
+  {
+    term: 'Private key / seed phrase',
+    oneLiner: 'The secret that proves ownership. Anyone with it can move the funds.',
+    detail: 'A private key is a random 256-bit number. A seed phrase (12 or 24 BIP-39 words) deterministically generates one or many private keys. The seed phrase IS the wallet — losing it loses the funds, and stealing it steals them.',
+    whyItMatters: 'Seizing physical media that contains a seed phrase (paper, hardware wallet, file) is seizing the money. Chain-of-custody for these is critical.',
+  },
+  {
+    term: 'Transaction (tx)',
+    oneLiner: 'A record on the blockchain moving value from one address to another, with a unique hash.',
+    detail: 'Identified by a transaction hash (txid). Has inputs (source addresses), outputs (destination addresses), an amount, a fee, and a block timestamp. Bitcoin and Ethereum model this differently (UTXO vs account) but the txid concept is universal.',
+    whyItMatters: 'The txid is the durable, unique identifier you reference in reports. Block timestamps anchor the activity in time.',
+  },
+  {
+    term: 'UTXO vs account model',
+    oneLiner: 'Two different bookkeeping styles. Bitcoin uses UTXO; Ethereum uses accounts.',
+    detail: 'UTXO (Bitcoin, Litecoin): each transaction spends prior "unspent transaction outputs" — like cash. Inputs from multiple addresses are common (common-input ownership heuristic relies on this). Account-based (Ethereum, Solana, etc.): each address has a balance that gets debited/credited like a bank account.',
+    whyItMatters: 'Bitcoin clustering (WalletExplorer, OXT) only works on UTXO chains. Ethereum analysis depends on different heuristics — direct address activity, contract interactions, gas-payer patterns.',
+  },
+  {
+    term: 'Wallet',
+    oneLiner: 'Software (or hardware) that manages private keys. NOT a place where coins "live."',
+    detail: 'Coins live on the blockchain. The wallet just holds the keys that prove ownership. Wallets are classified as: hot (online — MetaMask, Coinbase Wallet, Phantom), cold (offline — hardware wallets like Ledger / Trezor, paper wallets), and custodial (a third party holds your keys — Coinbase, Binance) vs non-custodial.',
+    whyItMatters: 'A device seizure looks for wallet software / hardware / seed phrase records. Knowing custodial vs non-custodial drives legal-process strategy: custodial = subpoena the exchange; non-custodial = you need the keys.',
+  },
+  {
+    term: 'Block explorer',
+    oneLiner: 'A website that lets you look up any address or transaction on a chain.',
+    detail: 'Free, no account needed for basic use. Etherscan (Ethereum), Mempool.space (Bitcoin), Solscan (Solana), Tronscan (Tron). For an unfamiliar address: identify the chain by format, paste it into the right explorer, read the transaction history.',
+    whyItMatters: 'First-look tool. Free, fast, and good enough for 80% of basic investigative questions.',
+  },
+  {
+    term: 'Gas / fee',
+    oneLiner: 'The fee paid to miners/validators to include a transaction in a block.',
+    detail: 'Bitcoin: fee in satoshis/byte. Ethereum: gas (a unit of compute) × gas price. Fees vary with network congestion and can spike during high activity. Suspects sometimes underfund fees to delay confirmation — useful timing signal.',
+    whyItMatters: 'A high-fee transaction signals urgency (suspect wanted it confirmed fast). Failed / stuck transactions are also forensic events worth noting.',
+  },
+  {
+    term: 'Mempool',
+    oneLiner: 'The pool of submitted-but-not-yet-confirmed transactions.',
+    detail: 'Each node has its own view of the mempool. Transactions sit here until a miner includes them in a block. Mempool.space lets you watch this in near-real-time.',
+    whyItMatters: 'Catches transactions BEFORE they\'re in a block. Useful for real-time monitoring of known suspect addresses.',
+  },
+  {
+    term: 'Token vs coin',
+    oneLiner: 'A "coin" is native to its blockchain (BTC, ETH). A "token" is issued on top of one (USDT, USDC).',
+    detail: 'On Ethereum, ERC-20 tokens (USDT, USDC, WETH) and ERC-721 tokens (NFTs) are smart contracts. Their transfer history is on Etherscan but lives under a contract address, with each holder having a sub-balance. USDT exists on Ethereum, Tron, Solana, BSC, etc. — same name, different smart contracts on each chain.',
+    whyItMatters: 'USDT is the dominant scam-payment currency. Tron USDT (TRC-20) is the most-laundered stablecoin today. Don\'t confuse "USDT" with a single asset — always identify the chain.',
+  },
+  {
+    term: 'Bridge',
+    oneLiner: 'A service that moves a token from one chain to another. Common laundering vector.',
+    detail: 'Bridges lock tokens on chain A and mint equivalent ones on chain B (or burn/release). Wormhole, Stargate, LayerZero, cBridge, Across, Hop are major ones. Some are decentralized; some have been exploited / sanctioned.',
+    whyItMatters: 'A suspect moving funds across chains is intentionally obfuscating. The bridge transaction is a tractable forensic event — both legs are public, just on different chains.',
+  },
+  {
+    term: 'Mixer / tumbler',
+    oneLiner: 'A service that mixes coins from many users to break the on-chain link between source and destination.',
+    detail: 'Tornado Cash (Ethereum, OFAC-sanctioned), ChipMixer (seized 2023), Wasabi Wallet + Samourai Wallet (CoinJoin implementations). Outputs can sometimes be partially de-anonymized through heuristics or operational mistakes; Tornado especially has known compromises.',
+    whyItMatters: 'Mixer involvement is a strong signal of criminal intent. Funds in/out of OFAC-sanctioned mixers (Tornado Cash) is itself a sanctions violation in the US.',
+  },
+  {
+    term: 'Privacy coin',
+    oneLiner: 'A cryptocurrency designed for anonymity. Monero is the only one that works in practice.',
+    detail: 'Monero (XMR): ring signatures + stealth addresses + RingCT — addresses and amounts hidden by default, effectively untraceable. Zcash (ZEC): shielded vs transparent — most users transact transparently, leaving shielded as opt-in (and rarely used). Dash: PrivateSend is CoinJoin, breakable.',
+    whyItMatters: 'A suspect on Monero is a wall. Plan to either work around it (off-ramp / on-ramp choke points, mistakes elsewhere) or use legal process to centralized exchanges that touched it.',
+  },
+  {
+    term: 'On-ramp / off-ramp',
+    oneLiner: 'Where fiat enters crypto (on-ramp) or crypto becomes fiat (off-ramp).',
+    detail: 'Almost always a centralized exchange (Coinbase, Binance, Kraken, OKX, etc.) or a P2P platform (LocalBitcoins legacy, Bisq, Hodl Hodl, peer-to-peer in Telegram groups). Off-ramps are subject to AML/KYC and produce records — this is usually where the investigation gets traction.',
+    whyItMatters: 'Most prosecutable evidence comes from off-ramp KYC records. Address tracing is preamble; the off-ramp is the conviction.',
+  },
+]
+
+// ─── Wallet artifacts on seized devices ──────────────────────────────────────
+
+export interface CryptoWalletArtifact {
+  wallet: string
+  type: 'Browser extension' | 'Mobile' | 'Desktop' | 'Hardware'
+  platform: string
+  paths: string[]
+  artifacts: string[]
+  notes: string
+}
+
+export const cryptoWalletArtifacts: CryptoWalletArtifact[] = [
+  {
+    wallet: 'MetaMask',
+    type: 'Browser extension',
+    platform: 'Chrome / Firefox / Edge — desktop',
+    paths: [
+      'Chrome: ~/Library/Application Support/Google/Chrome/Default/Local Extension Settings/nkbihfbeogaeaoehlefnkodbefgpgknn/ (macOS)',
+      'Chrome: %LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Local Extension Settings\\nkbihfbeogaeaoehlefnkodbefgpgknn\\ (Windows)',
+      'Chrome: ~/.config/google-chrome/Default/Local Extension Settings/nkbihfbeogaeaoehlefnkodbefgpgknn/ (Linux)',
+    ],
+    artifacts: [
+      'LevelDB store (.ldb files) — contains encrypted vault',
+      'Encrypted vault key: stored in extension storage; encrypted with the user\'s password',
+      'Recent address activity, contact book, network endpoints in extension preferences',
+    ],
+    notes: 'Vault decryption requires the password. Tools: MetaMask-Vault-Decryptor (open source). Most common Ethereum wallet — first thing to look for on suspect laptops.',
+  },
+  {
+    wallet: 'Phantom',
+    type: 'Browser extension',
+    platform: 'Chrome / Firefox / Brave — desktop',
+    paths: [
+      'Chrome extension ID: bfnaelmomeimhlpmgjnjophhpkkoljpa',
+      'macOS: ~/Library/Application Support/Google/Chrome/Default/Local Extension Settings/bfnaelmomeimhlpmgjnjophhpkkoljpa/',
+    ],
+    artifacts: [
+      'LevelDB encrypted vault',
+      'Connected dApps history, recent addresses',
+    ],
+    notes: 'Dominant Solana wallet; also supports Ethereum and Bitcoin. Similar structure to MetaMask.',
+  },
+  {
+    wallet: 'Trust Wallet',
+    type: 'Mobile',
+    platform: 'iOS / Android',
+    paths: [
+      'iOS: /private/var/mobile/Containers/Data/Application/<UUID>/Documents/ — Trust Wallet container',
+      'Android: /data/data/com.wallet.crypto.trustapp/ — files + shared_prefs + databases',
+    ],
+    artifacts: [
+      'Encrypted keystore (Android: trust.dat / iOS: wallet files in Documents)',
+      'Address book, transaction history cache, connected dApps',
+      'Biometric / passcode protected — decryption requires unlocked device',
+    ],
+    notes: 'Multi-chain (50+ chains). Acquisition needs file-system extraction; iTunes backup excludes app data on iOS.',
+  },
+  {
+    wallet: 'Coinbase Wallet (non-custodial)',
+    type: 'Mobile',
+    platform: 'iOS / Android',
+    paths: [
+      'iOS: /private/var/mobile/Containers/Data/Application/<UUID>/ — bundle ID org.toshi (legacy) or com.coinbase.wallet',
+      'Android: /data/data/org.toshi/',
+    ],
+    artifacts: [
+      'Encrypted seed phrase storage',
+      'Recovery phrase backup may be in iCloud / Google Drive — check cloud accounts',
+    ],
+    notes: 'Distinct from coinbase.com (custodial exchange). User holds keys. Coinbase\'s cloud-backup feature has been a forensic boon — recovery phrase may be retrievable from the user\'s iCloud / Google account with legal process.',
+  },
+  {
+    wallet: 'Electrum',
+    type: 'Desktop',
+    platform: 'Windows / macOS / Linux',
+    paths: [
+      'Windows: %APPDATA%\\Electrum\\wallets\\',
+      'macOS: ~/Library/Application Support/Electrum/wallets/',
+      'Linux: ~/.electrum/wallets/',
+    ],
+    artifacts: [
+      'Wallet file (default name: default_wallet) — JSON, encrypted if password set',
+      'Server history, address labels, transaction notes',
+    ],
+    notes: 'Bitcoin-only, lightweight SPV client. Wallet file decrypts with the user\'s password. Open with Electrum itself or python-electrum.',
+  },
+  {
+    wallet: 'Bitcoin Core',
+    type: 'Desktop',
+    platform: 'Windows / macOS / Linux',
+    paths: [
+      'Windows: %APPDATA%\\Bitcoin\\wallets\\',
+      'macOS: ~/Library/Application Support/Bitcoin/wallets/',
+      'Linux: ~/.bitcoin/wallets/',
+    ],
+    artifacts: [
+      'wallet.dat — Berkeley DB file containing keys + transaction metadata',
+      'May be encrypted (older versions) or descriptor-based (newer)',
+    ],
+    notes: 'Full node — also holds the entire blockchain locally (~500GB+). Wallet.dat is the high-value file. pywallet (open source) extracts keys from wallet.dat.',
+  },
+  {
+    wallet: 'Exodus / Atomic Wallet',
+    type: 'Desktop',
+    platform: 'Windows / macOS / Linux',
+    paths: [
+      'Exodus: %APPDATA%\\Exodus\\exodus.wallet\\ (Windows) · ~/Library/Application Support/exodus.wallet/ (macOS)',
+      'Atomic: %APPDATA%\\Atomic\\IndexedDB\\ (Windows) · ~/Library/Application Support/atomic/ (macOS)',
+    ],
+    artifacts: [
+      'Encrypted seed storage (multi-asset)',
+      'Recent transactions, exchange history (both have built-in swap features)',
+    ],
+    notes: 'Atomic Wallet was breached in 2023 — vulnerability suggests weak encryption / key derivation. Targets of opportunity for analysts; suspect may have already lost the funds.',
+  },
+  {
+    wallet: 'Ledger Live (companion to Ledger hardware)',
+    type: 'Desktop',
+    platform: 'Windows / macOS / Linux',
+    paths: [
+      'Windows: %APPDATA%\\Ledger Live\\',
+      'macOS: ~/Library/Application Support/Ledger Live/',
+      'Linux: ~/.config/Ledger Live/',
+    ],
+    artifacts: [
+      'Account list (read-only — public addresses, never private keys)',
+      'Transaction history cache',
+      'Connected device serial numbers, firmware versions',
+    ],
+    notes: 'Ledger Live does NOT contain private keys — those are on the hardware device. But it tells you WHICH addresses to look at on-chain. Cross-reference with the device itself if seized.',
+  },
+  {
+    wallet: 'Trezor Suite',
+    type: 'Desktop',
+    platform: 'Windows / macOS / Linux',
+    paths: [
+      'Windows: %APPDATA%\\@trezor\\suite-desktop\\',
+      'macOS: ~/Library/Application Support/@trezor/suite-desktop/',
+    ],
+    artifacts: [
+      'Account metadata, labels, address book',
+      'Optional Dropbox / Google Drive labels backup',
+    ],
+    notes: 'Same as Ledger Live — host-side metadata only. Private keys remain on the Trezor device. Labels stored in cloud are accessible via OAuth with legal process to Dropbox / Google.',
+  },
+  {
+    wallet: 'Hardware wallet (physical)',
+    type: 'Hardware',
+    platform: 'Device itself',
+    paths: ['Physical device seizure — Ledger Nano S/X/Plus, Trezor One/T/Safe 3, Coldcard, BitBox, etc.'],
+    artifacts: [
+      'Device PIN required to access. Multiple failed attempts may wipe the device.',
+      'Recovery phrase (24 words) — usually backed up on paper, sometimes engraved in metal',
+      'Look for nearby seed-phrase storage: paper, metal cards, password managers',
+    ],
+    notes: 'CRITICAL: do not enter wrong PINs randomly — many wallets wipe after 3-8 attempts. Photograph the device, document serial, work with a crypto-forensics specialist before touching it. The seed phrase backup is more important than the device itself.',
+  },
+  {
+    wallet: 'Seed phrase / paper wallet indicators',
+    type: 'Hardware',
+    platform: 'Physical seizure',
+    paths: ['Anywhere the suspect could have written 12 or 24 words'],
+    artifacts: [
+      'Lists of 12 or 24 English words (BIP-39 wordlist — 2048 words, all lowercase)',
+      'QR codes on paper / printouts',
+      'Steel / metal "seed plates" (Cryptosteel, Billfodl, etc.)',
+      'Encrypted password manager entries labeled crypto / wallet / seed',
+    ],
+    notes: 'BIP-39 wordlist is public — running a candidate 12/24 word list against the wordlist is a quick yes/no check. Tools: bip39-validator. Any match plus a wallet name on the same page = seizure target.',
+  },
+]
+
+// ─── Obfuscation indicators (mixers, bridges, privacy coins) ────────────────
+
+export interface CryptoObfuscation {
+  name: string
+  type: 'Mixer / CoinJoin' | 'Bridge' | 'Privacy coin' | 'DEX aggregator'
+  chains: string
+  indicators: string[]
+  ciValue: string
+  notes: string
+}
+
+export const cryptoObfuscation: CryptoObfuscation[] = [
+  // Mixers
+  {
+    name: 'Tornado Cash',
+    type: 'Mixer / CoinJoin',
+    chains: 'Ethereum + L2s',
+    indicators: [
+      'Deposit / withdrawal contract addresses publicly known',
+      'Funds in/out of Tornado addresses = on-chain visible',
+      'Fixed denominations (0.1, 1, 10, 100 ETH; 100, 1000, 10k DAI; etc.)',
+    ],
+    ciValue: 'OFAC-sanctioned since 2022. Any deposit/withdrawal involvement is a sanctions hit. Known operational compromises allow some pre-2023 transactions to be partially de-anonymized.',
+    notes: 'High investigative priority. Chainalysis and TRM Labs have de-mix attribution for specific deposit/withdrawal pairs. Document the txid going IN and any txid coming OUT to the same likely-controlled address with similar timing.',
+  },
+  {
+    name: 'ChipMixer',
+    type: 'Mixer / CoinJoin',
+    chains: 'Bitcoin',
+    indicators: ['Seized by FBI/Europol in March 2023', 'Pre-seizure deposits + withdrawal txids may still be on-chain'],
+    ciValue: 'Historical indicator — anyone touching ChipMixer pre-March 2023 has criminal-intent signal. Records seized; LE has subpoena access to its records.',
+    notes: 'No longer operational. Historical traces still valuable for cases involving 2018-2023 BTC laundering.',
+  },
+  {
+    name: 'Wasabi Wallet (CoinJoin)',
+    type: 'Mixer / CoinJoin',
+    chains: 'Bitcoin',
+    indicators: [
+      'Equal-output CoinJoin transactions: many inputs, many outputs of identical amounts',
+      'Coordinator: zkSNACKs (centralized; banned some addresses post-Chainalysis pressure in 2024)',
+    ],
+    ciValue: 'Self-hosted CoinJoin. Pre-2024: high participation rate. Post-2024 coordinator restrictions: usage dropped, alternatives gained share. Chainalysis publishes Wasabi-attribution data.',
+    notes: 'Look for: equal-output (0.1 BTC × 10, etc.) transactions with 8+ inputs and outputs. WalletExplorer and OXT flag known CoinJoin patterns.',
+  },
+  {
+    name: 'Samourai Wallet (Whirlpool)',
+    type: 'Mixer / CoinJoin',
+    chains: 'Bitcoin',
+    indicators: ['Founders charged April 2024 for unlicensed money transmission', 'Whirlpool denominations: 0.001, 0.01, 0.05, 0.5 BTC'],
+    ciValue: 'No longer operational. Existing chain traces remain. Operator-side records under federal subpoena.',
+    notes: 'Heavily used by privacy advocates AND criminals. The federal indictment offers a comprehensive record of attribution methodology.',
+  },
+
+  // Bridges
+  {
+    name: 'Wormhole',
+    type: 'Bridge',
+    chains: 'Ethereum, Solana, BSC, Polygon, Avalanche, others',
+    indicators: ['Lock-and-mint pattern: token locked on source chain, wrapped version minted on destination'],
+    ciValue: 'Both legs are on-chain — fully traceable across chains by amount + timestamp matching. $325M hack in 2022 was followed cross-chain to laundering attempts.',
+    notes: 'Use Wormhole\'s explorer (wormholescan.io) to follow specific txs across chains.',
+  },
+  {
+    name: 'Stargate / LayerZero',
+    type: 'Bridge',
+    chains: 'Multi-chain (Ethereum, BSC, Polygon, Arbitrum, etc.)',
+    indicators: ['LayerZero is the underlying protocol; Stargate is the user-facing app'],
+    ciValue: 'Like Wormhole — both legs trackable. LayerZero has its own scanner (layerzeroscan.com).',
+    notes: 'Increasingly popular for cross-chain laundering. Tracing requires matching amounts + timestamps on both source and destination chains.',
+  },
+  {
+    name: 'Across Protocol / Hop / cBridge',
+    type: 'Bridge',
+    chains: 'L1 ↔ L2 + cross-L2 (Optimism, Arbitrum, Base, Polygon)',
+    indicators: ['Optimistic bridges — small fee + delay before destination tokens arrive'],
+    ciValue: 'L2 → L2 movement is now the dominant cross-chain pattern. All bridges publish source/destination on-chain.',
+    notes: 'L2 explorers (Arbiscan, Optimistic Etherscan, Basescan) show the destination side; mainnet Etherscan shows the deposit.',
+  },
+
+  // Privacy coins
+  {
+    name: 'Monero (XMR)',
+    type: 'Privacy coin',
+    chains: 'Monero',
+    indicators: ['Native chain, not an Ethereum token. XMR addresses are 95 characters starting with 4 or 8.'],
+    ciValue: 'Effectively untraceable. Ring signatures (each tx mixes with 10+ decoys), stealth addresses (one-time destination per tx), RingCT (amounts hidden). NO useful on-chain analysis.',
+    notes: 'Investigation route: off-ramp choke points. XMR-to-fiat happens at limited exchanges (Kraken until 2024, regional/decentralized swaps post-2024). Subpoena off-ramp KYC. Also: operational mistakes — suspect reusing an address across chains, posting clearnet info linked to XMR address, etc.',
+  },
+  {
+    name: 'Zcash (ZEC)',
+    type: 'Privacy coin',
+    chains: 'Zcash',
+    indicators: ['Transparent (t-addr, starts with t1/t3) vs Shielded (z-addr, starts with zs)'],
+    ciValue: 'Most ZEC activity is on transparent addresses — fully traceable like Bitcoin. Shielded pool usage is single-digit percentages. Z-to-z transactions are private but rare.',
+    notes: 'Practical posture: treat ZEC as semi-public unless you see specifically z-to-z transactions. Most off-ramps don\'t accept shielded sends, forcing transparency at the off-ramp.',
+  },
+  {
+    name: 'Dash (PrivateSend)',
+    type: 'Privacy coin',
+    chains: 'Dash',
+    indicators: ['PrivateSend is a CoinJoin variant — looks like equal-input/output mixing'],
+    ciValue: 'Chainalysis and others have published de-mixing for Dash PrivateSend. Treat as obfuscated-but-tractable.',
+    notes: 'Marketed as a privacy coin but technically just CoinJoin. Lower investigator priority than Monero.',
+  },
+]
+
+// ─── Off-ramps · exchanges · stablecoin freeze ───────────────────────────────
+
+export interface CryptoOfframp {
+  name: string
+  type: 'Centralized exchange (CEX)' | 'Stablecoin issuer' | 'Peer-to-peer' | 'Non-KYC / instant swap'
+  jurisdiction: string
+  kyc: string
+  cooperation: string
+  legalProcess: string
+  notes: string
+}
+
+export const cryptoOfframps: CryptoOfframp[] = [
+  // CEX with cooperation
+  {
+    name: 'Coinbase',
+    type: 'Centralized exchange (CEX)',
+    jurisdiction: 'US (Delaware, listed NASDAQ)',
+    kyc: 'Full KYC',
+    cooperation: 'High',
+    legalProcess: 'Subpoena / court order via legal.coinbase.com. Compliance team responsive. Returns: account holder identity, KYC docs, transaction history, deposit/withdrawal addresses, IP logs.',
+    notes: 'Best-cooperation US exchange. Compliance Notice form for emergencies. Most-cited exchange in US crypto-crime cases.',
+  },
+  {
+    name: 'Kraken',
+    type: 'Centralized exchange (CEX)',
+    jurisdiction: 'US (San Francisco)',
+    kyc: 'Full KYC',
+    cooperation: 'High',
+    legalProcess: 'compliance@kraken.com / law-enforcement portal. Returns equivalent records to Coinbase.',
+    notes: 'Strong reputation for cooperation. Discontinued Monero trading for US users in 2024 — pre-2024 XMR off-ramp records may be available.',
+  },
+  {
+    name: 'Binance / Binance.US',
+    type: 'Centralized exchange (CEX)',
+    jurisdiction: 'Binance: offshore (now Cayman). Binance.US: US-regulated entity.',
+    kyc: 'Full KYC (Binance.US); variable historically (Binance global)',
+    cooperation: 'Mixed',
+    legalProcess: 'Binance.US: standard US legal process. Binance global: pre-2023 was less cooperative; post-DOJ settlement (Nov 2023) more responsive.',
+    notes: 'Largest exchange by volume. Significant overlap between Binance global and laundering activity historically. Recent compliance reforms changed posture.',
+  },
+  {
+    name: 'Bybit / OKX / KuCoin',
+    type: 'Centralized exchange (CEX)',
+    jurisdiction: 'Offshore (Seychelles / Cayman / others)',
+    kyc: 'Variable',
+    cooperation: 'Mixed',
+    legalProcess: 'Compliance addresses published on each site. Response varies by jurisdiction of requestor and case specifics.',
+    notes: 'Common destinations for funds leaving US-jurisdiction exchanges. KuCoin had US enforcement action 2024.',
+  },
+
+  // Non-KYC / red flags
+  {
+    name: 'ChangeNOW / SimpleSwap / FixedFloat',
+    type: 'Non-KYC / instant swap',
+    jurisdiction: 'Various offshore',
+    kyc: 'No KYC for small amounts',
+    cooperation: 'Low / nonexistent',
+    legalProcess: 'Limited / case-by-case. No durable customer records.',
+    notes: 'Used for cross-chain swaps without account creation. Address-to-address — may have IP / session logs but no identity. Red flag if seen in a transaction chain.',
+  },
+  {
+    name: 'LocalBitcoins (legacy) / Bisq / Hodl Hodl',
+    type: 'Peer-to-peer',
+    jurisdiction: 'Various / decentralized',
+    kyc: 'No / minimal',
+    cooperation: 'LocalBitcoins shut down Feb 2023; records exist with legal process. Bisq/Hodl Hodl: decentralized, no central records.',
+    legalProcess: 'LocalBitcoins records: subpoena to Finland-based parent (or successor). Bisq/Hodl Hodl: no central party.',
+    notes: 'Pre-2023 LocalBitcoins is a key data source for historical investigations. Modern P2P (Bisq) is much harder.',
+  },
+  {
+    name: 'Telegram P2P groups',
+    type: 'Peer-to-peer',
+    jurisdiction: 'Telegram corporate (Dubai)',
+    kyc: 'None',
+    cooperation: 'Telegram cooperates inconsistently; 2024 changes after Durov arrest improved response.',
+    legalProcess: 'Subpoena to Telegram for user records / group membership / message history. Post-2024 they comply with valid legal process for serious crimes.',
+    notes: 'Increasingly common venue for crypto-cash exchange. Often paired with cash drops or hawala-style settlement.',
+  },
+
+  // Stablecoin freeze
+  {
+    name: 'Tether (USDT)',
+    type: 'Stablecoin issuer',
+    jurisdiction: 'British Virgin Islands',
+    kyc: 'N/A (issuer)',
+    cooperation: 'High for clear LE requests',
+    legalProcess: 'lawenforcement.requests@tether.to. Freeze form requires: target address, txids, case docs. Response time: hours-to-days for credible LE requests.',
+    notes: 'USDT-Tron (TRC-20) is the #1 stablecoin used in crypto crime today. Tether has frozen $billions in criminal proceeds — fast, cooperative, no court order needed (just a credible LE request). Single biggest LE win in modern crypto cases.',
+  },
+  {
+    name: 'Circle (USDC)',
+    type: 'Stablecoin issuer',
+    jurisdiction: 'US (Boston)',
+    kyc: 'N/A (issuer)',
+    cooperation: 'High; standard US legal process',
+    legalProcess: 'compliance@circle.com / subpoena. Circle has frozen significant criminal proceeds especially in DPRK / sanctioned-entity cases.',
+    notes: 'USDC is on Ethereum, Solana, Base, Arbitrum, and others — each chain version is separately freezable. Circle\'s freeze is fast but follows formal legal process more than Tether.',
+  },
+  {
+    name: 'MakerDAO (DAI)',
+    type: 'Stablecoin issuer',
+    jurisdiction: 'Decentralized (no entity to subpoena)',
+    kyc: 'N/A',
+    cooperation: 'N/A — no freeze capability',
+    legalProcess: 'None possible. DAI cannot be frozen by any party.',
+    notes: 'When seen in a transaction chain after USDT/USDC, suspect may be intentionally choosing un-freezable stablecoin. Investigative flag.',
+  },
+  {
+    name: 'OFAC SDN List (sanctions screening)',
+    type: 'Stablecoin issuer',
+    jurisdiction: 'US Treasury',
+    kyc: 'N/A',
+    cooperation: 'Reference list, not an entity',
+    legalProcess: 'sanctionssearch.ofac.treas.gov — search by name or crypto address. Tornado Cash, Lazarus Group, ransomware affiliates all listed with specific addresses.',
+    notes: 'US-jurisdiction obligations: cannot transact with SDN-listed addresses, period. Cross-reference every suspect address. Chainalysis / TRM / Elliptic auto-screen against this list.',
+  },
+]
+
+// ─── Common case patterns ─────────────────────────────────────────────────────
+
+export interface CryptoCasePattern {
+  pattern: string
+  typicalChain: string
+  typicalAmount: string
+  flow: string[]
+  pivots: string[]
+  notes: string
+}
+
+export const cryptoCasePatterns: CryptoCasePattern[] = [
+  {
+    pattern: 'Ransomware payment',
+    typicalChain: 'Bitcoin (primarily); Monero increasingly',
+    typicalAmount: '$50k–$10M+ BTC; smaller affiliates accept XMR',
+    flow: [
+      '1. Victim pays attacker BTC address (one-time / per-victim)',
+      '2. Attacker consolidates payments → wallet aggregation transactions',
+      '3. Funds move through mixer (historically ChipMixer / Wasabi / Tornado) or bridge to other chain',
+      '4. Cashout via OTC desk, non-KYC exchange, or Russia-based exchange',
+    ],
+    pivots: [
+      'Initial payment address tied to ransomware family (Chainalysis publishes IOCs)',
+      'Wallet aggregation = likely controller address',
+      'Pre-cashout exchange deposit = subpoena target',
+    ],
+    notes: 'Most-studied crypto crime pattern. Chainalysis Reactor and TRM Labs have ransomware-family attribution. Tracking initial-payment address → aggregator → off-ramp is the standard workflow.',
+  },
+  {
+    pattern: 'Pig butchering / romance investment fraud',
+    typicalChain: 'USDT on Tron (TRC-20) — dominant',
+    typicalAmount: '$10k–$5M per victim, often life savings',
+    flow: [
+      '1. Victim grooming via Telegram / WhatsApp / dating app',
+      '2. Victim deposits to a fake "trading platform" address (USDT-Tron)',
+      '3. Funds consolidate to scam-organization wallets',
+      '4. Conversion to USDT or BTC, off-ramp through Southeast Asia exchanges (Huione Pay, Cambodia-based platforms)',
+    ],
+    pivots: [
+      'Victim has the address they sent funds to — primary IOC',
+      'Tronscan to trace USDT-TRC20 flow',
+      'Cluster analysis often shows organization-wide aggregator addresses',
+      'TETHER FREEZE: USDT freezable, request via lawenforcement.requests@tether.to',
+    ],
+    notes: 'Now the #1 crypto crime by dollar volume (~$3-5B/year). FBI IC3 publishes annual stats. Tether freeze is THE most effective intervention — request early, evidence may still be recoverable.',
+  },
+  {
+    pattern: 'Investment fraud / Ponzi (non-crypto-native)',
+    typicalChain: 'Variable — often whatever the marketing emphasizes',
+    typicalAmount: '$1M–$1B+ schemes',
+    flow: [
+      '1. Promoters market "guaranteed return" investment',
+      '2. Victim funds → company wallet → operator personal wallet',
+      '3. Late-stage withdrawals paid with new-deposit funds (Ponzi structure)',
+      '4. Collapse / exit scam — operator off-ramps remainder',
+    ],
+    pivots: [
+      'Company wallet addresses (often publicized in marketing materials)',
+      'Direct flow to identified principal addresses',
+      'Exchange off-ramp with US-jurisdiction KYC',
+    ],
+    notes: 'Often paired with traditional securities-fraud charges. Crypto trail supplements rather than replaces the financial-records investigation.',
+  },
+  {
+    pattern: 'Sextortion / data-extortion payments',
+    typicalChain: 'Bitcoin',
+    typicalAmount: '$200–$5k per victim, mass-targeted',
+    flow: [
+      '1. Threat email demands BTC payment to specific address',
+      '2. Multiple victim payments hit same address (or per-victim addresses with shared spending pattern)',
+      '3. Funds consolidate, mix, off-ramp',
+    ],
+    pivots: [
+      'Address is in the threat email — direct IOC',
+      'Common-input ownership heuristic clusters across victims',
+      'Volume is low per-victim but high aggregate; cooperation between victims valuable',
+    ],
+    notes: 'FBI IC3 collects these reports. Mempool.space + WalletExplorer often enough for a competent investigator without paid tools.',
+  },
+  {
+    pattern: 'Drug marketplace / darknet payment',
+    typicalChain: 'Monero (post-2020), Bitcoin (legacy)',
+    typicalAmount: '$50–$50k per purchase',
+    flow: [
+      '1. Buyer deposits to marketplace escrow',
+      '2. Sale completes, vendor withdraws',
+      '3. Vendor off-ramps through mixer + exchange',
+    ],
+    pivots: [
+      'Marketplace address clusters often well-attributed (Chainalysis, etc.)',
+      'Vendor profile + clearnet OpSec mistakes (PGP key reuse, posting patterns)',
+      'Mail intercepts often more productive than chain tracing for individual purchases',
+    ],
+    notes: 'Most major marketplaces (Hydra, AlphaBay, etc.) eventually fall to LE through OpSec mistakes rather than chain analysis. Chain analysis supports indictments rather than driving identification.',
+  },
+  {
+    pattern: 'DeFi exploit / smart contract hack',
+    typicalChain: 'Ethereum + L2s primarily',
+    typicalAmount: '$1M–$600M per incident',
+    flow: [
+      '1. Exploit drains protocol funds to attacker address',
+      '2. Funds quickly move through Tornado Cash (pre-sanction) or bridge to other chain',
+      '3. Multi-month dormant period',
+      '4. Slow off-ramp through privacy-coin swaps or distributed exchange deposits',
+    ],
+    pivots: [
+      'Exploit txid + attacker address (public from the moment of attack)',
+      'On-chain monitoring tools (Etherscan watchlist, OpenZeppelin Forta) catch movement',
+      'DPRK / Lazarus Group attribution for ~50% of major DeFi hacks since 2022',
+    ],
+    notes: 'Best-publicized cases. Chainalysis Crypto Crime Report annual summary tracks these. North Korea attribution + OFAC sanctions are common outcomes.',
+  },
+]
+
+
 // ─── Code & Repo OSINT ────────────────────────────────────────────────────────
 
 export interface CodeOSINTTool {
@@ -848,6 +1453,11 @@ export const osintSearchEntries: RawSearchEntry[] = [
   ...archiveOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.cost}`, subtitle: t.what, section: 'archive' })),
   ...codeOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.cost}`, subtitle: t.what, section: 'code' })),
   ...cryptoOSINT.map<RawSearchEntry>(t => ({ title: t.name, aka: `${t.category} · ${t.cost}`, subtitle: t.what, section: 'crypto' })),
+  ...cryptoConcepts.map<RawSearchEntry>(c => ({ title: c.term, aka: 'Crypto concept', subtitle: c.oneLiner, section: 'crypto' })),
+  ...cryptoWalletArtifacts.map<RawSearchEntry>(w => ({ title: w.wallet, aka: `Crypto wallet · ${w.type}`, subtitle: w.platform, section: 'crypto' })),
+  ...cryptoObfuscation.map<RawSearchEntry>(o => ({ title: o.name, aka: `Crypto · ${o.type}`, subtitle: o.chains, section: 'crypto' })),
+  ...cryptoOfframps.map<RawSearchEntry>(o => ({ title: o.name, aka: `Crypto off-ramp · ${o.type}`, subtitle: o.jurisdiction, section: 'crypto' })),
+  ...cryptoCasePatterns.map<RawSearchEntry>(p => ({ title: p.pattern, aka: 'Crypto case pattern', subtitle: p.typicalChain, section: 'crypto' })),
   ...phoneTools.map<RawSearchEntry>(t => ({ title: t.name, aka: t.cost, subtitle: t.what, section: 'phone' })),
   ...darkWebSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.type, subtitle: s.what, section: 'darkweb' })),
   ...corpSources.map<RawSearchEntry>(s => ({ title: s.name, aka: s.cost, subtitle: s.what, section: 'corp' })),
