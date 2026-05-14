@@ -607,9 +607,6 @@ export function GeoOSINTSection() {
 // ─── Crypto / Blockchain OSINT ────────────────────────────────────────────────
 
 export function CryptoOSINTSection() {
-  const [search, setSearch] = useUrlSyncedQueryParam('q')
-  const [catFilter, setCatFilter] = useState('ALL')
-  const cats = ['ALL', ...Array.from(new Set(cryptoOSINT.map(t => t.category)))]
   const [tab, setTab] = useState<'concepts' | 'tools' | 'wallets' | 'obfuscation' | 'offramps' | 'patterns'>('concepts')
 
   const TABS = [

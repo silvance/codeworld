@@ -1193,41 +1193,6 @@ export interface CellularThreat {
 
 export const cellularThreats: CellularThreat[] = [
   {
-    name: 'IMSI Catcher (Stingray / CSS)',
-    category: 'Active intercept',
-    mechanism: 'Broadcasts a stronger signal than legitimate cell towers, forcing nearby phones to downgrade to 2G (GSM) or register with the false base station. Device captures IMSI, location, and in some configurations intercepts calls/texts.',
-    detectionIndicators: [
-      'Unexpected 2G (GSM) signal where LTE should be dominant',
-      'Sudden change from LTE to 2G/3G (downgrade attack)',
-      'Cell tower with unusually strong signal that cannot be correlated to a known tower location',
-      'RSSI significantly stronger than expected for given distance from known towers',
-      'Phone battery drain spike (forced 2G/3G increases TX power)',
-      'SnoopSnitch or AIMSICD app alerts on unexpected base station',
-    ],
-    frequencies: '850/1900 MHz (GSM US), 700/1700/1900/2100 MHz (LTE)',
-    legality: 'Lawful use by law enforcement with court order. Unlawful use by unauthorized parties is a federal crime (18 USC 2511). Detection is not illegal.',
-    detectWith: ['SnoopSnitch (Android)', 'AIMSICD (Android)', 'IMSI Catcher Catcher research tools', 'Software-defined radio monitoring for unexpected base station broadcasts', 'Commercial IMSI catcher detection appliances (Pwnie Express, Bastille)'],
-    countermeasures: ['Use Signal or WhatsApp (E2E encrypted — intercept reveals nothing)', 'Avoid 2G — if phone allows, disable GSM fallback (iOS: Settings → Cellular → Enable LTE → Data Only)', 'VPN on all data traffic', 'Monitor for unexpected network downgrades', 'Use a Faraday pouch/cage in known-high-risk environments'],
-    notes: 'Law enforcement IMSI catchers are legal within their authority. Detection by citizens is legal in the US — no law prohibits detecting RF signals. The 2G downgrade attack is the key signature. Devices that refuse 2G connections (some Android "LTE Only" settings) are resistant to this specific attack vector.',
-  },
-  {
-    name: 'Rogue cellular base station (RBS)',
-    category: 'Active attack',
-    mechanism: 'Unauthorized base station transmitting on cellular frequencies to attract nearby devices. May be used for IMSI harvesting, traffic interception, denial of service, or as a relay for other attacks.',
-    detectionIndicators: [
-      'Cell tower on civilian map but no licensed installation nearby',
-      'Cellular signal in area without expected coverage (remote/rural unexpected strong signal)',
-      'Multiple devices in same area experiencing simultaneous connectivity issues',
-      'Cellular signal from unexpected direction (elevation or azimuth inconsistent with tower location)',
-      'FCC license database shows no authorized transmitter at apparent signal location',
-    ],
-    frequencies: 'All cellular bands: 700 MHz, 850 MHz, 1700 MHz, 1900 MHz, 2100 MHz, 2500 MHz, 3.5 GHz (CBRS)',
-    legality: 'Unlicensed cellular transmission is a federal crime (FCC violation + potential 18 USC 1030). Reporting suspected rogue base stations: FCC Enforcement Bureau.',
-    detectWith: ['OpenCelliD database (cross-reference tower location vs observed)', 'SnoopSnitch', 'Android Network Signal Guru', 'SDR monitoring — UMTS/LTE protocol analysis', 'Professional cellular monitoring equipment (Rohde & Schwarz TSMW)'],
-    countermeasures: ['E2E encrypted communications for all sensitive content', 'Correlation of observed cell ID vs public tower database', 'Network-layer VPN for all data', 'Report to FCC if confident of unauthorized transmission'],
-    notes: 'Distinguishing a legitimate small cell (femtocell, microcell) from a rogue base station requires cross-referencing with carrier network data. OpenCelliD provides community-sourced tower data. Carriers can also confirm whether a specific cell ID is part of their network.',
-  },
-  {
     name: 'Carrier current surveillance (building wiring)',
     category: 'Wired intercept',
     mechanism: 'Audio or data modulated onto building electrical wiring (10–500 kHz). Uses AC powerline as a transmission medium — signal travels throughout the building on the same electrical phase and can be received at any power outlet.',
@@ -1771,6 +1736,341 @@ export const rbsLegalFramework = {
 
 import type { RawSearchEntry } from '@/lib/search/types'
 
+// ─── Sweep planner ────────────────────────────────────────────────────────────
+// Pre-built sweep plans by room/site type. Each plan is the ordered workflow
+// from arrival to exit. Steps name the tools they need so the user can see at
+// a glance which they can run with the equipment they have on hand.
+
+export interface SweepPlanStep {
+  num: number
+  action: string
+  detail: string
+  toolsNeeded: string[]
+  lookFor: string
+  timeMinutes: number
+}
+
+export interface SweepPhase {
+  name: string
+  goal: string
+  steps: SweepPlanStep[]
+}
+
+export interface SweepPlan {
+  id: 'office' | 'conference' | 'vehicle' | 'hotel' | 'residence'
+  roomType: string
+  scope: string
+  typicalDuration: string
+  primaryThreats: string[]
+  phases: SweepPhase[]
+  reportRef: string
+}
+
+export const sweepPlans: SweepPlan[] = [
+  // ─────────── Office ─────────────────────────────────────────────────────
+  {
+    id: 'office',
+    roomType: 'Executive office',
+    scope: 'Single private office, 100–300 sq ft. Assumes regular occupant access, network connection, and standard office furniture (desk, chair, bookshelf, plants, art).',
+    typicalDuration: '2–4 hours',
+    primaryThreats: [
+      'Audio bugs in furniture, lamps, smoke detectors, AC vents',
+      'Hidden cameras in clocks, picture frames, decor',
+      'Cellular GSM/LTE-based covert devices',
+      'WiFi-based or BLE-based collection devices',
+      'Network tap on Ethernet wiring',
+      'Carrier-current devices on office mains',
+    ],
+    phases: [
+      {
+        name: '1. Pre-sweep prep',
+        goal: 'Establish baseline expectations and gather tools before entering the area.',
+        steps: [
+          { num: 1, action: 'Review prior sweep records', detail: 'Pull any previous TSCM reports for this location. Note what was found, what was clean, and what changed.', toolsNeeded: ['Prior reports'], lookFor: 'Recurring threats, persistent benign sources, new infrastructure since last sweep.', timeMinutes: 15 },
+          { num: 2, action: 'Document expected RF environment', detail: 'Identify legitimate transmitters: WiFi APs, BLE peripherals, building cellular DAS, two-way radio infrastructure, cordless phones. Get carrier coverage map for cellular bands.', toolsNeeded: [], lookFor: 'A baseline of what SHOULD be present.', timeMinutes: 15 },
+          { num: 3, action: 'Coordinate occupant access', detail: 'Confirm occupant has cleared the space and won\'t return during the sweep. Disable building security cameras in the target room if possible (documented and time-boxed).', toolsNeeded: [], lookFor: 'Confirmation of clear access window.', timeMinutes: 10 },
+        ],
+      },
+      {
+        name: '2. Visual inspection',
+        goal: 'Identify anomalies that warrant deeper investigation. Most discoveries are visual, not electronic.',
+        steps: [
+          { num: 4, action: 'Photograph the room as-found', detail: 'Wide shots from each corner plus close-ups of decor, electronics, light fixtures, AC vents, smoke detectors, ceiling tiles, picture frames. Establishes baseline if recurring sweeps.', toolsNeeded: ['Camera'], lookFor: 'Documentation reference for the rest of the sweep.', timeMinutes: 15 },
+          { num: 5, action: 'Inspect ceiling tiles and AC vents', detail: 'Lift each accessible ceiling tile. Check above for hidden devices, modified tiles, displaced insulation. Inspect AC vent louvers and HVAC return ducts.', toolsNeeded: ['Flashlight', 'Step ladder', 'Mirror'], lookFor: 'Dust patterns suggesting recent disturbance, drilled holes in tiles, foreign objects, modified tile thickness.', timeMinutes: 20 },
+          { num: 6, action: 'Inspect electrical outlets and switches', detail: 'Look at each outlet, switch plate, USB charger, power strip. Anything that takes mains power is a candidate concealment.', toolsNeeded: ['Screwdriver set', 'Flashlight'], lookFor: 'Replaced or modified outlets, devices in unfamiliar configurations, plates with screws set differently than nearby identical fixtures.', timeMinutes: 15 },
+          { num: 7, action: 'Inspect lamps, clocks, smoke detectors, decor', detail: 'Anything with a battery or power cord is a candidate. Pay attention to items the occupant didn\'t place themselves (gifts, vendor swag, holdovers from prior occupant).', toolsNeeded: ['Flashlight', 'Screwdriver set'], lookFor: 'New or unfamiliar items, identical-looking but heavier/lighter versions of known items, items with non-functional features.', timeMinutes: 25 },
+          { num: 8, action: 'Furniture inspection', detail: 'Underside of desk, chair, conference table. Pull books from bookshelves and check spines. Look behind framed art and certificates. Check under desk drawers and inside desk pedestals.', toolsNeeded: ['Flashlight', 'Mirror'], lookFor: 'Adhesive residue, screw heads with new wear, weight imbalances, drill marks on undersides.', timeMinutes: 25 },
+        ],
+      },
+      {
+        name: '3. RF sweep',
+        goal: 'Detect active transmissions across the threat spectrum. Comparison to baseline is more important than absolute power readings.',
+        steps: [
+          { num: 9, action: 'Wide-spectrum baseline scan', detail: 'Sweep from 10 MHz to 6 GHz with the suspect occupant\'s normal electronics powered ON. Capture baseline. Re-sweep with electronics OFF. Difference = the persistent signals worth investigating.', toolsNeeded: ['HackRF + GQRX/SDR#', 'TinySA Ultra', 'OSCOR'], lookFor: 'Signals present when electronics are off, signals at unexpected frequencies, signals with periodic bursts (potential GSM/LTE uplink).', timeMinutes: 45 },
+          { num: 10, action: 'WiFi / BLE survey', detail: 'List every WiFi SSID and BSSID visible, and every BLE peripheral name + MAC. Cross-reference against the room\'s known devices.', toolsNeeded: ['WiFi scanner (WiGLE, Kismet)', 'BLE scanner (nRF Connect)'], lookFor: 'Unknown SSIDs at high signal strength, BLE devices with unfamiliar manufacturer IDs or no name.', timeMinutes: 20 },
+          { num: 11, action: 'Cellular environment check', detail: 'Capture cell IDs and bands in use. Compare to public tower database (OpenCelliD, CellMapper).', toolsNeeded: ['SnoopSnitch (Android)', 'Network Signal Guru', 'OpenCelliD app'], lookFor: 'Unfamiliar cell IDs, unexpected 2G fallback, eNodeB IDs not matching carrier records (see Rogue base stations section).', timeMinutes: 20 },
+          { num: 12, action: 'Powerline / carrier-current check', detail: 'Inductive coupling to mains, scan 10 kHz – 500 kHz for modulated audio or data.', toolsNeeded: ['REI TALAN (powerline mode)', 'Airspy HF+ + inductive probe'], lookFor: 'Modulation correlating with conversation in the room, signals that vanish when circuit breaker is cycled.', timeMinutes: 20 },
+          { num: 13, action: 'Suspect-frequency dwell', detail: 'For each anomaly in the wide scan, dwell on the frequency, capture and demodulate. Identify modulation type, payload character.', toolsNeeded: ['HackRF + GQRX', 'TinySA Ultra', 'Audio capture'], lookFor: 'Voice audio, NTSC/PAL video, periodic burst patterns matching GSM/LTE, FHSS that matches known consumer protocols.', timeMinutes: 30 },
+        ],
+      },
+      {
+        name: '4. Physical / NLJD sweep',
+        goal: 'Find non-emitting electronics. Things that aren\'t transmitting (powered off, scheduled wake, record-only) won\'t show up on RF.',
+        steps: [
+          { num: 14, action: 'NLJD sweep of walls and furniture', detail: 'Slow pass across walls, ceiling perimeter, desk surfaces, all upholstery. The NLJD response is independent of power state.', toolsNeeded: ['NLJD (Orion 2.4, Akela)'], lookFor: 'Strong NLJD response at non-obvious locations (a wall section that responds where no outlet/wiring is mapped).', timeMinutes: 45 },
+          { num: 15, action: 'Thermal imaging pass', detail: 'IR camera sweep of walls, ceiling, furniture surfaces, electrical outlets. Active electronics produce localized heat.', toolsNeeded: ['Thermal camera (FLIR, Seek)'], lookFor: 'Heat signatures inside walls, behind picture frames, in ceiling tiles, in furniture cavities that shouldn\'t have heat sources.', timeMinutes: 20 },
+          { num: 16, action: 'Network cable inspection', detail: 'Trace every Ethernet run end-to-end. Inspect wall jacks, patch panel, midpoint splices. Look for inline taps.', toolsNeeded: ['Cable tracer', 'Flashlight'], lookFor: 'Unexpected RJ45 splice boxes, network taps with hidden ports, runs that don\'t match documented network diagrams.', timeMinutes: 25 },
+        ],
+      },
+      {
+        name: '5. Documentation',
+        goal: 'Record findings sufficient for legal use, comparison to future sweeps, and follow-up on anomalies.',
+        steps: [
+          { num: 17, action: 'Document each anomaly individually', detail: 'For each finding (RF anomaly, NLJD hit, visual concern, etc.): location with coordinates within room, photo, frequency/parameter recording, time of capture, suspected source, follow-up action.', toolsNeeded: ['Camera', 'Survey form'], lookFor: '', timeMinutes: 30 },
+          { num: 18, action: 'Generate final survey report', detail: 'Use the survey report template. Include scope, methodology, tool list, findings, conclusions, recommendations.', toolsNeeded: ['Report template'], lookFor: '', timeMinutes: 60 },
+        ],
+      },
+    ],
+    reportRef: 'See /rf?section=report for the survey report template.',
+  },
+
+  // ─────────── Conference room ────────────────────────────────────────────
+  {
+    id: 'conference',
+    roomType: 'Conference room (pre-meeting sweep)',
+    scope: 'Conference room before a sensitive meeting. Higher visual + RF emphasis, less physical depth. Assumes a 30–90 minute window before meeting attendees arrive.',
+    typicalDuration: '1–2 hours',
+    primaryThreats: [
+      'Concealed audio recorders or transmitters left by prior occupant',
+      'Hidden cameras with view of whiteboards / displays',
+      'Conference phone tampering — microphone always-on modification',
+      'Display / video conference system compromise',
+      'Pre-positioned cellular device covering the meeting time only',
+    ],
+    phases: [
+      {
+        name: '1. Pre-meeting prep',
+        goal: 'Establish baseline before attendees and equipment arrive.',
+        steps: [
+          { num: 1, action: 'Clear the room and arrive early', detail: 'Coordinate access at least 90 minutes before meeting. Confirm cleaning crew, IT, AV staff are all clear of the room.', toolsNeeded: [], lookFor: 'Empty, ventilated room with documented chain-of-custody from last cleaning.', timeMinutes: 15 },
+          { num: 2, action: 'Disable in-room AV', detail: 'Power down conference phone, video conference system, display, projector. Note serial numbers / asset tags.', toolsNeeded: [], lookFor: 'Establishes a known-off RF baseline.', timeMinutes: 10 },
+        ],
+      },
+      {
+        name: '2. Visual inspection',
+        goal: 'Catch obvious concealments in time-pressured environment.',
+        steps: [
+          { num: 3, action: 'Sweep the conference table', detail: 'Underside, table-leg interior, cable cutouts. Tables with built-in power/data hubs are prime concealment locations.', toolsNeeded: ['Flashlight', 'Mirror'], lookFor: 'Foreign objects, recently-disturbed cable channels, hubs with extra USB devices.', timeMinutes: 15 },
+          { num: 4, action: 'Inspect AV equipment', detail: 'Conference phone, video conference unit, displays. Check for non-OEM USB devices in any port, modified power adapters, replaced components.', toolsNeeded: ['Flashlight', 'Asset tag list'], lookFor: 'Devices not matching documented asset numbers, USB drives or HDMI capture devices present.', timeMinutes: 20 },
+          { num: 5, action: 'Inspect whiteboard, art, plants', detail: 'Anything on the walls or in fixed positions facing the table — these have view lines on attendees.', toolsNeeded: ['Flashlight'], lookFor: 'New decor, items moved since last sweep, picture frames with new contents.', timeMinutes: 10 },
+        ],
+      },
+      {
+        name: '3. RF sweep',
+        goal: 'Detect active transmitters before the meeting.',
+        steps: [
+          { num: 6, action: 'Wide-spectrum scan with AV off', detail: '10 MHz – 6 GHz. Capture baseline.', toolsNeeded: ['HackRF + GQRX', 'TinySA Ultra', 'OSCOR'], lookFor: 'Persistent signals not accounted for by building infrastructure.', timeMinutes: 30 },
+          { num: 7, action: 'WiFi / BLE scan', detail: 'List visible WiFi SSIDs and BLE devices. Cross-reference against authorized in-room equipment.', toolsNeeded: ['WiFi scanner', 'BLE scanner'], lookFor: 'Unknown BLE devices, especially those without manufacturer ID or with generic names like "ESP32" or "BT-Audio".', timeMinutes: 10 },
+          { num: 8, action: 'Cellular check', detail: 'Capture cellular environment. Look for unexpected uplink activity inside the room.', toolsNeeded: ['SnoopSnitch / Network Signal Guru'], lookFor: 'Unfamiliar cell IDs, anomalous uplink from inside the room.', timeMinutes: 10 },
+        ],
+      },
+      {
+        name: '4. Physical sweep',
+        goal: 'Light-touch NLJD pass on the most likely concealment surfaces.',
+        steps: [
+          { num: 9, action: 'NLJD on table and chairs', detail: 'Focused pass on table surface, table underside, each chair upholstery, table legs.', toolsNeeded: ['NLJD'], lookFor: 'Strong response on furniture surfaces — electronics inside non-electronic objects.', timeMinutes: 20 },
+          { num: 10, action: 'NLJD on display / projector / phone bezel', detail: 'AV equipment has expected NLJD response from its own electronics; focus on the BEZEL areas around displays for added concealments.', toolsNeeded: ['NLJD'], lookFor: 'Anomalous response in bezels, monitor stands, projector mounts.', timeMinutes: 15 },
+        ],
+      },
+      {
+        name: '5. Final clear & handoff',
+        goal: 'Hand the room back to the meeting organizer with sweep status documented.',
+        steps: [
+          { num: 11, action: 'Restore AV and re-test', detail: 'Power AV back on. Confirm RF environment matches the pre-power-on baseline plus the expected AV signatures.', toolsNeeded: ['Spectrum analyzer'], lookFor: 'Unexpected new signals after AV powers up — could indicate compromised firmware.', timeMinutes: 15 },
+          { num: 12, action: 'Brief security / EA / meeting host', detail: 'Confirm room is cleared. Note any findings that warrant pre-meeting decision (cancel, relocate, accept residual risk).', toolsNeeded: [], lookFor: '', timeMinutes: 10 },
+        ],
+      },
+    ],
+    reportRef: 'See /rf?section=report. Pre-meeting sweeps generate an abbreviated report — keep the longer post-meeting follow-up scheduled.',
+  },
+
+  // ─────────── Vehicle ────────────────────────────────────────────────────
+  {
+    id: 'vehicle',
+    roomType: 'Vehicle (executive transport)',
+    scope: 'Personal or executive vehicle, including interior, trunk, OBD-II port, exterior accessible attachment points. Vehicle sweep is heavily physical / GPS-tracker oriented.',
+    typicalDuration: '1.5–3 hours',
+    primaryThreats: [
+      'GPS trackers (battery-powered magnetic attachment, OBD-II powered, hardwired)',
+      'In-cabin audio device (covert recorder or cellular bug)',
+      'In-vehicle camera (dashcam tampering or hidden secondary)',
+      'OBD-II port telemetry device (legitimate-looking but malicious)',
+      'Cellular-based location beacon piggybacking on vehicle systems',
+    ],
+    phases: [
+      {
+        name: '1. Pre-sweep prep',
+        goal: 'Vehicle on lift or in well-lit accessible bay. Engine and electronics OFF.',
+        steps: [
+          { num: 1, action: 'Vehicle on lift / in accessible bay', detail: 'You need under-vehicle and wheel-well access. Power off. Disconnect 12V battery if comfortable — eliminates active transmissions from vehicle electronics.', toolsNeeded: ['Vehicle lift or jack stands'], lookFor: '', timeMinutes: 15 },
+          { num: 2, action: 'Document expected systems', detail: 'OEM telematics module (GM OnStar, Ford SYNC, Tesla, etc.), aftermarket dashcam, factory immobilizer, key fob receivers, satellite radio.', toolsNeeded: ['Owner\'s manual', 'Vehicle service records'], lookFor: 'A baseline of OEM-authorized transmitters.', timeMinutes: 15 },
+        ],
+      },
+      {
+        name: '2. Exterior physical search',
+        goal: 'GPS trackers are most often externally attached.',
+        steps: [
+          { num: 3, action: 'Magnetic tracker check — undercarriage', detail: 'Slow pass with magnetic search wand along entire undercarriage, frame rails, exhaust shielding, fuel tank straps, suspension components.', toolsNeeded: ['Magnetic search wand', 'Flashlight', 'Inspection mirror'], lookFor: 'Anything non-OEM attached to ferrous surfaces. Magnetic trackers are typically 2–6" rectangular boxes with rubber-coated magnets.', timeMinutes: 30 },
+          { num: 4, action: 'Wheel well inspection', detail: 'Inside fender liners, around spare tire, inside wheel wells. Common concealment for GPS trackers.', toolsNeeded: ['Flashlight', 'Mirror'], lookFor: 'Items attached to non-magnetic plastic with adhesive or zip-ties, devices secured behind fender liners.', timeMinutes: 20 },
+          { num: 5, action: 'Bumper, grille, trim inspection', detail: 'Front and rear bumpers — interior cavity often accessible. Behind license plate. Inside grille slats.', toolsNeeded: ['Flashlight'], lookFor: 'Items attached to non-OEM mounting points, recently disturbed adhesive residue.', timeMinutes: 20 },
+        ],
+      },
+      {
+        name: '3. Interior physical search',
+        goal: 'Audio / camera devices concentrate on interior.',
+        steps: [
+          { num: 6, action: 'OBD-II port inspection', detail: 'Pull whatever is plugged into OBD-II. Document it. OBD-II is the most-attacked port because it provides 12V power and CAN bus access.', toolsNeeded: ['Flashlight'], lookFor: 'Any non-OEM device. Insurance "drive-monitor" devices are common legitimate-looking covers.', timeMinutes: 10 },
+          { num: 7, action: 'Cabin search — common concealment points', detail: 'Under seats, inside center console, glovebox interior surfaces, headliner edges, sun visors, behind floor mats, inside door cards (if removable).', toolsNeeded: ['Flashlight', 'Mirror', 'Trim removal tools'], lookFor: 'Recently disturbed adhesive, modified upholstery seams, devices in non-OEM mounts.', timeMinutes: 30 },
+          { num: 8, action: 'Headliner and roof rail check', detail: 'Headliner can be pulled at edges without full removal. Check for devices nested between headliner and roof panel.', toolsNeeded: ['Flashlight'], lookFor: 'Anything inserted between fabric headliner and metal roof panel.', timeMinutes: 15 },
+          { num: 9, action: 'Dashboard and rear-view mirror area', detail: 'Inspect dashcam mount and any aftermarket devices on the windshield. Look at back of rear-view mirror, near map lights.', toolsNeeded: ['Flashlight'], lookFor: 'Replaced dashcam, additional pinhole apertures in dash trim, lens-like fittings in unexpected locations.', timeMinutes: 15 },
+        ],
+      },
+      {
+        name: '4. RF sweep',
+        goal: 'Detect active trackers and audio devices. Engine off, ignition off, key removed.',
+        steps: [
+          { num: 10, action: 'Wide-spectrum scan, all power off', detail: '10 MHz – 6 GHz with battery still connected; then with battery disconnected. Anything transmitting on the second scan has its own power source.', toolsNeeded: ['HackRF + GQRX', 'TinySA Ultra', 'OSCOR'], lookFor: 'Cellular uplink bursts (GSM 850/1900 MHz, LTE 700/1700/1900 MHz), GPS L1 (1575 MHz) signatures from active trackers, FHSS on 433 / 868 / 915 MHz from short-range trackers.', timeMinutes: 30 },
+          { num: 11, action: 'GPS / GNSS reception check', detail: 'A GPS tracker doesn\'t transmit GPS — it RECEIVES GPS and transmits position back via cellular. Look for cellular transmission, not GPS emission.', toolsNeeded: ['Cellular monitor'], lookFor: 'Periodic cellular uplink bursts from inside the vehicle when stationary. Real trackers often report every 5–30 minutes.', timeMinutes: 30 },
+        ],
+      },
+      {
+        name: '5. NLJD and post-sweep',
+        goal: 'NLJD finds non-emitting devices. Critical for trackers in sleep / wake-on-motion modes.',
+        steps: [
+          { num: 12, action: 'NLJD sweep — exterior', detail: 'Undercarriage, wheel wells, bumpers, license plate frame.', toolsNeeded: ['NLJD'], lookFor: 'Response at non-OEM locations. OEM electronics inside the vehicle will respond — focus on response patterns away from documented systems.', timeMinutes: 30 },
+          { num: 13, action: 'NLJD sweep — interior', detail: 'Slow pass over seats, headliner, door cards, dashboard, center console.', toolsNeeded: ['NLJD'], lookFor: 'Strong response at non-OEM positions.', timeMinutes: 25 },
+          { num: 14, action: 'Document and reconnect', detail: 'Photograph all findings before removal. Preserve any device for forensic exam. Reconnect battery, verify vehicle operates normally.', toolsNeeded: ['Camera', 'Evidence bags'], lookFor: '', timeMinutes: 20 },
+        ],
+      },
+    ],
+    reportRef: 'See /rf?section=report. Vehicle sweep reports must note: VIN, license, date/time, locations of all findings with photos.',
+  },
+
+  // ─────────── Hotel / short-stay ─────────────────────────────────────────
+  {
+    id: 'hotel',
+    roomType: 'Hotel room / short-stay accommodation',
+    scope: 'Hotel, Airbnb, executive housing. Time-pressured — guest arrives within 30–60 minutes typically. Focus on covert recording, hidden cameras, and short-term collection devices.',
+    typicalDuration: '30–60 minutes',
+    primaryThreats: [
+      'Hidden cameras in smoke detectors, clock radios, decor, TV remote',
+      'Audio recorders in bedside lamps, USB hubs, alarm clocks',
+      'Cellular-based bug (planted for known occupant)',
+      'WiFi-based surveillance (smart-room systems compromised)',
+      'Two-way mirrors (rare but worth checking in bathrooms and on closet doors)',
+    ],
+    phases: [
+      {
+        name: '1. Visual inspection',
+        goal: 'Most threats in temporary accommodations are visually identifiable. Camera concealment is the dominant threat class.',
+        steps: [
+          { num: 1, action: 'Smoke detector + ceiling-mount fixtures', detail: 'Smoke detector is the #1 hidden camera location. Check whether it\'s an OEM model and whether it actually responds to test. Look for additional pinholes.', toolsNeeded: ['Flashlight', 'IR detector / lens finder'], lookFor: 'Non-OEM smoke detector, modified housing, extra LED indicators, pinhole apertures.', timeMinutes: 5 },
+          { num: 2, action: 'Lens finder sweep', detail: 'Use IR flashlight in dim conditions. Camera lenses reflect IR — look for "eye reflections" from objects in the room. Sweep slowly across furniture, decor, ceiling fixtures.', toolsNeeded: ['IR LED finder (purpose-built or modified flashlight)'], lookFor: 'Bright pinpoint reflections at angles inconsistent with the object surface.', timeMinutes: 10 },
+          { num: 3, action: 'Bathroom check (mirrors, vents, shower head)', detail: 'Check mirrors for two-way installation — tap test, fingernail test (gap = mirror, no gap = two-way). Vents above shower / toilet. Shower head and grab bar interiors.', toolsNeeded: ['Flashlight'], lookFor: 'Two-way mirror indicators, devices behind ventilation grates, modified fixtures.', timeMinutes: 10 },
+          { num: 4, action: 'Bedroom items facing the bed', detail: 'Alarm clock, lamp, TV, picture frames, plants. Any object with a sight line to the bed is a candidate.', toolsNeeded: ['Flashlight', 'Lens finder'], lookFor: 'Unusual pinholes, devices with view-line oriented features.', timeMinutes: 10 },
+          { num: 5, action: 'Charging USB / power adapters', detail: 'Any USB charger, power adapter, USB hub in the room. Particularly if "provided" by the property.', toolsNeeded: ['Flashlight'], lookFor: 'Heavier-than-spec adapters, adapters with non-OEM markings, devices with built-in storage.', timeMinutes: 5 },
+        ],
+      },
+      {
+        name: '2. RF sweep',
+        goal: 'Quick scan for active transmitters. Most hotel-context threats are short-range WiFi-based or cellular.',
+        steps: [
+          { num: 6, action: 'WiFi / BLE survey', detail: 'List all visible WiFi BSSIDs and BLE peripherals. Hotel infrastructure produces a known signature; anything in-room and untagged warrants investigation.', toolsNeeded: ['WiFi scanner', 'BLE scanner'], lookFor: 'BLE devices broadcasting from inside the room (high RSSI), unknown SSIDs at high RSSI.', timeMinutes: 10 },
+          { num: 7, action: 'Cellular uplink check', detail: 'Look for cellular uplink originating inside the room. A planted cellular bug will transmit periodically.', toolsNeeded: ['Cellular monitor', 'Network Signal Guru'], lookFor: 'Uplink bursts inconsistent with the occupant\'s own phone.', timeMinutes: 5 },
+          { num: 8, action: 'Wide-spectrum scan if time allows', detail: '10 MHz – 6 GHz quick pass. Time-pressured environment so prioritize WiFi/BLE/cellular over deep sweep.', toolsNeeded: ['TinySA Ultra', 'HackRF'], lookFor: 'FHSS audio bug bands (60–90 MHz, 130–160 MHz, 400–470 MHz), unexpected 5.8 GHz video feeds.', timeMinutes: 5 },
+        ],
+      },
+      {
+        name: '3. Post-sweep',
+        goal: 'Document findings and clear the room or recommend relocation.',
+        steps: [
+          { num: 9, action: 'Document and recommend', detail: 'Photograph any anomalies. Decision tree: clean → guest proceeds. Suspicious → guest declines room or property relocates. Confirmed device → coordinate with property security and/or law enforcement.', toolsNeeded: ['Camera', 'Property management contact'], lookFor: '', timeMinutes: 10 },
+        ],
+      },
+    ],
+    reportRef: 'See /rf?section=report. Hotel sweeps generate abbreviated reports — preserve evidence for property management and any law enforcement follow-up.',
+  },
+
+  // ─────────── Residence ──────────────────────────────────────────────────
+  {
+    id: 'residence',
+    roomType: 'Residence (long-term occupancy)',
+    scope: 'Personal residence with long-term occupancy. Most thorough sweep type. Treats every room as potentially compromised; multiple sweep visits often appropriate.',
+    typicalDuration: '6–12 hours (often spread across multiple sessions)',
+    primaryThreats: [
+      'Long-term audio surveillance (multiple devices, redundant placement)',
+      'IoT device compromise (smart speakers, smart TV, smart thermostat, mesh router)',
+      'Persistent cellular-based collection devices',
+      'GPS trackers on personal vehicles (covered in vehicle sweep)',
+      'Carrier-current devices on home electrical system',
+      'Network compromise (rogue device on home network, mesh router tampering)',
+    ],
+    phases: [
+      {
+        name: '1. Pre-sweep prep',
+        goal: 'Understand the residence layout, document expected electronics, schedule for occupant absence.',
+        steps: [
+          { num: 1, action: 'Walk-through with occupant', detail: 'Map every room. Inventory every electronic device. Identify rooms most sensitive (home office, master bedroom, common areas where conversation happens).', toolsNeeded: ['Floor plan or notepad'], lookFor: 'Expected baseline of electronics and infrastructure.', timeMinutes: 60 },
+          { num: 2, action: 'Network inventory', detail: 'Pull router admin page or scan with arp / nmap. List every connected device by MAC + hostname.', toolsNeeded: ['Network scanner (Fing, nmap)'], lookFor: 'Devices the occupant cannot identify.', timeMinutes: 30 },
+          { num: 3, action: 'Schedule sweep time', detail: 'Occupant must vacate. Pets too if possible. Plan for 6+ hour window. Multi-session sweeps cover one room thoroughly per session.', toolsNeeded: [], lookFor: 'Confirmed clear window.', timeMinutes: 15 },
+        ],
+      },
+      {
+        name: '2. Whole-house RF baseline',
+        goal: 'Establish what RF should be present across the residence.',
+        steps: [
+          { num: 4, action: 'Power down all known electronics', detail: 'Unplug TVs, smart speakers, computers, routers, IoT devices. Leave refrigerator and HVAC for safety. The remaining RF is the unknown.', toolsNeeded: [], lookFor: 'A near-quiet RF environment except for external sources.', timeMinutes: 15 },
+          { num: 5, action: 'Whole-house wide-spectrum sweep', detail: '10 MHz – 6 GHz from multiple rooms. Capture a baseline scan from each room with electronics off. Any signal in this baseline is either external (neighbor WiFi, cellular tower, broadcast) or persistent and warrants investigation.', toolsNeeded: ['HackRF + GQRX', 'TinySA Ultra', 'OSCOR'], lookFor: 'Persistent signals at unexplained locations or frequencies.', timeMinutes: 60 },
+        ],
+      },
+      {
+        name: '3. Per-room thorough sweep',
+        goal: 'For each prioritized room: visual + RF + NLJD + physical inspection.',
+        steps: [
+          { num: 6, action: 'Visual inspection per room', detail: 'Follow the office or hotel visual checklist depending on room type. Bedrooms and home offices get the most attention.', toolsNeeded: ['Flashlight', 'Lens finder', 'Mirror', 'Trim tools'], lookFor: 'Same items as office sweep, scaled across the residence.', timeMinutes: 45 },
+          { num: 7, action: 'NLJD pass — all walls, furniture, upholstery', detail: 'Especially: behind / inside / above the bed; around the dining table; the home office desk; couches in the living room.', toolsNeeded: ['NLJD'], lookFor: 'Strong response at non-electrical wall sections, in furniture interiors.', timeMinutes: 60 },
+          { num: 8, action: 'Per-room dwell on RF anomalies', detail: 'For each unexplained signal from the baseline, dwell, capture, demodulate. Triangulate the source by RSSI as you move through the room.', toolsNeeded: ['HackRF + GQRX', 'Directional antenna'], lookFor: 'RSSI peak that lets you triangulate the source physically.', timeMinutes: 45 },
+        ],
+      },
+      {
+        name: '4. Network and IoT audit',
+        goal: 'The home network is increasingly the largest attack surface.',
+        steps: [
+          { num: 9, action: 'Router admin audit', detail: 'Connect to router admin. Review all admin users, password complexity, firmware version, port forwarding rules, VPN configurations, custom firmware.', toolsNeeded: ['Network access'], lookFor: 'Unfamiliar admin accounts, port forwards the occupant didn\'t create, non-OEM firmware.', timeMinutes: 30 },
+          { num: 10, action: 'Smart speaker / smart TV inspection', detail: 'Each smart device: review account that owns it, firmware version, voice history (Alexa, Google, Siri logs), connected services. Default-factory-reset is the strongest hygiene step.', toolsNeeded: [], lookFor: 'Devices linked to unfamiliar accounts, voice history with unrecognized queries.', timeMinutes: 45 },
+          { num: 11, action: 'Network device fingerprinting', detail: 'Scan + fingerprint every device on the network. Reconcile against the occupant\'s inventory.', toolsNeeded: ['nmap', 'Fing'], lookFor: 'Devices the occupant cannot identify by MAC + behavior.', timeMinutes: 30 },
+        ],
+      },
+      {
+        name: '5. Powerline / mains check',
+        goal: 'Carrier-current devices use home electrical wiring.',
+        steps: [
+          { num: 12, action: 'Powerline carrier-current scan', detail: 'Inductive coupling at the main panel + at each circuit. Scan 10 kHz – 500 kHz.', toolsNeeded: ['REI TALAN (powerline mode)', 'Airspy HF+ + inductive probe'], lookFor: 'Modulated signals on building wiring. See Cellular intercept · carrier-current section.', timeMinutes: 45 },
+        ],
+      },
+      {
+        name: '6. Documentation and follow-up',
+        goal: 'Long-term sweeps generate the most extensive reports. Plan follow-up.',
+        steps: [
+          { num: 13, action: 'Document each room, each finding, each baseline', detail: 'Photo, RF capture, NLJD location maps. This becomes the baseline for the NEXT sweep.', toolsNeeded: ['Camera', 'Survey form'], lookFor: '', timeMinutes: 60 },
+          { num: 14, action: 'Recommend hygiene actions and follow-up cadence', detail: 'Network cleanup recommendations, device replacements, lockdown configurations, follow-up sweep schedule.', toolsNeeded: ['Report template'], lookFor: '', timeMinutes: 60 },
+        ],
+      },
+    ],
+    reportRef: 'See /rf?section=report. Residence sweeps generate the most comprehensive reports — preserve detailed baselines for cross-sweep comparison.',
+  },
+]
+
 export const rfSearchEntries: RawSearchEntry[] = [
   ...freqReference.flatMap(c => c.bands.map<RawSearchEntry>(b => ({ title: b.name, aka: `${c.category} · ${b.start}–${b.end}`, subtitle: b.notes, section: 'freq' }))),
   ...tscmDevices.map<RawSearchEntry>(d => ({ title: d.name, aka: `${d.freqRange} · ${d.modulation}`, subtitle: d.notes, section: 'tscm' })),
@@ -1792,4 +2092,6 @@ export const rfSearchEntries: RawSearchEntry[] = [
   ...rbsTechniques.map<RawSearchEntry>(t => ({ title: t.name, aka: `Rogue BS · ${t.generation}`, subtitle: t.description, section: 'rbs' })),
   ...rbsHardware.map<RawSearchEntry>(h => ({ title: h.name, aka: `RBS hardware · ${h.type}`, subtitle: h.capabilities.join(' · '), section: 'rbs' })),
   ...rbsDetectionMethods.map<RawSearchEntry>(d => ({ title: d.method, aka: `RBS detection · ${d.category}`, subtitle: d.description, section: 'rbs' })),
+  ...sweepPlans.map<RawSearchEntry>(p => ({ title: p.roomType, aka: 'Sweep plan', subtitle: p.scope, section: 'sweepplan' })),
+  ...sweepPlans.flatMap(p => p.phases.flatMap(ph => ph.steps.map<RawSearchEntry>(s => ({ title: s.action, aka: `Sweep plan · ${p.roomType} · ${ph.name}`, subtitle: s.detail, section: 'sweepplan' })))),
 ]

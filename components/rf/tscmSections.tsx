@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { useUrlSyncedQueryParam } from "@/lib/queryParam"
 import { externalHref } from '@/lib/url'
 import {
   sdrDevices, sweepMethodology, physicalIndicators, modulations,
   counterSurvIndicators, bugFrequencies, tscmTools, antennaTypes, linkBudgetFormulas,
+  sweepPlans,
 } from '@/lib/rf/data'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -502,6 +504,128 @@ export function AntennaLinkBudget() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Sweep Planner ───────────────────────────────────────────────────────────
+
+export function SweepPlanner() {
+  const [planId, setPlanId] = useState<typeof sweepPlans[number]['id']>('office')
+  const [openPhase, setOpenPhase] = useState<string | null>(null)
+  const plan = sweepPlans.find(p => p.id === planId)!
+
+  const totalMinutes = useMemo(() => plan.phases.reduce(
+    (sum, phase) => sum + phase.steps.reduce((s, step) => s + step.timeMinutes, 0), 0
+  ), [plan])
+
+  // Collect distinct tools across all steps in this plan for the at-a-glance kit list.
+  const toolKit = useMemo(() => {
+    const set = new Set<string>()
+    for (const phase of plan.phases) for (const step of phase.steps) for (const t of step.toolsNeeded) set.add(t)
+    return Array.from(set).sort()
+  }, [plan])
+
+  return (
+    <div>
+      <SectionHeader title="Sweep planner"
+        sub="Room-type playbooks tying tools, methodology, and the survey report into one workflow — start here if you're planning a sweep" />
+
+      <div className="bg-emerald-950/20 border border-emerald-900/40 rounded p-3 mb-5 text-xs font-mono text-emerald-300 leading-relaxed">
+        Each plan is the end-to-end workflow for one common room/site type. Phases run in order; steps within a phase can be reordered to fit available time. Cross-references: see <Link href="?section=sweep" className="underline hover:text-emerald-200">Sweep methodology</Link> for the underlying technique reference, <Link href="?section=tools" className="underline hover:text-emerald-200">TSCM tools</Link> for kit details, and <Link href="?section=report" className="underline hover:text-emerald-200">Survey report</Link> for documentation.
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Room type:</span>
+        {sweepPlans.map(p => (
+          <button key={p.id} onClick={() => { setPlanId(p.id); setOpenPhase(null) }}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${planId === p.id ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>
+            {p.roomType}
+          </button>
+        ))}
+      </div>
+
+      <div className="border border-zinc-800 rounded p-4 bg-zinc-900/20 mb-4 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-base font-mono font-semibold text-zinc-100">{plan.roomType}</h3>
+          <div className="flex gap-2 flex-wrap">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400">{plan.typicalDuration}</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">step total ≈ {totalMinutes} min</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">{plan.phases.length} phases · {plan.phases.reduce((s, p) => s + p.steps.length, 0)} steps</span>
+          </div>
+        </div>
+        <p className="text-xs font-mono text-zinc-400 leading-relaxed">{plan.scope}</p>
+        <div>
+          <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">Primary threats</div>
+          <ul className="space-y-1">
+            {plan.primaryThreats.map((t, i) => (
+              <li key={i} className="text-xs font-mono text-amber-400 flex gap-2"><span className="text-zinc-700">→</span>{t}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">Kit (tools referenced across this plan)</div>
+          <div className="flex flex-wrap gap-1.5">
+            {toolKit.map(t => (
+              <span key={t} className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {plan.phases.map(phase => {
+          const isOpen = openPhase === phase.name
+          const phaseMinutes = phase.steps.reduce((s, step) => s + step.timeMinutes, 0)
+          return (
+            <div key={phase.name} className="border border-zinc-800 rounded overflow-hidden">
+              <button onClick={() => setOpenPhase(isOpen ? null : phase.name)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900/40 hover:bg-zinc-900 transition-colors text-left">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-mono font-semibold text-zinc-100">{phase.name}</div>
+                  <div className="text-[11px] font-mono text-zinc-500 mt-0.5">{phase.goal}</div>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-[10px] font-mono text-zinc-600">≈ {phaseMinutes} min · {phase.steps.length} steps</span>
+                  <span className="text-zinc-600 text-xs">{isOpen ? '▲' : '▼'}</span>
+                </div>
+              </button>
+              {isOpen && (
+                <div className="border-t border-zinc-800 p-4 bg-zinc-950/30">
+                  <ol className="space-y-3">
+                    {phase.steps.map(step => (
+                      <li key={step.num} className="border border-zinc-800 rounded p-3 bg-zinc-900/20">
+                        <div className="flex items-baseline gap-2 mb-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono font-bold text-emerald-500 flex-shrink-0">{String(step.num).padStart(2, '0')}</span>
+                          <span className="text-xs font-mono font-semibold text-zinc-100">{step.action}</span>
+                          <span className="text-[10px] font-mono text-zinc-600 ml-auto">≈ {step.timeMinutes} min</span>
+                        </div>
+                        <p className="text-[11px] font-mono text-zinc-300 leading-relaxed mb-2">{step.detail}</p>
+                        {step.lookFor && (
+                          <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2 mb-2">
+                            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">Look for: </span>
+                            <span className="text-[11px] font-mono text-amber-400">{step.lookFor}</span>
+                          </div>
+                        )}
+                        {step.toolsNeeded.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 items-center">
+                            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">Tools:</span>
+                            {step.toolsNeeded.map(t => (
+                              <span key={t} className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">{t}</span>
+                            ))}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="text-[11px] font-mono text-zinc-500 mt-5">{plan.reportRef}</p>
     </div>
   )
 }

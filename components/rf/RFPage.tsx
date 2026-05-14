@@ -8,7 +8,7 @@ import {
 } from './sections'
 import {
   SDRReference, SweepMethodology, PhysicalIndicators, ModulationRef,
-  CounterSurv, BugFrequencies, TSCMToolRef, AntennaLinkBudget,
+  CounterSurv, BugFrequencies, TSCMToolRef, AntennaLinkBudget, SweepPlanner,
 } from './tscmSections'
 import {
   DeviceTaxonomy, ThreatActors, SpectrumBaseline, TempestRef,
@@ -25,6 +25,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   rogue:          <RogueAP />,
   sdr:            <SDRReference />,
   sweep:          <SweepMethodology />,
+  sweepplan:      <SweepPlanner />,
   physical:       <PhysicalIndicators />,
   modulation:     <ModulationRef />,
   countersurv:    <CounterSurv />,
