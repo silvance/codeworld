@@ -1,25 +1,33 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
-// Lets each subpage honor `?section=<id>` deep-links from the global search bar.
-// Reads window.location.search once on mount and switches the active section if
-// the requested id matches one of the page's known NAV ids.
+// Lets each subpage honor `?section=<id>` deep-links from the global search
+// bar AND from same-page <Link> clicks (e.g. workflow steps that jump to a
+// different section on the same /osint page).
 //
+// Uses Next.js's useSearchParams so that client-side navigations on the same
+// route — which don't remount the component — still flip the active section.
 // The returned setActive is wrapped: when called by the sidebar (i.e. user
 // initiated), it clears ?q= from the URL so the new section starts with a
-// clean filter input. The initial URL-driven setState happens through the
-// internal _setActive and does NOT clear q=, so deep-links land with the
-// section's local search input pre-populated.
+// clean filter input.
 export function useSectionParam<T extends string>(defaultId: T, validIds: readonly T[]) {
+  const searchParams = useSearchParams()
   const [active, _setActive] = useState<T>(defaultId)
 
-  // Read once on mount to honor ?section=<id> deep-links from the search bar.
+  // React to ?section=<id> changes — covers initial load AND in-page <Link>
+  // navigations that update the search params without remounting. The
+  // setState inside the effect is intentional (external-source sync).
   useEffect(() => {
-    const param = new URLSearchParams(window.location.search).get('section')
-    if (param && (validIds as readonly string[]).includes(param)) _setActive(param as T)
+    const param = searchParams.get('section')
+    if (param && (validIds as readonly string[]).includes(param) && param !== active) {
+      _setActive(param as T)
+    }
+    // validIds is stable per page; active is intentionally excluded so this
+    // only fires when the URL actually changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [searchParams])
 
   const setActive = useCallback((next: T) => {
     _setActive(next)

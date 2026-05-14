@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import MobilePage from '@/components/mobile/MobilePage'
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function MobileRoute() {
-  return <MobilePage />
+  return <Suspense><MobilePage /></Suspense>
 }

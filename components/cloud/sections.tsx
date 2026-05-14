@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { readInitialQueryParam } from "@/lib/queryParam"
+import { useUrlSyncedQueryParam } from "@/lib/queryParam"
 import {
   awsServices, azureServices, gcpServices,
   auditEvents, misconfigs, iamPaths, storageAttacks,
@@ -49,7 +49,7 @@ function ProviderRef({
   badge: 'AWS' | 'Azure' | 'GCP'
   services: CloudService[]
 }) {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [cat, setCat] = useState('ALL')
   const cats = ['ALL', ...Array.from(new Set(services.map(s => s.category)))]
 
@@ -98,7 +98,7 @@ export const GCPReference   = () => <ProviderRef title="GCP reference"   sub="Cr
 // ─── IAM attack paths ─────────────────────────────────────────────────────────
 
 export function IAMAttacks() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [cloud, setCloud] = useState<'ALL' | 'AWS' | 'Azure' | 'GCP'>('ALL')
   const filtered = iamPaths.filter(p => {
     if (cloud !== 'ALL' && p.cloud !== cloud) return false

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { readInitialQueryParam } from "@/lib/queryParam"
+import { useUrlSyncedQueryParam } from "@/lib/queryParam"
 import {
   threatDevices, threatActors, spectrumBaselines, tempestEntries,
   countermeasures, cellularThreats, trainingScenarios, surveyReportTemplate,
@@ -45,7 +45,7 @@ const diffBadge = (d: string) => {
 // ─── 1. Technical Device Taxonomy ─────────────────────────────────────────────
 
 export function DeviceTaxonomy() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
   const [sophFilter, setSophFilter] = useState('ALL')
   const [open, setOpen] = useState<string | null>(null)
