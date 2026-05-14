@@ -11,6 +11,8 @@ import {
   darkWebSources, corpSources,
   emailOSINT, geoTools, cryptoOSINT, codeOSINT, archiveOSINT,
   vehicleOSINT, documentOSINT, verificationToolkit,
+  cryptoConcepts, cryptoWalletArtifacts, cryptoObfuscation,
+  cryptoOfframps, cryptoCasePatterns,
 } from '@/lib/osint/data'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -605,49 +607,170 @@ export function GeoOSINTSection() {
 // ─── Crypto / Blockchain OSINT ────────────────────────────────────────────────
 
 export function CryptoOSINTSection() {
-  const [search, setSearch] = useState(() => readInitialQueryParam('q'))
-  const [catFilter, setCatFilter] = useState('ALL')
-  const cats = ['ALL', ...Array.from(new Set(cryptoOSINT.map(t => t.category)))]
+  const [tab, setTab] = useState<'concepts' | 'tools' | 'wallets' | 'obfuscation' | 'offramps' | 'patterns'>('concepts')
 
-  const filtered = useMemo(() => cryptoOSINT.filter(t => {
-    if (catFilter !== 'ALL' && t.category !== catFilter) return false
-    if (!search) return true
-    const q = search.toLowerCase()
-    return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q)
-  }), [catFilter, search])
+  const TABS = [
+    { id: 'concepts',    label: 'Concepts',           count: cryptoConcepts.length },
+    { id: 'tools',       label: 'Tools',              count: cryptoOSINT.length },
+    { id: 'wallets',     label: 'Wallet artifacts',   count: cryptoWalletArtifacts.length },
+    { id: 'obfuscation', label: 'Mixers / bridges',   count: cryptoObfuscation.length },
+    { id: 'offramps',    label: 'Off-ramps · freeze', count: cryptoOfframps.length },
+    { id: 'patterns',    label: 'Case patterns',      count: cryptoCasePatterns.length },
+  ] as const
 
   return (
     <div>
-      <SH title="Crypto / blockchain OSINT" sub="Block explorers, wallet clustering, attribution, sanctions screening" />
-      <div className="flex gap-3 mb-5 flex-wrap">
-        <input placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-48 ${inputCls}`} />
-        <div className="flex flex-wrap gap-1">
-          {cats.map(c => (
-            <button key={c} onClick={() => setCatFilter(c)}
-              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
-                catFilter === c ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600 hover:text-zinc-300'
-              }`}>{c}</button>
-          ))}
-        </div>
+      <SH title="Crypto / blockchain investigations" sub="Concepts · tools · wallet artifacts · obfuscation · off-ramps · case patterns" />
+      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400 leading-relaxed">
+        Reference material for analysts who don&apos;t work crypto cases regularly. Start with <strong>Concepts</strong> if you&apos;re new — the terms in case files all show up there. Then <strong>Case patterns</strong> for the shapes you&apos;ll most likely encounter.
       </div>
-      <div className="space-y-3">
-        {filtered.map(t => (
-          <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
-            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
-              <div>
-                <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
-                <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
-              </div>
-              <div className="flex gap-1.5">
-                <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
-                <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
-              </div>
-            </div>
-            <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
-            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
-          </div>
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${tab === t.id ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>
+            {t.label} <span className="text-zinc-600">· {t.count}</span>
+          </button>
         ))}
       </div>
+
+      {tab === 'concepts' && (
+        <div className="space-y-3">
+          {cryptoConcepts.map(c => (
+            <div key={c.term} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+              <div className="text-sm font-mono font-semibold text-zinc-100">{c.term}</div>
+              <p className="text-xs font-mono text-zinc-300 italic">{c.oneLiner}</p>
+              <p className="text-xs font-mono text-zinc-400 leading-relaxed">{c.detail}</p>
+              <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+                <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">Why it matters: </span>
+                <span className="text-xs font-mono text-amber-400">{c.whyItMatters}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'tools' && (
+        <div className="space-y-3">
+          {cryptoOSINT.map(t => (
+            <div key={t.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+              <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                <div>
+                  <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
+                  <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
+                </div>
+                <div className="flex gap-1.5">
+                  <Badge text={t.category} cls="bg-zinc-800 text-zinc-400" />
+                  <Badge text={t.cost} cls="bg-zinc-800 text-zinc-500" />
+                </div>
+              </div>
+              <p className="text-xs font-mono text-zinc-300 mb-1.5">{t.what}</p>
+              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{t.notes}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'wallets' && (
+        <div className="space-y-3">
+          {cryptoWalletArtifacts.map(w => (
+            <div key={w.wallet} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-mono font-semibold text-zinc-100">{w.wallet}</span>
+                <Badge text={w.type} cls="bg-purple-950 text-purple-400" />
+                <Badge text={w.platform} cls="bg-zinc-800 text-zinc-400" />
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Paths</div>
+                <ul className="space-y-1">
+                  {w.paths.map((p, i) => <li key={i}><code className="text-[11px] font-mono text-emerald-400 break-all">{p}</code></li>)}
+                </ul>
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Artifacts</div>
+                <ul className="space-y-1">
+                  {w.artifacts.map((a, i) => <li key={i} className="text-xs font-mono text-zinc-300 flex gap-2"><span className="text-zinc-700">·</span>{a}</li>)}
+                </ul>
+              </div>
+              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{w.notes}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'obfuscation' && (
+        <div className="space-y-3">
+          {cryptoObfuscation.map(o => (
+            <div key={o.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-mono font-semibold text-zinc-100">{o.name}</span>
+                <Badge text={o.type} cls="bg-rose-950 text-rose-400" />
+                <Badge text={o.chains} cls="bg-zinc-800 text-zinc-400" />
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Indicators</div>
+                <ul className="space-y-1">
+                  {o.indicators.map((ind, i) => <li key={i} className="text-xs font-mono text-zinc-300 flex gap-2"><span className="text-zinc-700">·</span>{ind}</li>)}
+                </ul>
+              </div>
+              <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+                <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI: </span>
+                <span className="text-xs font-mono text-amber-400">{o.ciValue}</span>
+              </div>
+              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{o.notes}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'offramps' && (
+        <div className="space-y-3">
+          {cryptoOfframps.map(o => (
+            <div key={o.name} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-mono font-semibold text-zinc-100">{o.name}</span>
+                <Badge text={o.type} cls="bg-teal-950 text-teal-400" />
+                <Badge text={o.kyc} cls={o.kyc.startsWith('Full KYC') && !o.kyc.includes('variable') ? 'bg-emerald-950 text-emerald-400' : o.kyc.startsWith('No KYC') || o.kyc.startsWith('None') ? 'bg-red-950 text-red-400' : 'bg-amber-950 text-amber-400'} />
+                <Badge text={`Cooperation: ${o.cooperation}`} cls={o.cooperation.startsWith('High') ? 'bg-emerald-950 text-emerald-400' : o.cooperation.startsWith('Mixed') ? 'bg-amber-950 text-amber-400' : 'bg-red-950 text-red-400'} />
+              </div>
+              <div className="text-xs font-mono text-zinc-400"><span className="text-zinc-600">Jurisdiction: </span>{o.jurisdiction}</div>
+              <div>
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Legal process</div>
+                <p className="text-xs font-mono text-zinc-300 leading-relaxed">{o.legalProcess}</p>
+              </div>
+              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{o.notes}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'patterns' && (
+        <div className="space-y-3">
+          {cryptoCasePatterns.map(p => (
+            <div key={p.pattern} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-mono font-semibold text-zinc-100">{p.pattern}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                <div><span className="text-zinc-600">Chain: </span><span className="text-zinc-300">{p.typicalChain}</span></div>
+                <div><span className="text-zinc-600">Amount: </span><span className="text-zinc-300">{p.typicalAmount}</span></div>
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Typical flow</div>
+                <ul className="space-y-1">
+                  {p.flow.map((step, i) => <li key={i} className="text-xs font-mono text-zinc-300">{step}</li>)}
+                </ul>
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Investigative pivots</div>
+                <ul className="space-y-1">
+                  {p.pivots.map((piv, i) => <li key={i} className="text-xs font-mono text-emerald-400 flex gap-2"><span className="text-zinc-700">→</span>{piv}</li>)}
+                </ul>
+              </div>
+              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">{p.notes}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
