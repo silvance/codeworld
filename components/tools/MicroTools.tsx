@@ -112,50 +112,6 @@ function yamlToJson(yaml: string): unknown {
     return line.match(/^(\s*)/)?.[1].length ?? 0
   }
 
-  function parseBlock(startIdx: number, baseIndent: number): [unknown, number] {
-    const firstLine = lines[startIdx]
-    const isListItem = firstLine.trim().startsWith('- ')
-
-    // Detect if this block is a list
-    let i = startIdx
-    const blockLines: string[] = []
-    while (i < lines.length) {
-      const ind = getIndent(lines[i])
-      if (ind < baseIndent && i !== startIdx) break
-      blockLines.push(lines[i])
-      i++
-    }
-
-    // List block
-    if (blockLines.every(l => l.trim().startsWith('- ') || getIndent(l) > baseIndent)) {
-      const result: unknown[] = []
-      let j = 0
-      while (j < blockLines.length) {
-        const l = blockLines[j]
-        if (l.trim().startsWith('- ')) {
-          const rest = l.trim().slice(2)
-          if (rest.includes(': ') || (rest === '' && j + 1 < blockLines.length)) {
-            // nested object item
-            const subLines = rest ? [' '.repeat(baseIndent) + rest] : []
-            let k = j + 1
-            while (k < blockLines.length && !blockLines[k].trim().startsWith('- ')) {
-              subLines.push(blockLines[k])
-              k++
-            }
-            const sub = parseLines(subLines, baseIndent)
-            result.push(sub)
-            j = k
-          } else {
-            result.push(parseValue(rest))
-            j++
-          }
-        } else { j++ }
-      }
-      return [result, startIdx + blockLines.length]
-    }
-
-    return [parseLines(blockLines, baseIndent), startIdx + blockLines.length]
-  }
 
   function parseLines(ls: string[], baseIndent: number): unknown {
     const result: Record<string, unknown> = {}
@@ -309,6 +265,17 @@ export function JSONYAMLConverter() {
 // 2. URL PARSER
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function URLRow({ label, value, mono = true, highlight = false }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
+  if (!value) return null
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-zinc-800/50 last:border-0">
+      <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider w-28 flex-shrink-0 pt-0.5">{label}</span>
+      <span className={`flex-1 text-xs break-all ${mono ? 'font-mono' : ''} ${highlight ? 'text-amber-400' : 'text-zinc-300'}`}>{value}</span>
+      <Copy text={value} />
+    </div>
+  )
+}
+
 export function URLParser() {
   const [input, setInput] = useState('')
 
@@ -366,16 +333,6 @@ export function URLParser() {
     'http://192.168.1.100:8080/cgi-bin/shell.cgi?cmd=whoami',
   ]
 
-  function Row({ label, value, mono = true, highlight = false }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
-    if (!value) return null
-    return (
-      <div className="flex items-start gap-3 py-2.5 border-b border-zinc-800/50 last:border-0">
-        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider w-28 flex-shrink-0 pt-0.5">{label}</span>
-        <span className={`flex-1 text-xs break-all ${mono ? 'font-mono' : ''} ${highlight ? 'text-amber-400' : 'text-zinc-300'}`}>{value}</span>
-        <Copy text={value} />
-      </div>
-    )
-  }
 
   return (
     <div>
@@ -408,15 +365,15 @@ export function URLParser() {
                 <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Components</span>
               </div>
               <div className="px-4">
-                <Row label="Scheme"   value={result.scheme} />
-                <Row label="Host"     value={result.host} />
-                <Row label="Port"     value={result.portExplicit ? result.portExplicit : `${result.port} (default)`} highlight={!!result.portExplicit} />
-                <Row label="Origin"   value={result.origin} />
-                <Row label="Path"     value={result.path} />
-                <Row label="Query"    value={result.query} />
-                <Row label="Fragment" value={result.fragment} />
-                {result.username && <Row label="Username" value={result.username} highlight />}
-                {result.password && <Row label="Password" value={result.password} highlight />}
+                <URLRow label="Scheme"   value={result.scheme} />
+                <URLRow label="Host"     value={result.host} />
+                <URLRow label="Port"     value={result.portExplicit ? result.portExplicit : `${result.port} (default)`} highlight={!!result.portExplicit} />
+                <URLRow label="Origin"   value={result.origin} />
+                <URLRow label="Path"     value={result.path} />
+                <URLRow label="Query"    value={result.query} />
+                <URLRow label="Fragment" value={result.fragment} />
+                {result.username && <URLRow label="Username" value={result.username} highlight />}
+                {result.password && <URLRow label="Password" value={result.password} highlight />}
               </div>
             </div>
 
@@ -768,6 +725,274 @@ export function CronVisualizer() {
             ))}
           </div>
         </details>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. PUSH TOKEN IDENTIFIER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface TokenMatch {
+  provider: string
+  confidence: 'High' | 'Medium' | 'Low'
+  reason: string
+  details: { label: string; value: string }[]
+  notes: string
+}
+
+function identifyPushToken(raw: string): TokenMatch[] {
+  const t = raw.trim()
+  if (!t) return []
+
+  const matches: TokenMatch[] = []
+  const len = t.length
+  const isHex = /^[0-9a-fA-F]+$/.test(t)
+  const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(t)
+  const isUrl = /^https?:\/\//i.test(t)
+  const isB64Like = /^[A-Za-z0-9_\-+/=:]+$/.test(t) && t.length > 30
+
+  // ── FCM / GCM (Firebase Cloud Messaging) ─────────────────────────────────
+  // Format: <INSTANCE_ID>:APA91b<base64-stuff>. The :APA91b prefix on the
+  // second segment is a strong signature; INSTANCE_ID is typically 11-22 chars
+  // URL-safe base64.
+  if (t.includes(':APA91b')) {
+    const [iid, body] = t.split(':APA91b')
+    matches.push({
+      provider: 'FCM (Firebase Cloud Messaging)',
+      confidence: 'High',
+      reason: 'Contains the canonical ":APA91b" separator that splits Instance ID from token body.',
+      details: [
+        { label: 'Total length', value: `${len} chars` },
+        { label: 'Instance ID', value: iid || '(empty)' },
+        { label: 'Token body', value: `APA91b${body?.slice(0, 24) ?? ''}…` },
+      ],
+      notes: 'Used by Android apps and many cross-platform apps via the Firebase SDK. Token rotates on app reinstall, data clear, or token-refresh callback. Lookup: instance ID → device, token → app+device.',
+    })
+  }
+
+  // ── WNS (Windows Notification Service) ───────────────────────────────────
+  if (isUrl && /\.notify\.windows\.com/i.test(t)) {
+    matches.push({
+      provider: 'WNS (Windows Notification Service)',
+      confidence: 'High',
+      reason: 'URL on a *.notify.windows.com host — WNS uses a per-channel HTTPS URI as its push target.',
+      details: [
+        { label: 'Total length', value: `${len} chars` },
+        { label: 'Host', value: new URL(t).host },
+      ],
+      notes: 'Used by Windows 10/11 UWP apps. The URI itself is the addressable endpoint; rotate when the app re-registers a push channel. Modern Win32 apps often use FCM via the Windows Notification Hub instead.',
+    })
+  }
+
+  // ── MPNS (Microsoft Push Notification Service — legacy WP) ──────────────
+  if (isUrl && /\.notify\.live\.net/i.test(t)) {
+    matches.push({
+      provider: 'MPNS (Microsoft Push Notification Service)',
+      confidence: 'High',
+      reason: 'URL on a *.notify.live.net host — MPNS is the legacy Windows Phone push service (deprecated).',
+      details: [
+        { label: 'Total length', value: `${len} chars` },
+        { label: 'Host', value: new URL(t).host },
+      ],
+      notes: 'Deprecated in 2017. Seeing this token in current data is a strong signal of legacy / archival material from Windows Phone 7/8.x.',
+    })
+  }
+
+  // ── AWS SNS endpoint ARN ─────────────────────────────────────────────────
+  if (/^arn:aws:sns:[a-z0-9-]+:\d{12}:endpoint\//.test(t)) {
+    const parts = t.split(':')
+    matches.push({
+      provider: 'AWS SNS Platform Endpoint ARN',
+      confidence: 'High',
+      reason: 'arn:aws:sns:<region>:<acct>:endpoint/... format. Wraps an underlying APNs / FCM / Baidu token.',
+      details: [
+        { label: 'Region', value: parts[3] ?? '' },
+        { label: 'Account ID', value: parts[4] ?? '' },
+        { label: 'Resource path', value: t.slice(t.indexOf('endpoint/')) },
+      ],
+      notes: 'The ARN is the AWS-side handle; the underlying provider token is stored in the Endpoint\'s Token attribute. Need AWS access (or the original CreatePlatformEndpoint logs) to recover the underlying token.',
+    })
+  }
+
+  // ── OneSignal Player ID (UUID format) ────────────────────────────────────
+  if (isUUID) {
+    matches.push({
+      provider: 'OneSignal Player ID (or generic UUIDv4)',
+      confidence: 'Low',
+      reason: '36-char UUID. OneSignal Player IDs are UUIDs, but most UUIDs are NOT push tokens — confirm by context.',
+      details: [
+        { label: 'Format', value: 'UUID 8-4-4-4-12' },
+      ],
+      notes: 'OneSignal SDKs record this as the per-device player ID. Lookup requires OneSignal app credentials; the underlying APNs / FCM token is owned by OneSignal. If you have neither, this string alone isn\'t actionable.',
+    })
+  }
+
+  // ── APNs (Apple Push Notification service) ───────────────────────────────
+  // Modern APNs device tokens: 32-byte (64 hex chars). Older: variable length
+  // base64. Hex check is the dominant modern format.
+  if (isHex && len === 64) {
+    matches.push({
+      provider: 'APNs device token (modern, 32-byte)',
+      confidence: 'High',
+      reason: 'Exactly 64 hex chars = 32 raw bytes. This is the canonical modern APNs token length.',
+      details: [
+        { label: 'Length', value: '64 hex chars (32 bytes)' },
+      ],
+      notes: 'Issued by APNs to an iOS app on registerForRemoteNotifications. Token rotates on app reinstall, OS upgrade, or backup-restore-to-different-device. Often stored in app Preferences plist or app keychain item.',
+    })
+  } else if (isHex && len >= 60 && len <= 200 && len !== 64) {
+    matches.push({
+      provider: 'Possible APNs token (legacy / non-standard length)',
+      confidence: 'Medium',
+      reason: `Hex string of length ${len} — APNs tokens can vary in older logs and some intermediary representations. Most often 64 chars.`,
+      details: [
+        { label: 'Length', value: `${len} hex chars (${len / 2} bytes)` },
+      ],
+      notes: 'Hex APNs tokens of non-64 length sometimes appear in legacy logs or after certain encoding transforms (e.g. wrapped with leading length byte).',
+    })
+  }
+
+  // ── FBNS (Facebook / Instagram) ──────────────────────────────────────────
+  // FBNS tokens come from Facebook\'s MQTT-based push and don\'t have a clean
+  // single-format signature. Common pattern: long alphanumeric strings inside
+  // an MQTT registration payload, often wrapped as JSON. Heuristic only.
+  if (isB64Like && len > 100 && len < 300 && !t.includes(':APA91b') && !isHex) {
+    matches.push({
+      provider: 'Possible FBNS / proprietary push token',
+      confidence: 'Low',
+      reason: 'Long base64-shaped string that doesn\'t match other known formats. FBNS (Facebook / Instagram), Huawei HMS Push, Xiaomi MiPush, and similar proprietary services all produce tokens in this shape.',
+      details: [
+        { label: 'Length', value: `${len} chars` },
+        { label: 'Charset', value: 'Base64-like' },
+      ],
+      notes: 'Identification by format alone is unreliable for these. Lookup the source app: presence of com.facebook.* / com.instagram.android packages on Android, or Facebook / Instagram bundle IDs on iOS, strongly suggests FBNS.',
+    })
+  }
+
+  // ── Pushover device key ──────────────────────────────────────────────────
+  if (/^[a-zA-Z0-9]{30}$/.test(t)) {
+    matches.push({
+      provider: 'Pushover device or user key',
+      confidence: 'Medium',
+      reason: 'Exactly 30 alphanumeric characters — matches Pushover\'s key format.',
+      details: [
+        { label: 'Length', value: '30 chars' },
+      ],
+      notes: 'Pushover uses 30-char keys for both user identifiers and device names. Without app context (Pushover-installed) this is a guess.',
+    })
+  }
+
+  // ── Expo push token ──────────────────────────────────────────────────────
+  if (/^ExponentPushToken\[/.test(t) || /^ExpoPushToken\[/.test(t)) {
+    matches.push({
+      provider: 'Expo push token (React Native / Expo SDK)',
+      confidence: 'High',
+      reason: 'Begins with ExponentPushToken[ or ExpoPushToken[ — Expo wraps the underlying APNs / FCM token in this format.',
+      details: [
+        { label: 'Length', value: `${len} chars` },
+      ],
+      notes: 'Expo proxies push delivery through their server. The wrapped token does not directly expose APNs / FCM; lookup needs Expo\'s server records or app source credentials.',
+    })
+  }
+
+  return matches
+}
+
+const PUSH_TOKEN_EXAMPLES: { label: string; value: string }[] = [
+  { label: 'APNs (modern, 64 hex)',     value: '740f4707bebcf74f9b7c25d48e3358945f6aa01da5ddb387462c7eaf61bb78ad' },
+  { label: 'FCM (Android)',             value: 'eUJ5HqV6sMA:APA91bH9dEXAMPLEhX_qVXMrA-aUrG7nGqK3xC1Wq0L3Z4N9k2dXl5QlT2pK7m9D5kF8hJ3rN6E9T8wQpXc4F2vN1mG7R5tZcL0bH8aO9eJ2pV4xK6lD3tW2nM5qY7f' },
+  { label: 'WNS (Windows)',             value: 'https://db5.notify.windows.com/?token=AwYAAAB%2bUF%2bAvJlzx2BC0R%2feg' },
+  { label: 'AWS SNS endpoint ARN',      value: 'arn:aws:sns:us-east-1:123456789012:endpoint/APNS/MyApp/abc123de-f456-7890-abcd-ef1234567890' },
+  { label: 'Expo push token',           value: 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]' },
+]
+
+function PushTokenRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 py-2 border-b border-zinc-800/50 last:border-0">
+      <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider w-28 flex-shrink-0 pt-0.5">{label}</span>
+      <span className="flex-1 text-xs font-mono text-zinc-300 break-all">{value}</span>
+    </div>
+  )
+}
+
+export function PushTokenIdentifier() {
+  const [input, setInput] = useState('')
+
+  const result = useMemo(() => identifyPushToken(input), [input])
+
+  return (
+    <div>
+      <SH title="Push token identifier" sub="Paste a push token — APNs, FCM, WNS, FBNS, SNS, OneSignal, Expo, etc. — and identify which provider it belongs to" />
+
+      <div className="mb-4">
+        <textarea
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Paste a push token here…"
+          rows={3}
+          className={areaCls}
+          spellCheck={false}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Examples:</span>
+        {PUSH_TOKEN_EXAMPLES.map(ex => (
+          <button
+            key={ex.label}
+            type="button"
+            onClick={() => setInput(ex.value)}
+            className="px-2 py-1 text-[10px] font-mono bg-zinc-900 border border-zinc-800 rounded text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition-colors"
+          >
+            {ex.label}
+          </button>
+        ))}
+      </div>
+
+      {!input.trim() && (
+        <p className="text-xs font-mono text-zinc-600">Paste or click an example above. Identification runs locally; nothing is sent.</p>
+      )}
+
+      {input.trim() && result.length === 0 && (
+        <div className="border border-zinc-800 rounded p-4 bg-zinc-900/30">
+          <div className="text-xs font-mono text-zinc-300 mb-2">No known push-token format matched.</div>
+          <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
+            Check that you pasted the entire token without surrounding quotes / commas. If the token came from Cellebrite or AXIOM output, those tools sometimes truncate or split tokens across columns. Compare against the raw plist / shared_prefs / database value when possible.
+          </p>
+        </div>
+      )}
+
+      {result.length > 0 && (
+        <div className="space-y-3">
+          {result.map((m, i) => (
+            <div key={i} className="border border-zinc-800 rounded p-4 bg-zinc-900/20">
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <span className="text-sm font-mono font-semibold text-zinc-100">{m.provider}</span>
+                <span className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                  m.confidence === 'High'   ? 'bg-emerald-950 text-emerald-400' :
+                  m.confidence === 'Medium' ? 'bg-amber-950 text-amber-400'    :
+                                              'bg-zinc-800 text-zinc-500'
+                }`}>{m.confidence} confidence</span>
+              </div>
+              <p className="text-[11px] font-mono text-zinc-400 leading-relaxed mb-2">
+                <span className="text-zinc-600 uppercase tracking-wide mr-1">why:</span>{m.reason}
+              </p>
+              <div className="border border-zinc-800 rounded bg-zinc-950/40 px-3 py-1 mb-2">
+                {m.details.map(d => <PushTokenRow key={d.label} label={d.label} value={d.value} />)}
+              </div>
+              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
+                <span className="text-zinc-600 uppercase tracking-wide mr-1">forensic note:</span>{m.notes}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-6 bg-amber-950/20 border border-amber-900/30 rounded p-3 text-[11px] font-mono text-amber-400 leading-relaxed">
+        <div className="text-amber-500 uppercase tracking-wide font-semibold mb-1">Identification limits</div>
+        FCM (:APA91b prefix), WNS / MPNS (URL host), SNS ARN, and Expo wrappers have unique signatures that detect cleanly. APNs and several proprietary services (FBNS, HMS Push, MiPush) overlap in format and can&apos;t be told apart from token shape alone — see the Mobile → Push tokens section for artifact-side context that resolves the ambiguity.
       </div>
     </div>
   )

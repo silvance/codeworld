@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import NetworkPage from '@/components/network/NetworkPage'
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function NetworkRoute() {
-  return <NetworkPage />
+  return <Suspense><NetworkPage /></Suspense>
 }

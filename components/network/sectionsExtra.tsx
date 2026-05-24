@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useUrlSyncedQueryParam } from "@/lib/queryParam"
 import {
   cidrTable, specialRanges,
   tcpdumpCommands,
@@ -13,6 +14,8 @@ import {
   ipv6Entries,
   scapyExamples,
 } from '@/lib/network/data'
+import { sectionTools } from '@/lib/network/sectionTools'
+import ToolsUsedHere from '@/components/ToolsUsedHere'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -55,7 +58,7 @@ const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs
 
 export function SubnetRef() {
   const [view, setView] = useState<'table' | 'special'>('table')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
 
   const filtered = useMemo(() => cidrTable.filter(e =>
     !search || String(e.prefix).includes(search) || e.subnetMask.includes(search)
@@ -135,7 +138,7 @@ export function SubnetRef() {
 
 export function TcpdumpRef() {
   const [catFilter, setCatFilter] = useState('ALL')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const cats = ['ALL', ...Array.from(new Set(tcpdumpCommands.map(c => c.category)))]
   const filtered = useMemo(() => tcpdumpCommands.filter(c => {
     if (catFilter !== 'ALL' && c.category !== catFilter) return false
@@ -146,6 +149,7 @@ export function TcpdumpRef() {
   return (
     <div>
       <SH title="tcpdump cheat sheet" sub="Capture basics · output format · BPF capture filters · ring buffer · useful combos" />
+      <ToolsUsedHere tools={sectionTools.tcpdump ?? []} />
       <div className="flex gap-3 mb-4 flex-wrap">
         <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-40 ${inputCls}`} />
         <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none">
@@ -185,6 +189,7 @@ export function NetcatRef() {
   return (
     <div>
       <SH title="Netcat / Ncat reference" sub="Listeners · connect · port scan · file transfer · reverse shells · shell upgrade" />
+      <ToolsUsedHere tools={sectionTools.netcat ?? []} />
       <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400">
         ⚠ Reverse shells are offensive techniques. Use only on systems you are authorized to test.
       </div>
@@ -234,6 +239,7 @@ export function FirewallRef() {
   return (
     <div>
       <SH title="Firewall rule reference" sub="iptables · nftables · Windows Firewall — view, allow, block, NAT, logging" />
+      <ToolsUsedHere tools={sectionTools.firewall ?? []} />
       <div className="flex gap-3 mb-5 flex-wrap">
         <div className="flex gap-1 flex-wrap">
           {tools.map(t => (
@@ -274,7 +280,7 @@ export function FirewallRef() {
 export function DNSDeepDive() {
   const [toolFilter, setToolFilter] = useState('ALL')
   const [catFilter, setCatFilter] = useState('ALL')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const tools = ['ALL', ...Array.from(new Set(dnsCommands.map(c => c.tool)))]
   const cats = ['ALL', ...Array.from(new Set(dnsCommands.map(c => c.category)))]
   const filtered = useMemo(() => dnsCommands.filter(c => {
@@ -287,6 +293,7 @@ export function DNSDeepDive() {
   return (
     <div>
       <SH title="DNS deep dive" sub="dig · nslookup · host · zone transfer · DoH · DoT · DMARC/SPF/DKIM enumeration" />
+      <ToolsUsedHere tools={sectionTools.dns ?? []} />
       <div className="flex gap-3 mb-4 flex-wrap">
         <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-40 ${inputCls}`} />
         <div className="flex gap-1 flex-wrap">
@@ -324,7 +331,7 @@ export function DNSDeepDive() {
 
 export function TLSRef() {
   const [catFilter, setCatFilter] = useState('ALL')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const cats = ['ALL', ...Array.from(new Set(tlsCommands.map(c => c.category)))]
   const filtered = useMemo(() => tlsCommands.filter(c => {
     if (catFilter !== 'ALL' && c.category !== catFilter) return false
@@ -335,6 +342,7 @@ export function TLSRef() {
   return (
     <div>
       <SH title="TLS/SSL testing" sub="openssl s_client · certificate ops · testssl.sh · nmap TLS scripts" />
+      <ToolsUsedHere tools={sectionTools.tls ?? []} />
       <div className="flex gap-3 mb-4 flex-wrap">
         <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className={`flex-1 min-w-40 ${inputCls}`} />
         <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none">
@@ -373,6 +381,7 @@ export function PivotRef() {
   return (
     <div>
       <SH title="Network pivot & tunneling" sub="SSH tunnels · dynamic SOCKS · chisel · ligolo-ng · proxychains" />
+      <ToolsUsedHere tools={sectionTools.pivot ?? []} />
       <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400">
         ⚠ Pivoting techniques are offensive. Use only in authorized penetration tests or your own lab environment.
       </div>
@@ -429,6 +438,7 @@ export function WirelessRef() {
   return (
     <div>
       <SH title="Wireless reference" sub="Monitor mode · airodump-ng · WPA2 handshake capture · PMKID · rogue AP detection · kismet" />
+      <ToolsUsedHere tools={sectionTools.wireless ?? []} />
       <div className="bg-red-950/20 border border-red-900/40 rounded p-3 mb-5 text-xs font-mono text-red-400">
         ⚠ Wireless attacks against networks you do not own or have explicit written authorization to test are illegal under 18 USC 1030 and equivalent statutes. Deauthentication attacks disrupt legitimate users — this is a federal crime on unauthorized networks.
       </div>
@@ -518,6 +528,7 @@ export function ScapyRef() {
   return (
     <div>
       <SH title="Scapy packet crafting" sub="Build, send, sniff, and analyze packets in Python — ICMP, TCP, ARP, DNS, fuzzing, pcap" />
+      <ToolsUsedHere tools={sectionTools.scapy ?? []} />
       <div className="bg-blue-950/20 border border-blue-900/30 rounded p-3 mb-5 text-xs font-mono text-blue-400">
         Install: pip install scapy — Run as root/sudo for raw socket access. Interactive: sudo scapy
       </div>

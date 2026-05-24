@@ -40,7 +40,6 @@ function BoxHeader({ title }: { title: string }) {
 }
 
 const inputCls = 'w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-sm font-mono text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-zinc-500'
-const smallInputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500'
 
 // ─── 1. Subnet Calculator ─────────────────────────────────────────────────────
 
@@ -231,6 +230,8 @@ export function TimestampConverter() {
       mac: String(mac),
       hfs: String(unix_s + 2082844800),
       dayOfWeek: d.toLocaleDateString('en-US', { weekday: 'long' }),
+      // Snapshot of "today minus the input time" — not trying to stay live.
+      // eslint-disable-next-line react-hooks/purity
       daysAgo: Math.floor((Date.now() - ms) / 86400000),
     }
   }, [input, mode])
@@ -531,7 +532,6 @@ export function RegexTester() {
   const result = useMemo(() => {
     if (!pattern || !testStr) return null
     try {
-      const re = new RegExp(pattern, flags)
       const matches: { match: string; index: number; groups: string[] }[] = []
       let m: RegExpExecArray | null
       const r = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g')
@@ -665,6 +665,8 @@ export function JWTDecoder() {
     const payload = decode(parts[1])
     if (!header || !payload) return { error: 'Invalid base64url encoding in header or payload' }
 
+    // Snapshot of "now" for expiry display — not trying to stay live.
+    // eslint-disable-next-line react-hooks/purity
     const now = Math.floor(Date.now() / 1000)
     const exp = payload.exp ? new Date(payload.exp * 1000).toISOString() : null
     const iat = payload.iat ? new Date(payload.iat * 1000).toISOString() : null
@@ -1054,8 +1056,6 @@ export function MACLookup() {
     const eui64 = `${clean.slice(0,2)}:${clean.slice(2,4)}:${clean.slice(4,6)}:FF:FE:${clean.slice(6,8)}:${clean.slice(8,10)}:${clean.slice(10,12)}`
     const toggledByte = (firstByte ^ 0x02).toString(16).padStart(2,'0').toUpperCase()
     const modEui64 = `${toggledByte}:${clean.slice(2,4)}:${clean.slice(4,6)}:FF:FE:${clean.slice(6,8)}:${clean.slice(8,10)}:${clean.slice(10,12)}`
-    const linkLocal = `fe80::${modEui64.replace(/:/g,':').split(':').map((s,i) => i%2===0 ? s : '').join('')}${modEui64.replace(/:/g,':').split(':').map((s,i) => i%2!==0 ? s : '').join('')}`
-
     return {
       colon, dash, dot, noSep,
       oui: oui3,
@@ -1167,7 +1167,7 @@ export function UUIDDecoder() {
       std, ms, noSep,
       version, versionName: versionNames[version] ?? `v${version} — Unknown`,
       variant, timestamp, clockSeq, node,
-      isAppleUDID: false,
+      isAppleUDID,
     }
   }, [input])
 

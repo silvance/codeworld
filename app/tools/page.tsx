@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import ToolsPage from '@/components/tools/ToolsPage'
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function ToolsRoute() {
-  return <ToolsPage />
+  return <Suspense><ToolsPage /></Suspense>
 }

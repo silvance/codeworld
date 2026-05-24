@@ -1,41 +1,40 @@
 'use client'
 
 import { useState } from 'react'
+import { useSectionParam } from '@/lib/useSectionParam'
+import { NAV, GROUPS, type SectionId } from '@/lib/osint/nav'
 import {
   SearchOperators, PeopleSearch, SockPuppet, UsernameEnum,
   ImageOSINT, SocialMedia, InfraOSINT, PhoneOSINT, DarkWebOSINT, CorpIntel,
+  EmailOSINTSection, GeoOSINTSection, CryptoOSINTSection, CodeOSINTSection,
+  ArchiveOSINTSection, VehicleOSINTSection, DocumentOSINTSection, VerificationSection,
+  WorkflowsSection,
 } from './sections'
 
-type SectionId = 'search' | 'people' | 'persona' | 'username' | 'image' | 'social' | 'infra' | 'phone' | 'darkweb' | 'corp'
-
-const NAV = [
-  { id: 'search'   as SectionId, label: 'Search operators',    sub: 'Google · Bing · dorks',          icon: '🔎' },
-  { id: 'people'   as SectionId, label: 'People search',       sub: 'Spokeo · Pipl · PACER',          icon: '👤' },
-  { id: 'username' as SectionId, label: 'Username enum',       sub: 'Sherlock · Maigret · breaches',  icon: '🏷' },
-  { id: 'image'    as SectionId, label: 'Image OSINT',         sub: 'Reverse · EXIF · geolocation',   icon: '🖼' },
-  { id: 'social'   as SectionId, label: 'Social media',        sub: 'LinkedIn · Twitter · Facebook',  icon: '📱' },
-  { id: 'infra'    as SectionId, label: 'Domain / IP / infra', sub: 'Shodan · crt.sh · DNS history',  icon: '🌐' },
-  { id: 'phone'    as SectionId, label: 'Phone OSINT',         sub: 'Truecaller · Phoneinfoga',       icon: '📞' },
-  { id: 'darkweb'  as SectionId, label: 'Dark web OSINT',      sub: 'Breaches · Tor · ransomware',    icon: '🕸' },
-  { id: 'corp'     as SectionId, label: 'Corporate intel',     sub: 'SEC · SAM.gov · patents',        icon: '🏢' },
-  { id: 'persona'  as SectionId, label: 'Sock puppet OPSEC',   sub: 'Infrastructure · identity · ops',icon: '🎭' },
-]
-
 const SECTIONS: Record<SectionId, React.ReactNode> = {
+  workflows:<WorkflowsSection />,
   search:   <SearchOperators />,
   people:   <PeopleSearch />,
   persona:  <SockPuppet />,
   username: <UsernameEnum />,
+  email:    <EmailOSINTSection />,
   image:    <ImageOSINT />,
   social:   <SocialMedia />,
   infra:    <InfraOSINT />,
+  archive:  <ArchiveOSINTSection />,
+  code:     <CodeOSINTSection />,
+  crypto:   <CryptoOSINTSection />,
   phone:    <PhoneOSINT />,
   darkweb:  <DarkWebOSINT />,
   corp:     <CorpIntel />,
+  geo:      <GeoOSINTSection />,
+  vehicle:  <VehicleOSINTSection />,
+  document: <DocumentOSINTSection />,
+  verify:   <VerificationSection />,
 }
 
 export default function OSINTPage() {
-  const [active, setActive]           = useState<SectionId>('search')
+  const [active, setActive]               = useSectionParam<SectionId>('workflows', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
@@ -49,21 +48,28 @@ export default function OSINTPage() {
           <div className="text-[10px] font-mono text-zinc-600 mt-0.5">cyber / counterintelligence focus</div>
         </div>
         <nav className="flex-1 overflow-y-auto py-2">
-          {NAV.map(item => (
-            <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
-              className={`w-full text-left px-4 py-2.5 transition-colors border-l-2 ${
-                active === item.id
-                  ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
-                  : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
-              }`}>
-              <div className="flex items-center gap-2">
-                <span className="text-sm leading-none">{item.icon}</span>
-                <div>
-                  <div className="text-xs font-mono leading-tight">{item.label}</div>
-                  <div className="text-[10px] text-zinc-600 mt-0.5 leading-tight">{item.sub}</div>
-                </div>
+          {GROUPS.map(group => (
+            <div key={group}>
+              <div className="px-4 pt-3 pb-1 text-[9px] font-mono font-semibold text-zinc-700 uppercase tracking-widest">
+                {group}
               </div>
-            </button>
+              {NAV.filter(n => n.group === group).map(item => (
+                <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
+                  className={`w-full text-left px-4 py-2 transition-colors border-l-2 ${
+                    active === item.id
+                      ? 'border-red-500 bg-zinc-800 text-zinc-100'
+                      : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm leading-none">{item.icon}</span>
+                    <div>
+                      <div className="text-xs font-mono leading-tight">{item.label}</div>
+                      <div className="text-[9px] text-zinc-600 mt-0.5 leading-tight">{item.sub}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="px-4 py-3 border-t border-zinc-800">

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useUrlSyncedQueryParam } from "@/lib/queryParam"
+import { externalHref } from '@/lib/url'
 import {
   windowsEventIDs, registryHives, execArtifacts, usbArtifacts,
   lnkArtifacts, browserArtifacts, linuxArtifacts, volatilityPlugins,
@@ -377,7 +379,7 @@ export function MemoryForensics() {
   const [tab, setTab]       = useState<'triage' | 'plugins'>('triage')
   const [osFilter, setOsFilter] = useState<'All' | 'Windows' | 'Linux'>('All')
   const [triageOnly, setTriageOnly] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
 
   const filteredPlugins = useMemo(() => volatilityPlugins.filter(p => {
     if (osFilter !== 'All' && p.os !== osFilter) return false
@@ -473,7 +475,7 @@ export function MemoryForensics() {
 export function ToolCheatSheets() {
   const [activeTool, setActiveTool] = useState(toolSheets[0].tool)
   const tool = toolSheets.find(t => t.tool === activeTool)!
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
 
   const filteredCmds = useMemo(() =>
     tool.commands.filter(c =>
@@ -496,7 +498,19 @@ export function ToolCheatSheets() {
       <div className="bg-zinc-900/40 border border-zinc-800 rounded p-4 mb-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <div className="text-sm font-mono font-semibold text-zinc-100">{tool.tool}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-sm font-mono font-semibold text-zinc-100">{tool.tool}</div>
+              {tool.url && (
+                <a
+                  href={externalHref(tool.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-mono text-blue-400 hover:text-blue-300 hover:underline"
+                >
+                  Visit ↗
+                </a>
+              )}
+            </div>
             <div className="text-xs font-mono text-zinc-500 mt-0.5">{tool.purpose}</div>
           </div>
           <Badge text={`v${tool.version}`} cls="bg-zinc-800 text-zinc-500" />
@@ -530,7 +544,7 @@ export function ToolCheatSheets() {
 
 export function MacOSArtifacts() {
   const [tab, setTab] = useState<'artifacts' | 'unifiedlog' | 'tools'>('artifacts')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
 
   const cats = ['ALL', ...Array.from(new Set(macArtifacts.map(a => a.category)))]

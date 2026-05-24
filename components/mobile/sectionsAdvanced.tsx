@@ -5,8 +5,13 @@ import {
   iosLogQueries, androidLogEntries, cloudExtractions,
   appDeepDives, locationArtifacts, commArtifacts,
   mobileIOCs, mobileAntiForensics, jtagWorkflow,
-  ufedExtractionTypes, ufedWorkflow,
+  ufedExtractionTypes, ufedWorkflow, pushTokenLocations,
+  deepLinkArtifacts, appGroupArtifacts, installReferrerArtifacts,
+  notificationCacheArtifacts,
 } from '@/lib/mobile/data'
+import Link from 'next/link'
+import { sectionTools } from '@/lib/mobile/sectionTools'
+import ToolsUsedHere from '@/components/ToolsUsedHere'
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -32,8 +37,6 @@ function Copy({ text }: { text: string }) {
   )
 }
 
-const inputCls = 'bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500'
-
 function CmdBlock({ cmd }: { cmd: string }) {
   return (
     <div className="relative group">
@@ -56,7 +59,6 @@ const platBadge = (p: string) => {
 
 export function IOSUnifiedLog() {
   const [catFilter, setCatFilter] = useState('ALL')
-  const [open, setOpen] = useState<string | null>(null)
   const cats = ['ALL', ...Array.from(new Set(iosLogQueries.map(q => q.category)))]
   const filtered = useMemo(() => iosLogQueries.filter(q =>
     catFilter === 'ALL' || q.category === catFilter
@@ -66,6 +68,7 @@ export function IOSUnifiedLog() {
     <div>
       <SH title="iOS Unified Log forensics"
         sub="sysdiagnose acquisition · app execution · network activity · security events · jailbreak indicators" />
+      <ToolsUsedHere tools={sectionTools.ioslog ?? []} />
       <div className="bg-blue-950/20 border border-blue-900/30 rounded p-3 mb-5 text-xs font-mono text-blue-400">
         Trigger sysdiagnose immediately on seizure — log buffers are volatile and overwrite. Hold Volume Up + Volume Down + Side button for 1.5s. Collect from Settings → Privacy → Analytics before rebooting.
       </div>
@@ -108,6 +111,7 @@ export function AndroidLogs() {
     <div>
       <SH title="Android logcat & tombstones"
         sub="Logcat buffers · crash tombstones · Dropbox events · package history · permission audit · network stats" />
+      <ToolsUsedHere tools={sectionTools.androidlog ?? []} />
       <div className="flex flex-wrap gap-1.5 mb-5">
         {cats.map(c => (
           <button key={c} onClick={() => setCatFilter(c)}
@@ -146,6 +150,7 @@ export function CloudExtractionSection() {
     <div>
       <SH title="Cloud extraction reference"
         sub="iCloud · Google · Samsung Cloud · WhatsApp backup — what you get, legal process, retention, and tools" />
+      <ToolsUsedHere tools={sectionTools.cloud ?? []} />
       <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400">
         ⚠ Send preservation holds to providers BEFORE device is seized or wiped — providers auto-delete data on account closure. iCloud Advanced Data Protection (iOS 16.2+) and WhatsApp E2E backup fundamentally limit server-side collection.
       </div>
@@ -168,7 +173,7 @@ export function CloudExtractionSection() {
                     <ul className="space-y-1">{c.whatYouGet.map((w, i) => <li key={i} className="text-xs font-mono text-emerald-400 flex gap-2"><span className="text-zinc-700">✓</span>{w}</li>)}</ul>
                   </div>
                   <div>
-                    <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">What you don't get</div>
+                    <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1.5">What you don&apos;t get</div>
                     <ul className="space-y-1">{c.whatYouDontGet.map((w, i) => <li key={i} className="text-xs font-mono text-red-400 flex gap-2"><span className="text-zinc-700">✗</span>{w}</li>)}</ul>
                   </div>
                 </div>
@@ -204,6 +209,7 @@ export function AppDeepDivesSection() {
     <div>
       <SH title="App-specific deep dives"
         sub="WhatsApp · Signal · Telegram · Snapchat · Instagram — schemas, deleted recovery, encryption, server retention" />
+      <ToolsUsedHere tools={sectionTools.appdeep ?? []} />
       <div className="flex flex-wrap gap-1.5 mb-5">
         {appDeepDives.map(a => (
           <button key={a.app} onClick={() => { setActive(a.app); setDbIndex(0) }}
@@ -290,6 +296,7 @@ export function LocationForensics() {
     <div>
       <SH title="Location forensics"
         sub="iOS Significant Locations · KnowledgeC · Google Timeline · cell towers · WiFi geolocation" />
+      <ToolsUsedHere tools={sectionTools.location ?? []} />
       <div className="space-y-2">
         {locationArtifacts.map(a => (
           <div key={a.name} className="border border-zinc-800 rounded overflow-hidden">
@@ -348,6 +355,7 @@ export function CommCorrelation() {
     <div>
       <SH title="Communication artifact correlation"
         sub="SMS/iMessage · call logs (iOS + Android) · iMessage identity linking — schemas, queries, cross-artifact chains" />
+      <ToolsUsedHere tools={sectionTools.comms ?? []} />
       <div className="flex flex-wrap gap-1.5 mb-5">
         {commArtifacts.map(a => (
           <button key={a.type} onClick={() => setActive(a.type)}
@@ -406,6 +414,7 @@ export function MobileMalware() {
     <div>
       <SH title="Mobile malware & integrity indicators"
         sub="iOS jailbreak · iOS stalkerware · Android root · Android stalkerware/malicious APK — IOCs and detection" />
+      <ToolsUsedHere tools={sectionTools.malware ?? []} />
       <div className="flex gap-2 mb-5">
         {['ALL', 'iOS', 'Android'].map(p => (
           <button key={p} onClick={() => setPlatFilter(p)}
@@ -629,3 +638,313 @@ export function UFEDReference() {
     </div>
   )
 }
+
+// ─── 11. Push Tokens (artifact locations) ────────────────────────────────────
+
+export function PushTokensSection() {
+  const [platFilter, setPlatFilter] = useState<'ALL' | 'iOS' | 'Android'>('ALL')
+  const [provFilter, setProvFilter] = useState('ALL')
+
+  const providers = ['ALL', ...Array.from(new Set(pushTokenLocations.map(p => p.provider)))]
+
+  const filtered = useMemo(() => pushTokenLocations.filter(p =>
+    (platFilter === 'ALL' || p.platform === platFilter) &&
+    (provFilter === 'ALL' || p.provider === provFilter)
+  ), [platFilter, provFilter])
+
+  return (
+    <div>
+      <SH title="Push token artifact locations"
+        sub="Where APNs · FCM · FBNS · OEM · SDK push tokens live on disk — and what each is good for in CI" />
+      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400 leading-relaxed">
+        Push tokens are an under-parsed mobile artifact: AXIOM and Cellebrite extract the underlying plist / XML / SQLite values but rarely identify them as push tokens or attribute them to a provider. Once you have the raw value, paste it into the{' '}
+        <Link href="/tools?tool=pushtoken" className="underline hover:text-amber-300">Push Token Identifier</Link>{' '}
+        tool to confirm provider and parse the structure.
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Platform:</span>
+        {(['ALL', 'iOS', 'Android'] as const).map(p => (
+          <button key={p} onClick={() => setPlatFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${platFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>
+            {p}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Provider:</span>
+        {providers.map(p => (
+          <button key={p} onClick={() => setProvFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${provFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((p, i) => (
+          <div key={i} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {platBadge(p.platform)}
+              <Badge text={p.provider} cls="bg-purple-950 text-purple-400" />
+              <span className="text-xs font-mono font-semibold text-zinc-100">{p.app}</span>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Path</div>
+              <code className="text-[11px] font-mono text-emerald-400 break-all">{p.path}</code>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Format</div>
+              <p className="text-xs font-mono text-zinc-400">{p.format}</p>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Acquisition</div>
+              <p className="text-xs font-mono text-zinc-400">{p.acquisition}</p>
+            </div>
+            <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI: </span>
+              <span className="text-xs font-mono text-amber-400">{p.ciValue}</span>
+            </div>
+            <p className="text-[11px] font-mono text-zinc-600">{p.notes}</p>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="text-xs font-mono text-zinc-600">No entries for this filter combination.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── 12. Deep / universal links ──────────────────────────────────────────────
+
+export function DeepLinksSection() {
+  const [platFilter, setPlatFilter] = useState<'ALL' | 'iOS' | 'Android'>('ALL')
+  const [catFilter, setCatFilter] = useState('ALL')
+  const categories = ['ALL', ...Array.from(new Set(deepLinkArtifacts.map(d => d.category)))]
+
+  const filtered = useMemo(() => deepLinkArtifacts.filter(d =>
+    (platFilter === 'ALL' || d.platform === platFilter) &&
+    (catFilter === 'ALL' || d.category === catFilter)
+  ), [platFilter, catFilter])
+
+  return (
+    <div>
+      <SH title="Deep links / universal links"
+        sub="Which app handled which URL — Apple-App-Site-Association · Android App Links · custom URL schemes" />
+      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400 leading-relaxed">
+        Deep-link artifacts answer &quot;when the user tapped this URL, which app received it?&quot; Combined with timestamps, this proves how a user got to a specific in-app screen — often essential for phishing / fraud cases where the link itself was the lure.
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Platform:</span>
+        {(['ALL', 'iOS', 'Android'] as const).map(p => (
+          <button key={p} onClick={() => setPlatFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${platFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>{p}</button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Category:</span>
+        {categories.map(c => (
+          <button key={c} onClick={() => setCatFilter(c)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${catFilter === c ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>{c}</button>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((d, i) => (
+          <div key={i} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {platBadge(d.platform)}
+              <Badge text={d.category} cls="bg-purple-950 text-purple-400" />
+              <span className="text-xs font-mono font-semibold text-zinc-100">{d.name}</span>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Path</div>
+              <code className="text-[11px] font-mono text-emerald-400 break-all">{d.path}</code>
+            </div>
+            <p className="text-xs font-mono text-zinc-400">{d.description}</p>
+            <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI: </span>
+              <span className="text-xs font-mono text-amber-400">{d.ciValue}</span>
+            </div>
+            <p className="text-[11px] font-mono text-zinc-600">{d.notes}</p>
+          </div>
+        ))}
+        {filtered.length === 0 && <p className="text-xs font-mono text-zinc-600">No entries for this filter combination.</p>}
+      </div>
+    </div>
+  )
+}
+
+// ─── 13. App group containers / shared keychain ──────────────────────────────
+
+export function AppGroupsSection() {
+  const [platFilter, setPlatFilter] = useState<'ALL' | 'iOS' | 'Android'>('ALL')
+  const filtered = useMemo(() => appGroupArtifacts.filter(a =>
+    platFilter === 'ALL' || a.platform === platFilter
+  ), [platFilter])
+
+  return (
+    <div>
+      <SH title="App group containers · shared keychain"
+        sub="Where messaging apps and their extensions actually share data — invisible to per-app parsers" />
+      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400 leading-relaxed">
+        iOS App Groups let an app, its extensions (Notification Service, Share, Watch, Widget), and other apps from the same Apple Developer team share a container + keychain items. WhatsApp, Signal, and Telegram all put their <em>real</em> message stores in the shared group — per-app parsers that only walk Containers/Data/Application/&lt;UUID&gt;/ miss them entirely. Android&apos;s closest equivalent is the legacy sharedUserId pattern.
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Platform:</span>
+        {(['ALL', 'iOS', 'Android'] as const).map(p => (
+          <button key={p} onClick={() => setPlatFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${platFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>{p}</button>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((a, i) => (
+          <div key={i} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {platBadge(a.platform)}
+              <span className="text-xs font-mono font-semibold text-zinc-100">{a.app}</span>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Group ID</div>
+              <code className="text-[11px] font-mono text-emerald-400 break-all">{a.groupId}</code>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Path</div>
+              <code className="text-[11px] font-mono text-emerald-400 break-all">{a.path}</code>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Contents</div>
+              <ul className="space-y-1">
+                {a.contents.map((c, j) => (
+                  <li key={j} className="text-xs font-mono text-zinc-300 flex gap-2"><span className="text-zinc-700">·</span>{c}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI: </span>
+              <span className="text-xs font-mono text-amber-400">{a.ciValue}</span>
+            </div>
+            <p className="text-[11px] font-mono text-zinc-600">{a.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── 14. Install attribution + analytics IDs ─────────────────────────────────
+
+export function InstallAttributionSection() {
+  const [platFilter, setPlatFilter] = useState<'ALL' | 'iOS' | 'Android'>('ALL')
+  const [catFilter, setCatFilter] = useState('ALL')
+  const categories = ['ALL', ...Array.from(new Set(installReferrerArtifacts.map(i => i.category)))]
+
+  const filtered = useMemo(() => installReferrerArtifacts.filter(i =>
+    (platFilter === 'ALL' || i.platform === platFilter) &&
+    (catFilter === 'ALL' || i.category === catFilter)
+  ), [platFilter, catFilter])
+
+  return (
+    <div>
+      <SH title="Install attribution · advertising / analytics IDs"
+        sub="How the app got there (campaign · sideload · store) and which IDs anchor it to backend / ad-network records" />
+      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400 leading-relaxed">
+        Install referrer answers <em>where the install came from</em> (specific ad, organic, sideload). Advertising IDs (GAID / IDFA / IDFV) and Firebase Installation IDs let an investigator pivot from on-device evidence to backend / ad-network records via legal process.
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Platform:</span>
+        {(['ALL', 'iOS', 'Android'] as const).map(p => (
+          <button key={p} onClick={() => setPlatFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${platFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>{p}</button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Category:</span>
+        {categories.map(c => (
+          <button key={c} onClick={() => setCatFilter(c)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${catFilter === c ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>{c}</button>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((i, idx) => (
+          <div key={idx} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {platBadge(i.platform)}
+              <Badge text={i.category} cls="bg-purple-950 text-purple-400" />
+              <span className="text-xs font-mono font-semibold text-zinc-100">{i.name}</span>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Path</div>
+              <code className="text-[11px] font-mono text-emerald-400 break-all">{i.path}</code>
+            </div>
+            <p className="text-xs font-mono text-zinc-400">{i.description}</p>
+            <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI: </span>
+              <span className="text-xs font-mono text-amber-400">{i.ciValue}</span>
+            </div>
+            <p className="text-[11px] font-mono text-zinc-600">{i.notes}</p>
+          </div>
+        ))}
+        {filtered.length === 0 && <p className="text-xs font-mono text-zinc-600">No entries for this filter combination.</p>}
+      </div>
+    </div>
+  )
+}
+
+// ─── 15. Notification cache ──────────────────────────────────────────────────
+
+export function NotificationCacheSection() {
+  const [platFilter, setPlatFilter] = useState<'ALL' | 'iOS' | 'Android'>('ALL')
+  const filtered = useMemo(() => notificationCacheArtifacts.filter(n =>
+    platFilter === 'ALL' || n.platform === platFilter
+  ), [platFilter])
+
+  return (
+    <div>
+      <SH title="Notification preview cache"
+        sub="System-side cache of delivered notifications — often preserves message text after the source app's data is wiped" />
+      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-3 mb-5 text-xs font-mono text-amber-400 leading-relaxed">
+        Notification caches are the artifact you reach for when the source app has been uninstalled or its DB cleared. UserNotificationsServer.db on iOS and NotificationListenerService caches on Android can preserve OTPs, message previews, and alert content the user never opened in-app. Push-token side: see the <Link href="?section=pushtokens" className="underline hover:text-amber-300">Push tokens</Link> section for delivery-side artifacts.
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mr-1 self-center">Platform:</span>
+        {(['ALL', 'iOS', 'Android'] as const).map(p => (
+          <button key={p} onClick={() => setPlatFilter(p)}
+            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${platFilter === p ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}>{p}</button>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((n, i) => (
+          <div key={i} className="border border-zinc-800 rounded p-4 bg-zinc-900/20 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {platBadge(n.platform)}
+              <span className="text-xs font-mono font-semibold text-zinc-100">{n.name}</span>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Path</div>
+              <code className="text-[11px] font-mono text-emerald-400 break-all">{n.path}</code>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-1">Format</div>
+              <p className="text-xs font-mono text-zinc-400">{n.format}</p>
+            </div>
+            <div className="bg-amber-950/20 border border-amber-900/30 rounded px-3 py-2">
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">CI: </span>
+              <span className="text-xs font-mono text-amber-400">{n.ciValue}</span>
+            </div>
+            <p className="text-[11px] font-mono text-zinc-600">{n.notes}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+

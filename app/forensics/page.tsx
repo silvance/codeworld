@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import ForensicsPage from '@/components/forensics/ForensicsPage'
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function ForensicsRoute() {
-  return <ForensicsPage />
+  return <Suspense><ForensicsPage /></Suspense>
 }

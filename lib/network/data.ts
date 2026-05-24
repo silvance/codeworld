@@ -1230,3 +1230,23 @@ eth_pkt = Ether(dst="ff:ff:ff:ff:ff:ff", src="aa:bb:cc:dd:ee:ff", type=0x0800) /
           ICMP()
 sendp(eth_pkt, iface="eth0")` },
 ]
+
+// ─── Search index entries ────────────────────────────────────────────────────
+
+import type { RawSearchEntry } from '@/lib/search/types'
+
+export const networkSearchEntries: RawSearchEntry[] = [
+  ...ports.map<RawSearchEntry>(p => ({ title: `Port ${p.port}/${p.proto}`, aka: p.service, subtitle: p.description, section: 'ports' })),
+  ...wiresharkFilters.map<RawSearchEntry>(f => ({ title: f.filter, aka: f.category, subtitle: f.description, section: 'wireshark' })),
+  ...nmapCommands.map<RawSearchEntry>(c => ({ title: c.cmd, aka: c.category, subtitle: c.description, section: 'nmap' })),
+  ...attackSignatures.map<RawSearchEntry>(a => ({ title: a.name, aka: a.category, subtitle: a.description, section: 'attacks' })),
+  ...tcpdumpCommands.map<RawSearchEntry>(c => ({ title: c.cmd, aka: c.category, subtitle: c.description, section: 'tcpdump' })),
+  ...ncCommands.map<RawSearchEntry>(c => ({ title: c.cmd, aka: c.category, subtitle: c.description, section: 'netcat' })),
+  ...firewallRules.map<RawSearchEntry>(r => ({ title: r.cmd, aka: `${r.tool} · ${r.category}`, subtitle: r.description, section: 'firewall' })),
+  ...dnsCommands.map<RawSearchEntry>(c => ({ title: c.cmd, aka: `${c.tool} · ${c.category}`, subtitle: c.description, section: 'dns' })),
+  ...tlsCommands.map<RawSearchEntry>(c => ({ title: c.cmd, aka: c.category, subtitle: c.description, section: 'tls' })),
+  ...pivotTechniques.map<RawSearchEntry>(p => ({ title: p.name, aka: p.category, subtitle: p.description, section: 'pivot' })),
+  ...wirelessCommands.map<RawSearchEntry>(c => ({ title: c.cmd, aka: c.category, subtitle: c.description, section: 'wireless' })),
+  ...ipv6Entries.map<RawSearchEntry>(e => ({ title: e.topic, aka: e.category, subtitle: e.description, section: 'ipv6' })),
+  ...protocols.map<RawSearchEntry>(p => ({ title: p.protocol, aka: p.ports, subtitle: p.overview, section: 'protocols' })),
+]

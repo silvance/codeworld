@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useUrlSyncedQueryParam } from "@/lib/queryParam"
+import { externalHref } from '@/lib/url'
 import {
   freqReference, tscmDevices, wifi24Channels, wifi5Channels, bleChannels,
   rogueAPIndicators, rogueAPTools,
@@ -34,7 +36,7 @@ const SectionHeader = ({ title, sub }: { title: string; sub: string }) => (
 // ─── 1. Frequency Reference ──────────────────────────────────────────────────
 
 export function FreqReference() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [showThreat, setShowThreat] = useState(false)
 
   const filtered = useMemo(() => {
@@ -396,7 +398,7 @@ export function ChannelMaps() {
 export function SignalMath() {
   const [dbm, setDbm]       = useState('-70')
   const [mw, setMw]         = useState('')
-  const [lastEdit, setLastEdit] = useState<'dbm' | 'mw'>('dbm')
+  const [, setLastEdit] = useState<'dbm' | 'mw'>('dbm')
 
   const [eirpTx, setEirpTx] = useState('20')
   const [eirpGain, setEirpGain] = useState('2')
@@ -539,7 +541,7 @@ export function SignalMath() {
 // ─── 5. TSCM Device Frequencies ─────────────────────────────────────────────
 
 export function TSCMFreqs() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [riskFilter, setRiskFilter] = useState<'ALL' | 'HIGH' | 'MED' | 'LOW'>('ALL')
 
   const filtered = useMemo(() => tscmDevices.filter(d => {
@@ -655,9 +657,15 @@ export function RogueAP() {
         <div className="space-y-3">
           {rogueAPTools.map(tool => (
             <div key={tool.tool} className="border border-zinc-800 rounded p-4 bg-zinc-900/30">
-              <div className="flex items-start gap-3 mb-1.5">
+              <div className="flex items-start gap-3 mb-1.5 flex-wrap">
                 <span className="text-xs font-mono font-semibold text-zinc-100 min-w-[160px]">{tool.tool}</span>
                 {badge(tool.platform, 'bg-blue-950 text-blue-400')}
+                {tool.url && (
+                  <a href={externalHref(tool.url)} target="_blank" rel="noopener noreferrer"
+                     className="text-[10px] font-mono text-blue-400 hover:text-blue-300 hover:underline">
+                    Visit ↗
+                  </a>
+                )}
               </div>
               <div className="text-xs font-mono text-amber-400 mb-1.5">{tool.primaryUse}</div>
               <p className="text-xs text-zinc-400">{tool.notes}</p>

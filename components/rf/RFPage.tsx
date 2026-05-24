@@ -1,54 +1,20 @@
 'use client'
 
 import { useState } from 'react'
+import { useSectionParam } from '@/lib/useSectionParam'
+import { NAV, GROUPS, type SectionId } from '@/lib/rf/nav'
 import {
   FreqReference, PathLossCalc, ChannelMaps, SignalMath, TSCMFreqs, RogueAP,
 } from './sections'
 import {
   SDRReference, SweepMethodology, PhysicalIndicators, ModulationRef,
-  CounterSurv, BugFrequencies, TSCMToolRef, AntennaLinkBudget,
+  CounterSurv, BugFrequencies, TSCMToolRef, AntennaLinkBudget, SweepPlanner,
 } from './tscmSections'
 import {
   DeviceTaxonomy, ThreatActors, SpectrumBaseline, TempestRef,
   CellularThreats, Countermeasures, TrainingScenarios, SurveyReport,
 } from './tscmAdvanced'
 import { RogueBaseStation } from './RogueBaseStation'
-
-type SectionId =
-  | 'freq' | 'fspl' | 'channels' | 'math' | 'tscm' | 'rogue' | 'rbs'
-  | 'sdr' | 'sweep' | 'physical' | 'modulation' | 'countersurv' | 'bugfreq' | 'tools' | 'antenna'
-  | 'taxonomy' | 'actors' | 'baseline' | 'tempest' | 'cellular' | 'countermeasures' | 'training' | 'report'
-
-const NAV = [
-  // RF Tools
-  { id: 'freq'           as SectionId, label: 'Frequency reference',  sub: 'ISM · cellular · gov · ham',        icon: '📡', group: 'RF Tools' },
-  { id: 'fspl'           as SectionId, label: 'Path loss calc',        sub: 'FSPL · EIRP · link budget',         icon: '📉', group: 'RF Tools' },
-  { id: 'channels'       as SectionId, label: 'Channel maps',          sub: '2.4 GHz · 5 GHz · BLE',            icon: '🗺', group: 'RF Tools' },
-  { id: 'math'           as SectionId, label: 'Signal math',           sub: 'dBm ↔ mW · EIRP · ref table',      icon: '🔢', group: 'RF Tools' },
-  { id: 'antenna'        as SectionId, label: 'Antenna & link budget', sub: 'Gain · patterns · formulas',        icon: '📶', group: 'RF Tools' },
-  { id: 'modulation'     as SectionId, label: 'Modulation reference',  sub: 'AM · FM · FHSS · OFDM · OOK',      icon: '〜', group: 'RF Tools' },
-  // TSCM — Operations
-  { id: 'sweep'          as SectionId, label: 'Sweep methodology',     sub: 'Pre-sweep · RF · physical · docs',  icon: '🔄', group: 'TSCM' },
-  { id: 'tscm'           as SectionId, label: 'TSCM devices',          sub: 'Threat freqs · detection',          icon: '🔍', group: 'TSCM' },
-  { id: 'bugfreq'        as SectionId, label: 'Bug frequencies',       sub: 'Audio · video · GSM · cellular',    icon: '🐛', group: 'TSCM' },
-  { id: 'physical'       as SectionId, label: 'Physical indicators',   sub: 'Screws · paint · wiring · weight',  icon: '👁', group: 'TSCM' },
-  { id: 'countersurv'    as SectionId, label: 'Counter-surv',          sub: 'Foot · vehicle · technical',        icon: '🕵', group: 'TSCM' },
-  { id: 'rogue'          as SectionId, label: 'Rogue AP reference',    sub: 'Evil twin · indicators · tools',    icon: '⚠', group: 'TSCM' },
-  // TSCM — Threat Intel
-  { id: 'taxonomy'       as SectionId, label: 'Device taxonomy',       sub: 'Acoustic · optical · RF · IoT',     icon: '🎯', group: 'Threat Intel' },
-  { id: 'actors'         as SectionId, label: 'Threat actors',         sub: 'Nation-state · insider · criminal', icon: '🎭', group: 'Threat Intel' },
-  { id: 'baseline'       as SectionId, label: 'Spectrum baseline',     sub: 'Office · mil · industrial',         icon: '📊', group: 'Threat Intel' },
-  { id: 'tempest'        as SectionId, label: 'TEMPEST / emanations',  sub: 'Van Eck · keyboard · powerline',    icon: '⚡', group: 'Threat Intel' },
-  { id: 'rbs'           as SectionId, label: 'Rogue base stations', sub: '2G/LTE attacks · SDR platforms · detection', icon: '📡', group: 'TSCM' },
-  { id: 'cellular'       as SectionId, label: 'Cellular threats',      sub: 'IMSI · rogue cell · carrier current',icon: '📶', group: 'Threat Intel' },
-  { id: 'countermeasures'as SectionId, label: 'Countermeasures',       sub: 'Shielding · masking · policy',      icon: '🛡', group: 'Threat Intel' },
-  // TSCM — Training & Docs
-  { id: 'training'       as SectionId, label: 'Training scenarios',    sub: 'Beginner → expert · 5 scenarios',   icon: '🎓', group: 'Training & Docs' },
-  { id: 'report'         as SectionId, label: 'Survey report',         sub: 'Sweep documentation · export',      icon: '📋', group: 'Training & Docs' },
-  // Equipment
-  { id: 'sdr'            as SectionId, label: 'SDR quick reference',   sub: 'HackRF · RTL · TinySA · Flipper',   icon: '📻', group: 'Equipment' },
-  { id: 'tools'          as SectionId, label: 'TSCM tool reference',   sub: 'OSCOR · TALAN · NLJD · TinySA',     icon: '🛠', group: 'Equipment' },
-]
 
 const SECTIONS: Record<SectionId, React.ReactNode> = {
   freq:           <FreqReference />,
@@ -59,6 +25,7 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   rogue:          <RogueAP />,
   sdr:            <SDRReference />,
   sweep:          <SweepMethodology />,
+  sweepplan:      <SweepPlanner />,
   physical:       <PhysicalIndicators />,
   modulation:     <ModulationRef />,
   countersurv:    <CounterSurv />,
@@ -76,10 +43,9 @@ const SECTIONS: Record<SectionId, React.ReactNode> = {
   report:         <SurveyReport />,
 }
 
-const groups = ['RF Tools', 'TSCM', 'Threat Intel', 'Training & Docs', 'Equipment']
 
 export default function RFPage() {
-  const [active, setActive] = useState<SectionId>('freq')
+  const [active, setActive] = useSectionParam<SectionId>('freq', NAV.map(n => n.id))
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
@@ -94,7 +60,7 @@ export default function RFPage() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2">
-          {groups.map(group => (
+          {GROUPS.map(group => (
             <div key={group}>
               <div className="px-4 pt-3 pb-1 text-[9px] font-mono font-semibold text-zinc-700 uppercase tracking-widest">
                 {group}
@@ -103,7 +69,7 @@ export default function RFPage() {
                 <button key={item.id} onClick={() => { setActive(item.id); setMobileNavOpen(false) }}
                   className={`w-full text-left px-4 py-2 transition-colors border-l-2 ${
                     active === item.id
-                      ? 'border-emerald-600 bg-zinc-800 text-zinc-100'
+                      ? 'border-blue-500 bg-zinc-800 text-zinc-100'
                       : 'border-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
                   }`}>
                   <div className="flex items-center gap-2">

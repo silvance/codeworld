@@ -63,6 +63,8 @@ export default function CodePlayground() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile]       = useState(false)
 
+  // Pyodide's runtime API has no installed TS types in this project — opaque ref.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pyodideRef  = useRef<any>(null)
   const runCodeRef  = useRef<() => void>(() => {})
   const abortRef    = useRef<AbortController | null>(null)
@@ -90,10 +92,12 @@ export default function CodePlayground() {
   }
 
   // ── Python (Pyodide) ──────────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadPyodide = async (): Promise<any> => {
     if (pyodideRef.current) return pyodideRef.current
     setPyStatus('loading')
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (!(window as any).loadPyodide) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script')
@@ -103,6 +107,7 @@ export default function CodePlayground() {
           document.head.appendChild(script)
         })
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const py = await (window as any).loadPyodide({
         indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/',
       })
@@ -147,7 +152,7 @@ export default function CodePlayground() {
       table: (data: unknown)      => lines.push(stringify(data)),
     }
     try {
-      // eslint-disable-next-line no-new-func
+       
       const fn = new Function('console', src)
       fn(consoleMock)
     } catch (e: unknown) {
@@ -243,6 +248,8 @@ export default function CodePlayground() {
 
   useEffect(() => { runCodeRef.current = runCode }, [runCode])
 
+  // Monaco editor + monaco namespace types aren't installed in this project.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditorMount = (editor: any, monaco: any) => {
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,

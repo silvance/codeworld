@@ -9,16 +9,6 @@ function Badge({ text, cls }: { text: string; cls: string }) {
   return <span className={`inline-block px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded ${cls}`}>{text}</span>
 }
 
-function Copy({ text }: { text: string }) {
-  const [c, setCopied] = useState(false)
-  return (
-    <button onClick={() => navigator.clipboard.writeText(text)
-      .then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) }).catch(() => {})}
-      className="text-[10px] font-mono text-zinc-600 hover:text-zinc-300 transition-colors px-1"
-    >{c ? '✓' : 'copy'}</button>
-  )
-}
-
 const diffColors: Record<string, string> = {
   LOW:       'bg-emerald-950 text-emerald-400',
   MED:       'bg-amber-950 text-amber-400',

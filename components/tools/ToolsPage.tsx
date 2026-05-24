@@ -8,7 +8,8 @@ import {
 } from './ToolsExtra'
 import { CodeOptimizer } from './CodeOptimizer'
 import { CodeExplainer } from './CodeExplainer'
-import { JSONYAMLConverter, URLParser, CronVisualizer } from './MicroTools'
+import { JSONYAMLConverter, URLParser, CronVisualizer, PushTokenIdentifier } from './MicroTools'
+import EmailAnalyzer from '../email/EmailAnalyzer'
 
 // ─── Hash tool (inlined here for the sidebar layout) ─────────────────────────
 
@@ -123,6 +124,10 @@ function HashTool() {
     setHSHA1(s1); setHSHA256(s256); setHSHA512(s512)
   }, [])
 
+  // computeHashes runs an async webcrypto chain and only setState's after the
+  // most recent call to itself. The strict rule wants derived state but the
+  // async hashing means we genuinely need an effect here.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void computeHashes(textVal) }, [textVal, computeHashes])
 
   const inputCls2 = 'w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-sm font-mono text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-zinc-500 resize-none leading-relaxed'
@@ -213,26 +218,7 @@ function HashTool() {
 
 // ─── Main layout ──────────────────────────────────────────────────────────────
 
-type ToolId = 'hash' | 'subnet' | 'timestamp' | 'packet' | 'regex' | 'jwt' | 'cert' | 'entropy' | 'mac' | 'uuid' | 'chars' | 'codeopt' | 'explain' | 'jsonyaml' | 'urlparser' | 'cron'
-
-const NAV: { id: ToolId; label: string; sub: string; icon: string }[] = [
-  { id: 'hash',      label: 'Hash & encoding',     sub: 'MD5 · SHA · Base64 · hex · URL', icon: '#️⃣' },
-  { id: 'subnet',    label: 'Subnet calculator',    sub: 'CIDR · hosts · mask · binary',   icon: '🌐' },
-  { id: 'timestamp', label: 'Timestamp converter',  sub: 'Unix · FILETIME · Chrome · Mac', icon: '🕐' },
-  { id: 'packet',    label: 'Packet decoder',       sub: 'Ethernet · IP · TCP · UDP · DNS',icon: '📦' },
-  { id: 'regex',     label: 'Regex tester',         sub: 'Live match · groups · highlight', icon: '🔍' },
-  { id: 'jwt',       label: 'JWT decoder',          sub: 'Header · payload · expiry check', icon: '🔑' },
-  { id: 'cert',      label: 'Certificate decoder',  sub: 'PEM · fields · SHA-256 fingerprint', icon: '📜' },
-  { id: 'entropy',   label: 'Entropy calculator',   sub: 'Shannon · classification · histogram', icon: '📊' },
-  { id: 'mac',       label: 'MAC address lookup',   sub: 'OUI vendor · UAA/LAA · EUI-64',  icon: '🔌' },
-  { id: 'uuid',      label: 'UUID / GUID decoder',  sub: 'Version · v1 timestamp · MAC',   icon: '🆔' },
-  { id: 'chars',     label: 'Char inspector',       sub: 'Codepoint · UTF-8 · non-print',  icon: '🔎' },
-  { id: 'codeopt',   label: 'Code optimizer',       sub: 'Bug detection · security · AI',   icon: '🤖' },
-  { id: 'explain',   label: 'Code explainer',       sub: 'Plain English · technical · security lens', icon: '💡' },
-  { id: 'jsonyaml',  label: 'JSON ↔ YAML',           sub: 'Convert between formats — local', icon: '⇄'  },
-  { id: 'urlparser', label: 'URL parser',             sub: 'Scheme · host · params · fragment', icon: '🔗' },
-  { id: 'cron',      label: 'Cron visualizer',        sub: 'Schedule → plain English + next runs', icon: '🕒' },
-]
+import { NAV, VALID_TOOL_IDS, type ToolId } from '@/lib/tools/nav'
 
 const TOOLS: Record<ToolId, React.ReactNode> = {
   hash:      <HashTool />,
@@ -242,6 +228,7 @@ const TOOLS: Record<ToolId, React.ReactNode> = {
   regex:     <RegexTester />,
   jwt:       <JWTDecoder />,
   cert:      <CertDecoder />,
+  email:     <EmailAnalyzer />,
   entropy:   <EntropyCalc />,
   mac:       <MACLookup />,
   uuid:      <UUIDDecoder />,
@@ -251,12 +238,21 @@ const TOOLS: Record<ToolId, React.ReactNode> = {
   jsonyaml:  <JSONYAMLConverter />,
   urlparser: <URLParser />,
   cron:      <CronVisualizer />,
+  pushtoken: <PushTokenIdentifier />,
 }
+
 
 export default function ToolsPage() {
   const [active, setActive] = useState<ToolId>('hash')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const current = NAV.find(n => n.id === active)!
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('tool') as ToolId | null
+    // Read once on mount to honor the ?tool=email deep-link from the /email redirect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (requested && VALID_TOOL_IDS.includes(requested)) setActive(requested)
+  }, [])
 
   return (
     <div className="flex h-full bg-zinc-950 text-zinc-100 overflow-hidden">
@@ -297,13 +293,50 @@ export default function ToolsPage() {
           <span className="text-xs font-mono text-zinc-300">{current.label}</span>
         </div>
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8">
-            <div className="mb-5 pb-4 border-b border-zinc-800">
-              <h1 className="text-sm font-mono font-semibold text-zinc-100 mb-0.5">{current.label}</h1>
-              <p className="text-[11px] font-mono text-zinc-600">{current.sub}</p>
+          {active === 'email' ? (
+            TOOLS[active]
+          ) : (
+            <div className="max-w-4xl mx-auto px-6 py-8">
+              <div className="mb-5 pb-4 border-b border-zinc-800 flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-sm font-mono font-semibold text-zinc-100 mb-0.5">{current.label}</h1>
+                  <p className="text-[11px] font-mono text-zinc-600">{current.sub}</p>
+                </div>
+                {current.script && (
+                  <a
+                    href={current.script}
+                    download={current.script.replace(/^\//, '')}
+                    title="Download a standalone Python version of this tool — runs offline on air-gapped systems."
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-700 rounded hover:border-zinc-500 hover:text-zinc-200 transition-colors flex-shrink-0"
+                  >
+                    <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current" aria-hidden="true">
+                      <path d="M8 12L3 7h3V1h4v6h3L8 12zM1 14h14v1H1z"/>
+                    </svg>
+                    .py
+                  </a>
+                )}
+              </div>
+              {current.script && current.cliExamples && (
+                <details className="mb-5 border border-zinc-800 rounded bg-zinc-900/20">
+                  <summary className="cursor-pointer select-none px-3 py-2 text-[11px] font-mono text-zinc-400 hover:text-zinc-200 transition-colors">
+                    How to run offline / on an air-gapped system
+                  </summary>
+                  <div className="px-3 pb-3 pt-1 space-y-2 text-[11px] font-mono text-zinc-400 leading-relaxed">
+                    <p><span className="text-zinc-600">1.</span> Click the <code className="text-zinc-200">.py</code> button above to download <code className="text-zinc-200">{current.script.replace(/^\//, '')}</code>.</p>
+                    <p><span className="text-zinc-600">2.</span> Move it to the target machine. Needs Python 3.6+ (<code className="text-zinc-200">python3 --version</code>). Stdlib only — no <code className="text-zinc-200">pip install</code> required.</p>
+                    <p><span className="text-zinc-600">3.</span> Run it. Examples:</p>
+                    <ul className="space-y-1 pl-4">
+                      {current.cliExamples.map(ex => (
+                        <li key={ex}><code className="text-emerald-400 break-all">$ {ex}</code></li>
+                      ))}
+                    </ul>
+                    <p className="text-zinc-600 pt-1">Add <code className="text-zinc-300">--json</code> to any command for machine-readable output. Windows: use <code className="text-zinc-300">python</code> or <code className="text-zinc-300">py</code> if <code className="text-zinc-300">python3</code> isn&apos;t on PATH.</p>
+                  </div>
+                </details>
+              )}
+              {TOOLS[active]}
             </div>
-            {TOOLS[active]}
-          </div>
+          )}
         </main>
       </div>
 
