@@ -55,6 +55,19 @@ export default function AboutPage() {
             welcome — especially for content gaps where you&apos;ve been the
             one re-Googling the same path or command.
           </p>
+          <p className="text-xs text-zinc-500 pt-2">
+            The domain and hosting come out of my own pocket. If the site
+            saves you time and you want to chip in,{' '}
+            <a
+              href="https://github.com/sponsors/silvance"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline"
+            >
+              GitHub Sponsors
+            </a>{' '}
+            is the easiest way. Entirely optional — the site stays free either way.
+          </p>
         </section>
 
         <div className="mt-12 pt-6 border-t border-zinc-800">

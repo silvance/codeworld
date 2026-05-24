@@ -185,6 +185,15 @@ export default function HomePage() {
             <Link href="/contact" className="hover:text-zinc-200 transition-colors">Contact</Link>
             <Link href="/privacy" className="hover:text-zinc-200 transition-colors">Privacy</Link>
             <a
+              href="https://github.com/sponsors/silvance"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Help cover hosting"
+              className="hover:text-zinc-200 transition-colors"
+            >
+              Sponsor
+            </a>
+            <a
               href="https://github.com/silvance/codeworld"
               target="_blank"
               rel="noopener noreferrer"
