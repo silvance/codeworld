@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { SUPPORT_URL } from '@/lib/links'
 
 export const metadata: Metadata = {
   title: 'About',
@@ -59,7 +60,7 @@ export default function AboutPage() {
             The domain and hosting come out of my own pocket. If the site
             saves you time and you want to chip in,{' '}
             <a
-              href="https://github.com/sponsors/silvance"
+              href={SUPPORT_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline"
