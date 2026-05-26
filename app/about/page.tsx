@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { SUPPORT_URL } from '@/lib/links'
+import { SUPPORT_URL, CICYBERLAB_URL } from '@/lib/links'
 
 export const metadata: Metadata = {
   title: 'About',
@@ -55,6 +55,19 @@ export default function AboutPage() {
             . Open an issue if something&apos;s wrong or missing, and PRs are
             welcome — especially for content gaps where you&apos;ve been the
             one re-Googling the same path or command.
+          </p>
+          <p>
+            Also building{' '}
+            <a
+              href={CICYBERLAB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline"
+            >
+              CICyberLab
+            </a>
+            {' '}— a counter-intel and digital-forensics training platform;
+            codeworld is the references, CICyberLab is the practice.
           </p>
           <p className="text-xs text-zinc-500 pt-2">
             The domain and hosting come out of my own pocket. If the site

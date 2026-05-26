@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import TypewriterCycle from '@/components/TypewriterCycle'
-import { SUPPORT_URL } from '@/lib/links'
+import { SUPPORT_URL, CICYBERLAB_URL } from '@/lib/links'
 
 const TOOLS = [
   {
@@ -193,6 +193,15 @@ export default function HomePage() {
               className="hover:text-zinc-200 transition-colors"
             >
               Sponsor
+            </a>
+            <a
+              href={CICYBERLAB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="My counter-intel & digital-forensics training platform"
+              className="hover:text-zinc-200 transition-colors"
+            >
+              CICyberLab
             </a>
             <a
               href="https://github.com/silvance/codeworld"
