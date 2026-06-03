@@ -1,5 +1,7 @@
 import { brandImage, OG_SIZE } from '@/lib/og'
 
+export const dynamic = "force-static"
+
 export const alt = 'codeworld — OSINT Reference'
 export const size = OG_SIZE
 export const contentType = 'image/png'

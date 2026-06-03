@@ -5,7 +5,13 @@ export type ToolId =
 
 export interface NavItem { id: ToolId; label: string; sub: string; icon: string; script?: string; cliExamples?: string[] }
 
-export const NAV: NavItem[] = [
+// LLM-backed tools depend on api.anthropic.com — drop them from nav in
+// air-gapped builds where outbound network is blocked. Evaluated at build
+// time (NEXT_PUBLIC_*) so tree-shaking can also strip the components.
+const AIRGAP = process.env.NEXT_PUBLIC_AIRGAP === '1'
+const LLM_TOOLS = new Set<ToolId>(['codeopt', 'explain'])
+
+const ALL_NAV: NavItem[] = [
   { id: 'hash',      label: 'Hash & encoding',     sub: 'MD5 · SHA · Base64 · hex · URL',          icon: '#️⃣', script: '/hash_tool.py',
     cliExamples: ['python3 hash_tool.py "hello world"', 'python3 hash_tool.py --file binary.bin', 'echo -n hello | python3 hash_tool.py --json', 'python3 hash_tool.py --identify 5eb63bbbe01eeed093cb22bb8f5acdc3'] },
   { id: 'subnet',    label: 'Subnet calculator',   sub: 'CIDR · hosts · mask · binary',            icon: '🌐', script: '/subnet.py',
@@ -33,5 +39,9 @@ export const NAV: NavItem[] = [
   { id: 'pushtoken', label: 'Push token ID',      sub: 'APNs · FCM · WNS · SNS · Expo · OneSignal', icon: '📲', script: '/push_token_id.py',
     cliExamples: ['python3 push_token_id.py <token>', 'cat tokens.txt | python3 push_token_id.py', 'python3 push_token_id.py --json <token>'] },
 ]
+
+export const NAV: NavItem[] = AIRGAP
+  ? ALL_NAV.filter(n => !LLM_TOOLS.has(n.id))
+  : ALL_NAV
 
 export const VALID_TOOL_IDS: ToolId[] = NAV.map(n => n.id)

@@ -1,5 +1,20 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+
+const AIRGAP = process.env.NEXT_PUBLIC_AIRGAP === '1'
+
+// Air-gapped build: static export, no SSR features (headers/redirects don't run).
+// Hosting-side security headers become the operator's responsibility — set them in
+// Caddy/nginx/IIS. See AIRGAP.md.
+const airgapConfig = {
+  output: 'export',
+  images: { unoptimized: true },
+  poweredByHeader: false,
+  compress: true,
+  reactStrictMode: true,
+  trailingSlash: true, // friendlier to static file servers
+}
+
+const standardConfig = {
   async headers() {
     return [
       {
@@ -152,5 +167,7 @@ const nextConfig = {
   // Strict mode for React — catches potential issues in development
   reactStrictMode: true,
 }
+
+const nextConfig = AIRGAP ? airgapConfig : standardConfig
 
 module.exports = nextConfig

@@ -4,6 +4,13 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { categories, Language, Snippet } from '@/lib/playground/snippets'
 import { simulateBash } from '@/lib/playground/bashSimulator'
+import { AIRGAP } from '@/lib/airgap'
+
+// Pyodide source — CDN by default, local path in air-gapped builds where
+// the user must drop pyodide-0.26.2/* into public/pyodide/. See AIRGAP.md.
+const PYODIDE_BASE = AIRGAP
+  ? '/pyodide/'
+  : 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -101,7 +108,7 @@ export default function CodePlayground() {
       if (!(window as any).loadPyodide) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script')
-          script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js'
+          script.src = `${PYODIDE_BASE}pyodide.js`
           script.onload  = () => resolve()
           script.onerror = () => reject(new Error('Failed to load Pyodide script'))
           document.head.appendChild(script)
@@ -109,7 +116,7 @@ export default function CodePlayground() {
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const py = await (window as any).loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/',
+        indexURL: PYODIDE_BASE,
       })
       pyodideRef.current = py
       setPyStatus('ready')

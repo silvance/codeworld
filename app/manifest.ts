@@ -1,5 +1,8 @@
 import type { MetadataRoute } from 'next'
 
+// Force static so `output: 'export'` (air-gapped build) can include this.
+export const dynamic = 'force-static'
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'codeworld.codes',
