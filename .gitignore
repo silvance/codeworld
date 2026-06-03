@@ -43,3 +43,4 @@ next-env.d.ts
 # python bytecode (downloadable CLIs in /public)
 __pycache__/
 *.pyc
+public/pyodide/

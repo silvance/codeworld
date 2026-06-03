@@ -1,5 +1,7 @@
 import { brandImage, OG_SIZE } from '@/lib/og'
 
+export const dynamic = "force-static"
+
 export const alt = 'codeworld — Network Utilities'
 export const size = OG_SIZE
 export const contentType = 'image/png'

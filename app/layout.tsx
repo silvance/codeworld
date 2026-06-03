@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import TopNav from '@/components/nav/TopNav'
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
+import { AIRGAP } from '@/lib/airgap'
 
 const inter = Inter({
   variable: '--font-inter',
@@ -76,7 +77,7 @@ export default function RootLayout({
         <main id="main-content" tabIndex={-1} className="h-screen pt-10 flex flex-col fade-up focus:outline-none">
           {children}
         </main>
-        <Analytics />
+        {!AIRGAP && <Analytics />}
         <ServiceWorkerRegistrar />
       </body>
     </html>
