@@ -10,8 +10,8 @@ Usage:
     python3 mac_lookup.py --eui64 aa:bb:cc:dd:ee:ff    # show derived IPv6 EUI-64
 
 Parses a MAC address — vendor OUI prefix, UAA/LAA bit, unicast/multicast bit,
-EUI-64 derivation. Vendor lookup uses a built-in mini OUI database; for full
-IEEE coverage point this script at the official OUI file (see VENDORS below).
+EUI-64 derivation. Vendor lookup uses a small built-in table; place the IEEE oui.txt next to
+this script for full, authoritative coverage (loaded automatically).
 """
 
 import sys
@@ -51,11 +51,9 @@ VENDORS = {
     '443839': 'Cumulus Networks',
     '485D60': 'AzureWave (HP / Dell / Lenovo WiFi)',
     '4C72B9': 'Pegatron',
-    '52540': 'QEMU (any 52:54:00 prefix)',
     '525400': 'QEMU / KVM virtual',
     '60334B': 'Apple',
     '64BC0C': 'LG Electronics',
-    '6C40089': 'Apple',
     '70568B': 'Apple',
     '74E5F9': 'Intel',
     '78D75F': 'Samsung',
@@ -74,22 +72,24 @@ VENDORS = {
     'DCA904': 'Apple',
     'DCA632': 'Raspberry Pi Trading',
     'E45F01': 'Raspberry Pi Trading',
-    'F0189800': 'Apple',
     'F0DCE2': 'Apple',
     'F4F15A': 'Apple',
     'F8E61A': 'Apple',
     'FCFC48': 'Apple',
 }
 
-# Uncomment to load the official IEEE OUI file if you have one alongside:
-# import os
-# OUI_FILE = os.path.join(os.path.dirname(__file__), 'oui.txt')
-# if os.path.exists(OUI_FILE):
-#     with open(OUI_FILE, encoding='utf-8', errors='ignore') as f:
-#         for line in f:
-#             m = re.match(r'^\s*([0-9A-F]{6})\s*\(base 16\)\s*(.+)$', line)
-#             if m:
-#                 VENDORS[m.group(1)] = m.group(2).strip()
+# The built-in table above is a small convenience set. For authoritative
+# vendor names, drop the IEEE registry (https://standards-oui.ieee.org/oui/oui.txt)
+# next to this script as oui.txt — it is loaded automatically and overrides
+# the built-in entries. Works offline once the file is copied over.
+import os
+OUI_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'oui.txt')
+if os.path.exists(OUI_FILE):
+    with open(OUI_FILE, encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            m = re.match(r'^\s*([0-9A-F]{6})\s*\(base 16\)\s*(.+)$', line)
+            if m:
+                VENDORS[m.group(1)] = m.group(2).strip()
 
 
 def parse_mac(s: str) -> tuple[bytes, str]:

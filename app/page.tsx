@@ -1,13 +1,25 @@
 import Link from 'next/link'
 import TypewriterCycle from '@/components/TypewriterCycle'
 import { SUPPORT_URL, CICYBERLAB_URL } from '@/lib/links'
+import { NAV as toolsNav } from '@/lib/tools/nav'
+import { NAV as osintNav } from '@/lib/osint/nav'
+import { NAV as pentestNav } from '@/lib/pentest/nav'
+import { NAV as malwareNav } from '@/lib/malware/nav'
+import { NAV as networkNav } from '@/lib/network/nav'
+import { NAV as forensicsNav } from '@/lib/forensics/nav'
+import { NAV as cloudNav } from '@/lib/cloud/nav'
+import { NAV as mobileNav } from '@/lib/mobile/nav'
+import { NAV as rfNav } from '@/lib/rf/nav'
+
+// Card counts come from each page's NAV so they can't drift as sections are added.
+const count = (nav: readonly unknown[]) => String(nav.length)
 
 const TOOLS = [
   {
     href: '/tools', label: 'Tools', cmd: 'cd /tools',
     desc: 'Hashes, subnets, timestamps, JWT, certs, regex, packet decode — plus a push-token identifier. All local. Several have a single-file Python version you can download.',
     tags: ['Hash', 'Subnet', 'JWT', 'Email Headers', 'Regex', 'Cert'],
-    stat: { label: 'Tools', value: '18' }, color: 'zinc',
+    stat: { label: 'Tools', value: count(toolsNav) }, color: 'zinc',
   },
   {
     href: '/playground', label: 'Code Playground', cmd: 'cd /playground',
@@ -19,49 +31,49 @@ const TOOLS = [
     href: '/osint', label: 'OSINT Reference', cmd: 'cd /osint',
     desc: 'Search operators, username and email enum, image / social / infra workflows — plus a sock-puppet OPSEC playbook and 5 investigation workflows that tie tools together.',
     tags: ['Search Ops', 'People Search', 'Sock Puppet', 'Infra', 'Dark Web'],
-    stat: { label: 'Sections', value: '10' }, color: 'coral',
+    stat: { label: 'Sections', value: count(osintNav) }, color: 'coral',
   },
   {
     href: '/pentest', label: 'Pentesting', cmd: 'cd /pentest',
     desc: 'Recon → AD → reporting. Metasploit, web-app testing, password attacks, post-exploit, AD attack chains.',
     tags: ['Metasploit', 'BloodHound', 'SQLi', 'PrivEsc', 'AD'],
-    stat: { label: 'Sections', value: '10' }, color: 'rose',
+    stat: { label: 'Sections', value: count(pentestNav) }, color: 'rose',
   },
   {
     href: '/malware', label: 'Malware Analysis', cmd: 'cd /malware',
     desc: 'PE structure, static analysis workflow, packer signatures, YARA, C2 beacon patterns, evasion techniques, family reference.',
     tags: ['PE Structure', 'YARA', 'Packers', 'C2', 'Evasion'],
-    stat: { label: 'Sections', value: '8' }, color: 'amber',
+    stat: { label: 'Sections', value: count(malwareNav) }, color: 'amber',
   },
   {
     href: '/network', label: 'Network Utilities', cmd: 'cd /network',
     desc: 'Ports with security notes, Wireshark display filters, Nmap reference, protocol quick-ref (DNS, HTTP, TLS, ICMP, ARP, SMB), attack signatures.',
     tags: ['Ports', 'Wireshark', 'Nmap', 'Protocols', 'Attack Sigs'],
-    stat: { label: 'Sections', value: '5' }, color: 'teal',
+    stat: { label: 'Sections', value: count(networkNav) }, color: 'teal',
   },
   {
     href: '/forensics', label: 'Digital Forensics', cmd: 'cd /forensics',
     desc: 'Windows · Linux · macOS artifact paths, registry hives, execution evidence, memory workflow, tool cheat sheets.',
     tags: ['Windows', 'Linux', 'macOS', 'Memory', 'X-Ways'],
-    stat: { label: 'Sections', value: '5' }, color: 'purple',
+    stat: { label: 'Sections', value: count(forensicsNav) }, color: 'purple',
   },
   {
     href: '/cloud', label: 'Cloud Security', cmd: 'cd /cloud',
     desc: 'AWS · Azure · GCP services, audit-log events, IAM attack paths, K8s chains, storage misconfigs. The cloud-IR runbook is the part I actually reach for.',
     tags: ['AWS', 'Azure', 'GCP', 'IAM', 'K8s', 'IR'],
-    stat: { label: 'Sections', value: '8' }, color: 'violet',
+    stat: { label: 'Sections', value: count(cloudNav) }, color: 'violet',
   },
   {
     href: '/mobile', label: 'Mobile Forensics', cmd: 'cd /mobile',
     desc: 'iOS + Android paths, acquisition, SQLite, ADB. Plus the artifacts AXIOM / Cellebrite extract but don\'t identify — push tokens, app groups, install attribution, notification cache.',
     tags: ['Android', 'iOS', 'ADB', 'SQLite'],
-    stat: { label: 'Sections', value: '17' }, color: 'sky',
+    stat: { label: 'Sections', value: count(mobileNav) }, color: 'sky',
   },
   {
     href: '/rf', label: 'RF / TSCM', cmd: 'cd /rf',
     desc: 'Frequency reference, path-loss math, sweep methodology — written around the TSCM workflow I use, not generic SDR tutorial stuff.',
     tags: ['Freq Ref', 'Sweep', 'Bug Freq', 'SDR', 'Counter-Surv'],
-    stat: { label: 'Sections', value: '14' }, color: 'blue',
+    stat: { label: 'Sections', value: count(rfNav) }, color: 'blue',
   },
 ]
 

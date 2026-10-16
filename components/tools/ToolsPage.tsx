@@ -292,7 +292,7 @@ export default function ToolsPage() {
           <button onClick={() => setMobileNavOpen(o => !o)} className="text-zinc-400 text-xs font-mono">☰</button>
           <span className="text-xs font-mono text-zinc-300">{current.label}</span>
         </div>
-        <main className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {active === 'email' ? (
             TOOLS[active]
           ) : (
@@ -337,7 +337,7 @@ export default function ToolsPage() {
               {TOOLS[active]}
             </div>
           )}
-        </main>
+        </div>
       </div>
 
       {mobileNavOpen && (
