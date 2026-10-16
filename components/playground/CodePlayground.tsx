@@ -12,7 +12,13 @@ const PYODIDE_BASE = AIRGAP
   ? '/pyodide/'
   : 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'
 
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+// Air-gapped builds serve Monaco from public/monaco/vs (copied by
+// scripts/copy-monaco.mjs) instead of the loader's default jsDelivr CDN.
+const MonacoEditor = dynamic(async () => {
+  const mod = await import('@monaco-editor/react')
+  if (AIRGAP) mod.loader.config({ paths: { vs: '/monaco/vs' } })
+  return mod
+}, {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full bg-zinc-900 text-zinc-600 text-xs font-mono">

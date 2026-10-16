@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:airgap": "cross-env NEXT_PUBLIC_AIRGAP=1 next build",
+    "build:airgap": "node scripts/copy-monaco.mjs && cross-env NEXT_PUBLIC_AIRGAP=1 next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -24,6 +24,7 @@
     "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "monaco-editor": "0.55.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'codeworld.codes',
     short_name: 'codeworld',
     description:
-      'Reference tools and interactive utilities for cyber operations, TSCM, and digital forensics. Built for practitioners, not demos.',
+      'Reference tools and utilities for CI cyber, TSCM, and forensics work. Runs locally in your browser.',
     start_url: '/',
     display: 'standalone',
     background_color: '#09090b',

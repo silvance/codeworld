@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { searchEntries, COLOR_DOT, type SearchEntry } from '@/lib/search'
 
@@ -21,7 +21,13 @@ function highlight(text: string, query: string) {
   )
 }
 
+// Shortcut hint matches the visitor's OS (the handler accepts both Cmd and Ctrl).
+// useSyncExternalStore keeps hydration clean: server renders ⌘K, client corrects.
+const noopSubscribe = () => () => {}
+const shortcutHint = () => (/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K')
+
 export default function SearchBar() {
+  const kbdHint = useSyncExternalStore(noopSubscribe, shortcutHint, () => '⌘K')
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -111,7 +117,7 @@ export default function SearchBar() {
           aria-hidden="true"
           className="hidden md:flex absolute right-1.5 top-1/2 -translate-y-1/2 items-center gap-0.5 text-[10px] font-mono text-zinc-600 bg-zinc-800 border border-zinc-700 rounded px-1 py-0.5 leading-none"
         >
-          ⌘K
+          {kbdHint}
         </kbd>
       </div>
 

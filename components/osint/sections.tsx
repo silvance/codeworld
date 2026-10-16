@@ -215,20 +215,21 @@ export function UsernameEnum() {
 
 // ─── 5. Image OSINT ───────────────────────────────────────────────────────────
 
+const IMAGE_CATS: Record<string, string> = {
+  'Google Reverse Image': 'Reverse image', 'Bing Visual Search': 'Reverse image',
+  'Yandex Image Search': 'Reverse image', 'TinEye': 'Reverse image',
+  'PimEyes': 'Facial recognition', 'FaceCheck.ID': 'Facial recognition',
+  'ExifTool': 'EXIF / metadata', 'Jeffrey\'s Exif Viewer': 'EXIF / metadata',
+  'Google Maps / Earth': 'Geolocation', 'SunCalc': 'Geolocation',
+  'Forensically': 'Forensics', 'FotoForensics': 'Forensics',
+}
+
 export function ImageOSINT() {
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', 'Reverse image', 'Facial recognition', 'EXIF / metadata', 'Geolocation', 'Forensics']
 
-  const catMap: Record<string, string> = {
-    'Google Reverse Image': 'Reverse image', 'Bing Visual Search': 'Reverse image',
-    'Yandex Image Search': 'Reverse image', 'TinEye': 'Reverse image',
-    'PimEyes': 'Facial recognition', 'FaceCheck.ID': 'Facial recognition',
-    'ExifTool': 'EXIF / metadata', 'Jeffrey\'s Exif Viewer': 'EXIF / metadata',
-    'Google Maps / Earth': 'Geolocation', 'SunCalc': 'Geolocation',
-    'Forensically': 'Forensics', 'FotoForensics': 'Forensics',
-  }
 
-  const filtered = useMemo(() => imageTools.filter(t => catFilter === 'ALL' || catMap[t.name] === catFilter), [catFilter])
+  const filtered = useMemo(() => imageTools.filter(t => catFilter === 'ALL' || IMAGE_CATS[t.name] === catFilter), [catFilter])
 
   return (
     <div>
@@ -319,23 +320,24 @@ export function SocialMedia() {
 
 // ─── 7. Domain / IP / Infrastructure ─────────────────────────────────────────
 
+const INFRA_CATS: Record<string, string> = {
+  'WHOIS (ICANN)': 'WHOIS', 'DomainTools': 'WHOIS', 'ViewDNS.info': 'WHOIS',
+  'crt.sh': 'Certificates', 'Censys': 'Certificates',
+  'Shodan': 'Scanning', 'Shodan CVE search': 'Scanning',
+  'DNSDumpster': 'DNS', 'SecurityTrails': 'DNS', 'Amass (CLI)': 'DNS',
+  'BGP.he.net (Hurricane Electric)': 'ASN/IP', 'ARIN / RIPE / APNIC': 'ASN/IP',
+  'Hunter.io': 'Email', 'EmailRep': 'Email',
+}
+
 export function InfraOSINT() {
   const [search, setSearch] = useUrlSyncedQueryParam('q')
   const [catFilter, setCatFilter] = useState('ALL')
 
-  const catMap: Record<string, string> = {
-    'WHOIS (ICANN)': 'WHOIS', 'DomainTools': 'WHOIS', 'ViewDNS.info': 'WHOIS',
-    'crt.sh': 'Certificates', 'Censys': 'Certificates',
-    'Shodan': 'Scanning', 'Shodan CVE search': 'Scanning',
-    'DNSDumpster': 'DNS', 'SecurityTrails': 'DNS', 'Amass (CLI)': 'DNS',
-    'BGP.he.net (Hurricane Electric)': 'ASN/IP', 'ARIN / RIPE / APNIC': 'ASN/IP',
-    'Hunter.io': 'Email', 'EmailRep': 'Email',
-  }
 
   const cats = ['ALL', 'WHOIS', 'Certificates', 'Scanning', 'DNS', 'ASN/IP', 'Email']
 
   const filtered = useMemo(() => infraTools.filter(t => {
-    if (catFilter !== 'ALL' && catMap[t.name] !== catFilter) return false
+    if (catFilter !== 'ALL' && INFRA_CATS[t.name] !== catFilter) return false
     if (!search) return true
     const q = search.toLowerCase()
     return t.name.toLowerCase().includes(q) || t.what.toLowerCase().includes(q)
@@ -363,7 +365,7 @@ export function InfraOSINT() {
                 <span className="text-sm font-mono font-semibold text-zinc-100">{t.name}</span>
                 <a href={externalHref(t.url)} target="_blank" rel="noopener noreferrer" className="ml-3 text-xs font-mono text-blue-400 hover:text-blue-300 hover:underline">{t.url}</a>
               </div>
-              {catMap[t.name] && <Badge text={catMap[t.name]} cls="bg-zinc-800 text-zinc-400" />}
+              {INFRA_CATS[t.name] && <Badge text={INFRA_CATS[t.name]} cls="bg-zinc-800 text-zinc-400" />}
             </div>
             <p className="text-xs font-mono text-zinc-300 mb-2">{t.what}</p>
             {t.commands && (
@@ -416,19 +418,20 @@ export function PhoneOSINT() {
 
 // ─── 9. Dark Web OSINT ───────────────────────────────────────────────────────
 
+const DARKWEB_CATS: Record<string, string> = {
+  'Have I Been Pwned': 'Breach data', 'Dehashed': 'Breach data', 'IntelligenceX': 'Breach data', 'Leaked Source (archived)': 'Breach data',
+  'Pastebin / Ghostbin / Hastebin': 'Paste sites', 'psbdmp.ws': 'Paste sites',
+  'Ahmia': 'Dark web search', 'OnionSearch': 'Dark web search',
+  'Ransomware leak site monitoring': 'Ransomware', 'DarkOwl': 'Ransomware',
+  'Blockchain.com / Blockchair': 'Cryptocurrency', 'Etherscan': 'Cryptocurrency',
+}
+
 export function DarkWebOSINT() {
   const [catFilter, setCatFilter] = useState('ALL')
   const cats = ['ALL', 'Breach data', 'Paste sites', 'Dark web search', 'Ransomware', 'Cryptocurrency']
 
-  const catMap: Record<string, string> = {
-    'Have I Been Pwned': 'Breach data', 'Dehashed': 'Breach data', 'IntelligenceX': 'Breach data', 'Leaked Source (archived)': 'Breach data',
-    'Pastebin / Ghostbin / Hastebin': 'Paste sites', 'psbdmp.ws': 'Paste sites',
-    'Ahmia': 'Dark web search', 'OnionSearch': 'Dark web search',
-    'Ransomware leak site monitoring': 'Ransomware', 'DarkOwl': 'Ransomware',
-    'Blockchain.com / Blockchair': 'Cryptocurrency', 'Etherscan': 'Cryptocurrency',
-  }
 
-  const filtered = useMemo(() => darkWebSources.filter(s => catFilter === 'ALL' || catMap[s.name] === catFilter), [catFilter])
+  const filtered = useMemo(() => darkWebSources.filter(s => catFilter === 'ALL' || DARKWEB_CATS[s.name] === catFilter), [catFilter])
 
   return (
     <div>

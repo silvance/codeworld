@@ -20,6 +20,7 @@ What this changes vs. a normal `npm run build`:
 | | Normal build | `build:airgap` |
 | :--- | :--- | :--- |
 | Output | `.next/` (needs `next start`) | `out/` (flat HTML/JS/CSS, any static server) |
+| `/playground` code editor (Monaco) | jsDelivr CDN | local `/monaco/` (copied automatically from `node_modules`) |
 | `/playground` Pyodide source | jsDelivr CDN | local `/pyodide/` (you provide) |
 | `/tools` Code Optimizer + Code Explainer | Visible (calls Anthropic API) | Hidden from nav (no outbound network) |
 | Vercel Analytics | Loaded | Skipped |
@@ -56,8 +57,8 @@ npm ci                                # ~700 MB node_modules, takes a few minute
 #     codeworld\public\pyodide\
 #   The file codeworld\public\pyodide\pyodide.js should exist.
 
-npm run build:airgap                  # produces .\out\ — ~5 MB without Pyodide,
-                                      # ~80 MB with Pyodide files included
+npm run build:airgap                  # produces .\out\ — ~20 MB with the bundled
+                                      # Monaco editor, ~100 MB with Pyodide too
 ```
 
 ### Run on the air-gapped machine

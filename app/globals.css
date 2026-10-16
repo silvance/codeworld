@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
+/* The site is dark-only. These used to flip on prefers-color-scheme (leftover
+   create-next-app scaffold), which made pages without their own background —
+   home, about, contact, privacy — render white for light-mode visitors. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09090b; /* zinc-950 */
+  --foreground: #ededed;
+  color-scheme: dark;    /* dark native scrollbars + form controls */
 }
 
 @theme inline {
@@ -10,13 +14,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
